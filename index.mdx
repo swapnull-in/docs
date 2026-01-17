@@ -1,97 +1,103 @@
 ---
 title: "Introduction"
-description: "Welcome to the new home for your documentation"
+description: "Open-source billing infrastructure for SaaS and subscription businesses"
 ---
 
-## Setting up
+## What is Recurso?
 
-Get your documentation site up and running in minutes.
+Recurso is an **open-source billing engine** designed for SaaS companies, subscription businesses, and developers who need complete control over their billing infrastructure.
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get up and running in under 5 minutes
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Core Concepts" icon="book" href="/concepts">
+    Understand the building blocks
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Complete API documentation
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Self-Host" icon="server" href="/quickstart#self-hosting">
+    Deploy on your own infrastructure
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Key Features
 
-Everything you need to create world-class documentation.
+<AccordionGroup>
+  <Accordion title="Flexible Subscription Billing" icon="repeat">
+    Create plans with any pricing model: flat-rate, per-seat, usage-based, or hybrid. Support for trials, billing anchors, and proration.
+  </Accordion>
+  <Accordion title="Multi-Gateway Payments" icon="credit-card">
+    Integrate with Razorpay (India) and Stripe (Global). Smart routing based on customer currency.
+  </Accordion>
+  <Accordion title="GST-Compliant Invoicing" icon="file-invoice">
+    Generate invoices with GSTIN, SAC codes, CGST/SGST/IGST breakup, and e-invoice support.
+  </Accordion>
+  <Accordion title="Customer Portal" icon="user">
+    White-label portal with magic link authentication. Customers can manage subscriptions, view invoices, and update payment methods.
+  </Accordion>
+  <Accordion title="Real-time Webhooks" icon="bell">
+    Get notified instantly about subscription changes, payment events, and invoice updates.
+  </Accordion>
+  <Accordion title="Developer-First" icon="terminal">
+    Clean REST API, TypeScript SDK, and comprehensive documentation.
+  </Accordion>
+</AccordionGroup>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## Why Recurso?
 
-## Need inspiration?
+| Feature | Recurso | Stripe Billing | Chargebee |
+|---------|---------|----------------|-----------|
+| **Open Source** | ✅ Yes | ❌ No | ❌ No |
+| **Self-Hosted** | ✅ Yes | ❌ No | ❌ No |
+| **GST Support** | ✅ Native | 🟡 Limited | ✅ Yes |
+| **Razorpay** | ✅ Yes | ❌ No | ✅ Yes |
+| **Usage Billing** | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Pricing** | Free | 0.5% + fees | $249+/mo |
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
+## Architecture
+
+```mermaid
+graph LR
+    A[Your App] -->|API| B[Recurso Engine]
+    B --> C[Plans & Pricing]
+    B --> D[Customers]
+    B --> E[Subscriptions]
+    B --> F[Invoices]
+    B --> G[Payments]
+    G --> H[Razorpay]
+    G --> I[Stripe]
+    B --> J[Webhooks]
+    J --> A
+```
+
+## Get Started
+
+<Steps>
+  <Step title="Install the SDK">
+    ```bash
+    npm install @recurso/sdk
+    ```
+  </Step>
+  <Step title="Create a customer">
+    ```typescript
+    const customer = await recurso.customers.create({
+      name: 'Acme Corp',
+      email: 'billing@acme.com'
+    });
+    ```
+  </Step>
+  <Step title="Start a subscription">
+    ```typescript
+    const subscription = await recurso.subscriptions.create({
+      customer_id: customer.id,
+      plan_id: 'plan_pro_monthly'
+    });
+    ```
+  </Step>
+</Steps>
+
+<Card title="Ready to build?" icon="arrow-right" href="/quickstart">
+  Follow our quickstart guide to set up Recurso in your project
 </Card>

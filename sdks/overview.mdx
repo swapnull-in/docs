@@ -1,0 +1,166 @@
+---
+title: "SDK Overview"
+description: "Official SDKs for TypeScript, Python, and Go"
+---
+
+## Available SDKs
+
+<CardGroup cols={3}>
+  <Card title="TypeScript/JavaScript" icon="js" href="/sdks/typescript">
+    For Node.js and browser applications
+    ```bash
+    npm install @recurso/sdk
+    ```
+  </Card>
+  <Card title="Python" icon="python" href="/sdks/python">
+    For Django, Flask, FastAPI
+    ```bash
+    pip install recurso
+    ```
+  </Card>
+  <Card title="Go" icon="golang" href="/sdks/go">
+    For Go services
+    ```bash
+    go get github.com/recur-so/recurso-go
+    ```
+  </Card>
+</CardGroup>
+
+## Quick Example
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Recurso from '@recurso/sdk';
+
+    const recurso = new Recurso({
+      apiKey: process.env.RECURSO_API_KEY
+    });
+
+    // Create a customer
+    const customer = await recurso.customers.create({
+      name: 'Acme Corp',
+      email: 'billing@acme.com'
+    });
+
+    // Start a subscription
+    const subscription = await recurso.subscriptions.create({
+      customer_id: customer.id,
+      plan_id: 'plan_pro'
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    import recurso
+
+    client = recurso.Client(api_key=os.environ['RECURSO_API_KEY'])
+
+    # Create a customer
+    customer = client.customers.create(
+        name='Acme Corp',
+        email='billing@acme.com'
+    )
+
+    # Start a subscription
+    subscription = client.subscriptions.create(
+        customer_id=customer.id,
+        plan_id='plan_pro'
+    )
+    ```
+  </Tab>
+  <Tab title="Go">
+    ```go
+    import "github.com/recur-so/recurso-go"
+
+    client := recurso.NewClient(os.Getenv("RECURSO_API_KEY"))
+
+    // Create a customer
+    customer, err := client.Customers.Create(&recurso.CustomerParams{
+        Name:  "Acme Corp",
+        Email: "billing@acme.com",
+    })
+
+    // Start a subscription
+    subscription, err := client.Subscriptions.Create(&recurso.SubscriptionParams{
+        CustomerID: customer.ID,
+        PlanID:     "plan_pro",
+    })
+    ```
+  </Tab>
+</Tabs>
+
+## Features
+
+All SDKs include:
+
+- **Type Safety**: Full TypeScript/typing support
+- **Auto-retry**: Automatic retry on transient errors
+- **Pagination**: Easy iteration over large lists
+- **Webhooks**: Signature verification helpers
+- **Async**: Native async/await support
+
+## Configuration Options
+
+```typescript
+const recurso = new Recurso({
+  apiKey: 'rsk_live_xxx',
+  
+  // Optional
+  baseUrl: 'https://api.recurso.dev',  // For self-hosted
+  timeout: 30000,                       // Request timeout (ms)
+  maxRetries: 3,                        // Auto-retry attempts
+  debug: false                          // Enable debug logging
+});
+```
+
+## Error Handling
+
+All SDKs use consistent error types:
+
+```typescript
+try {
+  await recurso.customers.get('invalid_id');
+} catch (error) {
+  if (error instanceof recurso.NotFoundError) {
+    console.log('Customer not found');
+  } else if (error instanceof recurso.ValidationError) {
+    console.log('Invalid input:', error.errors);
+  } else if (error instanceof recurso.RateLimitError) {
+    console.log('Rate limited, retry after:', error.retryAfter);
+  }
+}
+```
+
+## Webhook Verification
+
+```typescript
+const signature = req.headers['recurso-signature'];
+const payload = req.body;
+
+const event = recurso.webhooks.constructEvent(
+  payload,
+  signature,
+  process.env.WEBHOOK_SECRET
+);
+
+switch (event.type) {
+  case 'subscription.activated':
+    handleActivation(event.data);
+    break;
+}
+```
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="TypeScript Guide" icon="js" href="/sdks/typescript">
+    Detailed TypeScript docs
+  </Card>
+  <Card title="Python Guide" icon="python" href="/sdks/python">
+    Detailed Python docs
+  </Card>
+  <Card title="Go Guide" icon="golang" href="/sdks/go">
+    Detailed Go docs
+  </Card>
+</CardGroup>

@@ -1,80 +1,197 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quick Start"
+description: "Get Recurso up and running in under 5 minutes"
 ---
 
-## Get started in three steps
+## Installation
 
-Get your documentation site running locally and make your first customization.
+Choose your preferred setup method:
 
-### Step 1: Set up your local environment
+<Tabs>
+  <Tab title="Docker (Recommended)">
+    ```bash
+    # Clone the repository
+    git clone https://github.com/recur-so/recurso.git
+    cd recurso
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    # Start with Docker Compose
+    docker-compose up -d
 
-### Step 2: Deploy your changes
+    # API available at http://localhost:8080
+    ```
+  </Tab>
+  <Tab title="From Source">
+    ```bash
+    # Clone the repository
+    git clone https://github.com/recur-so/recurso.git
+    cd recurso
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    # Install dependencies
+    go mod download
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    # Set up environment
+    cp .env.example .env
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    # Run migrations
+    make migrate
 
-### Step 3: Go live
+    # Start the server
+    make run
+    ```
+  </Tab>
+  <Tab title="SDK Only">
+    ```bash
+    # If using Recurso Cloud or existing deployment
+    npm install @recurso/sdk
+    # or
+    pip install recurso
+    # or
+    go get github.com/recur-so/recurso-go
+    ```
+  </Tab>
+</Tabs>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+## Configuration
 
-## Next steps
+Set these environment variables:
 
-Now that you have your docs running, explore these key features:
+```bash .env
+# Database
+DATABASE_URL=postgres://user:pass@localhost:5432/recurso
+
+# API
+PORT=8080
+API_KEY_SECRET=your-secret-key
+
+# Payment Gateways (optional)
+RAZORPAY_KEY_ID=rzp_test_xxx
+RAZORPAY_KEY_SECRET=xxx
+STRIPE_SECRET_KEY=sk_test_xxx
+
+# Email (optional)
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=noreply@example.com
+SMTP_PASSWORD=xxx
+```
+
+## Initialize the SDK
+
+<CodeGroup>
+```typescript TypeScript
+import Recurso from '@recurso/sdk';
+
+const recurso = new Recurso({
+  apiKey: process.env.RECURSO_API_KEY,
+  baseUrl: 'http://localhost:8080' // or your deployment URL
+});
+```
+
+```python Python
+from recurso import Recurso
+
+recurso = Recurso(
+    api_key=os.environ['RECURSO_API_KEY'],
+    base_url='http://localhost:8080'
+)
+```
+
+```go Go
+import "github.com/recur-so/recurso-go"
+
+client := recurso.NewClient(
+    os.Getenv("RECURSO_API_KEY"),
+    recurso.WithBaseURL("http://localhost:8080"),
+)
+```
+</CodeGroup>
+
+## Create Your First Plan
+
+<Steps>
+  <Step title="Create a pricing plan">
+    ```typescript
+    const plan = await recurso.plans.create({
+      name: 'Pro Plan',
+      description: 'For growing teams',
+      interval: 'month',
+      prices: [
+        { amount: 4999, currency: 'INR' }, // ₹49.99/month
+        { amount: 999, currency: 'USD' }   // $9.99/month
+      ]
+    });
+    ```
+  </Step>
+  
+  <Step title="Add a customer">
+    ```typescript
+    const customer = await recurso.customers.create({
+      name: 'Acme Corp',
+      email: 'billing@acme.com',
+      metadata: {
+        company_size: 'mid-market'
+      }
+    });
+    ```
+  </Step>
+  
+  <Step title="Start a subscription">
+    ```typescript
+    const subscription = await recurso.subscriptions.create({
+      customer_id: customer.id,
+      plan_id: plan.id,
+      payment_gateway: 'razorpay' // or 'stripe'
+    });
+
+    // Redirect customer to complete payment
+    console.log(subscription.checkout_url);
+    ```
+  </Step>
+  
+  <Step title="Handle webhooks">
+    ```typescript
+    app.post('/webhooks/recurso', (req, res) => {
+      const event = recurso.webhooks.verify(req.body, req.headers);
+      
+      switch (event.type) {
+        case 'subscription.activated':
+          // Grant access to your product
+          break;
+        case 'payment.succeeded':
+          // Payment received
+          break;
+        case 'subscription.cancelled':
+          // Revoke access
+          break;
+      }
+      
+      res.sendStatus(200);
+    });
+    ```
+  </Step>
+</Steps>
+
+## Self-Hosting
+
+For production deployments:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Docker" icon="docker" href="/deployment/docker">
+    Deploy with Docker Compose or Kubernetes
+  </Card>
+  <Card title="Railway" icon="train" href="/deployment/railway">
+    One-click deploy to Railway
+  </Card>
+  <Card title="Render" icon="server" href="/deployment/render">
+    Deploy to Render with PostgreSQL
+  </Card>
+  <Card title="AWS" icon="aws" href="/deployment/aws">
+    Production setup on AWS
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+## Next Steps
+
+<Card title="Core Concepts" icon="book" href="/concepts">
+  Learn about plans, customers, subscriptions, and invoices
+</Card>

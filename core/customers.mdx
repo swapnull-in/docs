@@ -1,0 +1,169 @@
+---
+title: "Customers"
+description: "Manage customer accounts and billing profiles"
+---
+
+## Overview
+
+Customers represent the people or companies who pay you. Each customer can have:
+
+- Multiple subscriptions
+- Multiple payment methods
+- Billing details (address, tax ID)
+- Custom metadata
+
+## Create a Customer
+
+<CodeGroup>
+```typescript TypeScript
+const customer = await recurso.customers.create({
+  name: 'Acme Corporation',
+  email: 'billing@acme.com',
+  phone: '+919876543210',
+  address: {
+    line1: '123 MG Road',
+    city: 'Bangalore',
+    state: 'Karnataka',
+    postal_code: '560001',
+    country: 'IN'
+  },
+  metadata: {
+    company_id: 'acme_123',
+    plan_type: 'enterprise'
+  }
+});
+```
+
+```bash cURL
+curl -X POST https://api.recurso.dev/v1/customers \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme Corporation",
+    "email": "billing@acme.com"
+  }'
+```
+</CodeGroup>
+
+## B2B Customers (India)
+
+For business customers in India, capture GSTIN for proper invoicing:
+
+```typescript
+const b2bCustomer = await recurso.customers.create({
+  name: 'TechCorp India Pvt Ltd',
+  email: 'accounts@techcorp.in',
+  gstin: '29ABCDE1234F1Z5',  // 15-character GSTIN
+  address: {
+    line1: '456 Koramangala',
+    city: 'Bangalore',
+    state: 'Karnataka',  // Important for CGST/SGST vs IGST
+    postal_code: '560034',
+    country: 'IN'
+  }
+});
+```
+
+<Info>
+When GSTIN is provided, invoices automatically show the customer's business name and tax registration number.
+</Info>
+
+## Update a Customer
+
+```typescript
+const updated = await recurso.customers.update('cust_abc123', {
+  email: 'newemail@acme.com',
+  metadata: {
+    upgraded: true
+  }
+});
+```
+
+## Get a Customer
+
+```typescript
+const customer = await recurso.customers.get('cust_abc123');
+
+// Includes
+{
+  id: 'cust_abc123',
+  name: 'Acme Corporation',
+  email: 'billing@acme.com',
+  subscriptions: [...],
+  invoices: [...],
+  default_payment_method: 'pm_xxx'
+}
+```
+
+## List Customers
+
+```typescript
+const customers = await recurso.customers.list({
+  email: 'billing@acme.com',  // Filter by email
+  limit: 20,
+  offset: 0
+});
+```
+
+## Customer Portal
+
+Each customer gets access to a self-service portal:
+
+```typescript
+// Generate a magic link for customer portal access
+const session = await recurso.portal.createSession({
+  customer_id: 'cust_abc123',
+  return_url: 'https://yourapp.com/account'
+});
+
+// Redirect customer to:
+console.log(session.url);
+// https://portal.yourapp.com/verify?token=xxx
+```
+
+The portal allows customers to:
+- View and pay invoices
+- Update payment methods
+- Cancel subscriptions
+- Download invoices as PDF
+
+## Payment Methods
+
+Associate payment methods with customers:
+
+```typescript
+// After collecting payment via Razorpay/Stripe
+await recurso.customers.attachPaymentMethod('cust_abc123', {
+  gateway: 'razorpay',
+  gateway_payment_method_id: 'method_xxx',
+  set_default: true
+});
+```
+
+## Delete a Customer
+
+<Warning>
+Deleting a customer cancels all active subscriptions and is irreversible.
+</Warning>
+
+```typescript
+await recurso.customers.delete('cust_abc123');
+```
+
+## Metadata
+
+Store custom data on customers:
+
+```typescript
+await recurso.customers.update('cust_abc123', {
+  metadata: {
+    salesforce_id: 'SF123456',
+    segment: 'enterprise',
+    account_manager: 'john@company.com'
+  }
+});
+```
+
+<Tip>
+Use metadata to link Recurso customers to your internal systems.
+</Tip>

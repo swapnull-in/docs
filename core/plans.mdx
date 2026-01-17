@@ -1,0 +1,186 @@
+---
+title: "Plans & Pricing"
+description: "Create and manage subscription plans"
+---
+
+## Overview
+
+Plans define what you're selling and how much it costs. Each plan has:
+
+- **Name & Description** - What appears to customers
+- **Interval** - Billing frequency (monthly, yearly, etc.)
+- **Prices** - Amount in one or more currencies
+- **Features** - What's included (for display)
+
+## Create a Plan
+
+<CodeGroup>
+```typescript TypeScript
+const plan = await recurso.plans.create({
+  name: 'Pro Plan',
+  description: 'For growing teams',
+  interval: 'month',
+  trial_days: 14,
+  prices: [
+    { amount: 4999, currency: 'INR' },  // ₹49.99
+    { amount: 999, currency: 'USD' }    // $9.99
+  ],
+  features: [
+    'Up to 10 team members',
+    'Unlimited projects',
+    'Priority support'
+  ]
+});
+```
+
+```bash cURL
+curl -X POST https://api.recurso.dev/v1/plans \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Pro Plan",
+    "description": "For growing teams",
+    "interval": "month",
+    "trial_days": 14,
+    "prices": [
+      { "amount": 4999, "currency": "INR" },
+      { "amount": 999, "currency": "USD" }
+    ]
+  }'
+```
+</CodeGroup>
+
+## Pricing Models
+
+### Flat Rate
+
+Simple fixed price per period:
+
+```typescript
+{
+  name: 'Starter',
+  interval: 'month',
+  prices: [{ amount: 999, currency: 'INR' }]
+}
+```
+
+### Per-Seat Pricing
+
+Charge based on number of users:
+
+```typescript
+{
+  name: 'Team Plan',
+  interval: 'month',
+  billing_scheme: 'per_unit',
+  prices: [{ amount: 299, currency: 'INR' }],
+  unit_label: 'user'
+}
+
+// When creating subscription
+const subscription = await recurso.subscriptions.create({
+  plan_id: 'plan_team',
+  customer_id: customer.id,
+  quantity: 5  // 5 users × ₹299 = ₹1495/month
+});
+```
+
+### Tiered Pricing
+
+Volume discounts based on quantity:
+
+```typescript
+{
+  name: 'API Access',
+  interval: 'month',
+  billing_scheme: 'tiered',
+  tiers_mode: 'graduated',  // or 'volume'
+  tiers: [
+    { up_to: 1000, unit_amount: 0.10 },    // First 1000: ₹0.10 each
+    { up_to: 10000, unit_amount: 0.05 },   // Next 9000: ₹0.05 each
+    { up_to: 'inf', unit_amount: 0.01 }    // Beyond: ₹0.01 each
+  ]
+}
+```
+
+<Note>
+**Tiered vs Volume**: 
+- `graduated` applies each tier to its own range
+- `volume` applies the final tier rate to all units
+</Note>
+
+## Plan Intervals
+
+| Interval | Value | Example |
+|----------|-------|---------|
+| Daily | `day` | Metered services |
+| Weekly | `week` | Short-term access |
+| Monthly | `month` | Most common |
+| Yearly | `year` | Discounted annual |
+
+For custom intervals, use `interval_count`:
+
+```typescript
+{
+  interval: 'month',
+  interval_count: 3  // Quarterly billing
+}
+```
+
+## Trials
+
+Add free trial periods to any plan:
+
+```typescript
+{
+  name: 'Pro Plan',
+  trial_days: 14  // 14-day free trial
+}
+```
+
+<Info>
+Trial subscribers don't pay until the trial ends. No payment method required during trial (configurable).
+</Info>
+
+## List Plans
+
+```typescript
+const plans = await recurso.plans.list({
+  active: true,
+  limit: 10
+});
+
+// Returns
+{
+  data: [
+    { id: 'plan_starter', name: 'Starter', ... },
+    { id: 'plan_pro', name: 'Pro', ... }
+  ],
+  has_more: false
+}
+```
+
+## Archive a Plan
+
+Archived plans can't be used for new subscriptions but existing subscriptions continue:
+
+```typescript
+await recurso.plans.archive('plan_old');
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Version Plans" icon="code-branch">
+    Create new plans instead of modifying prices. Existing subscribers keep their rates.
+  </Card>
+  <Card title="Multi-Currency" icon="coins">
+    Add prices for each currency you accept. Recurso auto-selects based on customer location.
+  </Card>
+  <Card title="Clear Names" icon="tag">
+    Use descriptive names customers will recognize on their credit card statements.
+  </Card>
+  <Card title="Feature Lists" icon="list-check">
+    Include features for display on pricing pages. They're stored as metadata.
+  </Card>
+</CardGroup>

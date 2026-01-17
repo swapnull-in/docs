@@ -1,0 +1,198 @@
+---
+title: "GST-Compliant Invoicing"
+description: "Generate India-compliant tax invoices with GSTIN, SAC codes, and e-invoice support"
+---
+
+## Overview
+
+Recurso automatically generates GST-compliant invoices for Indian businesses, including:
+
+- GSTIN validation and display
+- SAC (Services Accounting Code) for SaaS
+- CGST/SGST for intrastate, IGST for interstate
+- HSN code support
+- E-invoice integration (IRN, signed QR)
+
+## Configuration
+
+### Seller Details
+
+Configure your business GST details:
+
+```bash .env
+# Your business GSTIN
+SELLER_GSTIN=27BBBBB0000B1Z5
+SELLER_PAN=BBBBB0000B
+SELLER_STATE_CODE=27  # Maharashtra
+
+# Default SAC for SaaS services
+DEFAULT_SAC_CODE=998311
+
+# GST rates
+DEFAULT_GST_RATE=18  # 18% GST
+```
+
+Or via API:
+
+```typescript
+await recurso.settings.update({
+  gstin: '27BBBBB0000B1Z5',
+  legal_name: 'Your Company Pvt Ltd',
+  trade_name: 'YourBrand',
+  state_code: '27',
+  sac_code: '998311',
+  gst_rate: 18
+});
+```
+
+## Tax Calculation
+
+GST is calculated automatically based on place of supply:
+
+### Intrastate (Same State)
+
+When seller and buyer are in the same state:
+
+```
+CGST: 9%  →  ₹450
+SGST: 9%  →  ₹450
+Total GST: 18%  →  ₹900
+```
+
+### Interstate (Different States)
+
+When seller and buyer are in different states:
+
+```
+IGST: 18%  →  ₹900
+```
+
+<Info>
+Place of supply is determined by customer's billing address state code.
+</Info>
+
+## B2B Invoices
+
+For business customers with GSTIN:
+
+```typescript
+const customer = await recurso.customers.create({
+  name: 'Customer Corp Pvt Ltd',
+  email: 'accounts@customer.com',
+  gstin: '29CCCCC0000C1Z5',  // Customer GSTIN
+  address: {
+    state: 'Karnataka',
+    country: 'IN'
+  }
+});
+```
+
+Invoice will include:
+- Customer GSTIN
+- Customer legal name
+- Reverse charge applicability
+- Input tax credit eligibility
+
+## SAC Codes
+
+Common SAC codes for SaaS:
+
+| SAC Code | Description |
+|----------|-------------|
+| `998311` | IT consulting and support |
+| `998312` | IT design and development |
+| `998313` | IT infrastructure provisioning |
+| `998314` | IT infrastructure/network management |
+| `998315` | Software originals development |
+| `998316` | IT software licensing (SaaS) |
+
+## Invoice Format
+
+GST-compliant invoice includes:
+
+```typescript
+{
+  // Header
+  invoice_number: 'REC/2024/0001',
+  invoice_date: '2024-01-15',
+  
+  // Seller
+  seller_name: 'Your Company Pvt Ltd',
+  seller_gstin: '27BBBBB0000B1Z5',
+  seller_address: '123 Main St, Mumbai, MH 400001',
+  
+  // Buyer
+  buyer_name: 'Customer Corp',
+  buyer_gstin: '29CCCCC0000C1Z5',
+  buyer_address: '456 Tech Park, Bangalore, KA 560001',
+  place_of_supply: 'Karnataka (29)',
+  
+  // Line items
+  lines: [{
+    description: 'Pro Plan Subscription - Jan 2024',
+    sac_code: '998316',
+    quantity: 1,
+    unit_price: 4999,
+    gst_rate: 18,
+    amount: 4999
+  }],
+  
+  // Tax breakup
+  subtotal: 4999,
+  igst_amount: 900,  // Interstate
+  cgst_amount: 0,
+  sgst_amount: 0,
+  total: 5899,
+  
+  // Amount in words
+  amount_in_words: 'Rupees Five Thousand Eight Hundred Ninety-Nine Only'
+}
+```
+
+## E-Invoice Integration
+
+For businesses exceeding ₹5 Cr turnover:
+
+```typescript
+// Enable e-invoicing
+await recurso.settings.update({
+  einvoice_enabled: true,
+  gsp_provider: 'cleartax',  // or 'masters-india'
+  gsp_username: 'xxx',
+  gsp_password: 'xxx'
+});
+```
+
+E-invoices include:
+- **IRN**: Invoice Reference Number from GST portal
+- **Acknowledgement Number**: Validation proof
+- **Signed QR Code**: For verification
+
+## Download PDF
+
+```typescript
+const pdf = await recurso.invoices.pdf('inv_001');
+
+// PDF includes:
+// - GST-compliant format
+// - Tax breakup table
+// - Seller/buyer GSTIN
+// - Digital signature (if configured)
+```
+
+## Compliance Checklist
+
+<Steps>
+  <Step title="Configure seller GSTIN">
+    Add your business GSTIN, PAN, and state code
+  </Step>
+  <Step title="Set SAC code">
+    Configure default SAC code for your services
+  </Step>
+  <Step title="Capture customer GSTIN">
+    For B2B customers, collect and validate GSTIN
+  </Step>
+  <Step title="Enable e-invoicing">
+    If turnover > ₹5 Cr, integrate with GSP
+  </Step>
+</Steps>
