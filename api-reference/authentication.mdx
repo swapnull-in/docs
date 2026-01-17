@@ -1,0 +1,91 @@
+---
+title: "Authentication"
+description: "API key authentication and security best practices"
+---
+
+## API Keys
+
+Authenticate all API requests with your API key in the `Authorization` header:
+
+```bash
+curl https://api.recurso.dev/v1/customers \
+  -H "Authorization: Bearer rsk_live_xxx"
+```
+
+## Key Types
+
+| Type | Prefix | Environment |
+|------|--------|-------------|
+| Live | `rsk_live_` | Production |
+| Test | `rsk_test_` | Development |
+
+<Warning>
+**Never expose API keys in client-side code.** Keys should only be used on your backend.
+</Warning>
+
+## Generate Keys
+
+1. Go to **Settings → API Keys** in your dashboard
+2. Click **Create API Key**
+3. Choose **Live** or **Test** mode
+4. Copy and store securely
+
+## SDK Usage
+
+<CodeGroup>
+```typescript TypeScript
+const recurso = new Recurso({
+  apiKey: process.env.RECURSO_API_KEY
+});
+```
+
+```python Python
+client = Recurso(api_key=os.environ['RECURSO_API_KEY'])
+```
+
+```go Go
+client := recurso.NewClient(os.Getenv("RECURSO_API_KEY"))
+```
+</CodeGroup>
+
+## Scoped Keys (Coming Soon)
+
+Create keys with limited permissions:
+
+```typescript
+const key = await recurso.apiKeys.create({
+  name: 'Read-only integrations',
+  permissions: ['customers:read', 'invoices:read'],
+  expires_at: '2025-01-01'
+});
+```
+
+## Security Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Environment Variables" icon="leaf">
+    Store keys in environment variables, not code
+  </Card>
+  <Card title="Rotate Regularly" icon="arrows-rotate">
+    Rotate keys periodically and after breaches
+  </Card>
+  <Card title="Use Test Keys" icon="flask">
+    Always use test keys for development
+  </Card>
+  <Card title="Restrict Permissions" icon="lock">
+    Use scoped keys with minimal permissions
+  </Card>
+</CardGroup>
+
+## Revoke a Key
+
+If a key is compromised:
+
+1. Go to **Settings → API Keys**
+2. Click **Revoke** on the compromised key
+3. Generate a new key
+4. Update your applications
+
+<Info>
+Revoking a key is immediate and permanent.
+</Info>

@@ -1,0 +1,111 @@
+---
+title: "Credit Notes"
+description: "Issue refunds and credits to customers"
+---
+
+## Overview
+
+Credit notes represent refunds or credits issued to customers. They can be:
+
+- **Invoice adjustments** (incorrect charges)
+- **Refunds** (returned payments)
+- **Credits** (goodwill, service issues)
+
+## Create a Credit Note
+
+```typescript
+const creditNote = await recurso.creditNotes.create({
+  customer_id: 'cust_abc',
+  invoice_id: 'inv_001',  // Optional: link to original invoice
+  
+  line_items: [{
+    description: 'Refund for service downtime',
+    quantity: 1,
+    unit_amount: 2500
+  }],
+  
+  reason: 'service_issue',
+  memo: 'Compensation for 2 hours of downtime on Jan 15'
+});
+```
+
+## Refund Reasons
+
+| Reason | Description |
+|--------|-------------|
+| `duplicate` | Duplicate charge |
+| `fraudulent` | Fraudulent charge |
+| `order_change` | Customer changed order |
+| `product_unsatisfactory` | Not satisfied |
+| `service_issue` | Service problem |
+| `other` | Other reason |
+
+## Apply to Invoice
+
+Credit notes can offset future invoices:
+
+```typescript
+await recurso.creditNotes.applyToInvoice({
+  credit_note_id: 'cn_xyz',
+  invoice_id: 'inv_002',
+  amount: 2500
+});
+```
+
+## Issue Refund
+
+Process an actual refund to the payment method:
+
+```typescript
+const refund = await recurso.creditNotes.refund('cn_xyz', {
+  amount: 2500,  // Partial or full
+  payment_method: 'original'  // or specific method
+});
+```
+
+## Credit Note Lifecycle
+
+| Status | Description |
+|--------|-------------|
+| `draft` | Being created |
+| `issued` | Finalized, visible to customer |
+| `applied` | Applied to invoices |
+| `refunded` | Refund processed |
+| `voided` | Cancelled |
+
+## List Credit Notes
+
+```typescript
+const creditNotes = await recurso.creditNotes.list({
+  customer_id: 'cust_abc',
+  status: 'issued'
+});
+```
+
+## Get Credit Note PDF
+
+```typescript
+const pdf = await recurso.creditNotes.pdf('cn_xyz');
+```
+
+## Customer Balance
+
+Track customer credit balance:
+
+```typescript
+const balance = await recurso.customers.balance('cust_abc');
+
+// Returns
+{
+  available_credit: 5000,  // ₹50 credit available
+  pending: 0
+}
+```
+
+## Webhooks
+
+| Event | Description |
+|-------|-------------|
+| `credit_note.created` | Credit note issued |
+| `credit_note.applied` | Applied to invoice |
+| `credit_note.refunded` | Refund processed |

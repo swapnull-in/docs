@@ -1,0 +1,46 @@
+---
+title: "Get Plan"
+openapi: "GET /v1/plans/{id}"
+description: "Retrieve a specific plan by ID"
+---
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The plan ID |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/plans/plan_pro \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "id": "plan_pro",
+  "object": "plan",
+  "name": "Pro Plan",
+  "description": "For growing teams",
+  "interval": "month",
+  "interval_count": 1,
+  "trial_days": 14,
+  "active": true,
+  "prices": [
+    { "amount": 4999, "currency": "INR" },
+    { "amount": 999, "currency": "USD" }
+  ],
+  "features": ["Unlimited users", "Priority support"],
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:30:00Z"
+}
+```
+
+## Errors
+
+| Code | Description |
+|------|-------------|
+| 404 | Plan not found |

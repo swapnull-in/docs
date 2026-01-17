@@ -1,0 +1,50 @@
+---
+title: "Get Invoice"
+openapi: "GET /v1/invoices/{id}"
+description: "Retrieve a specific invoice"
+---
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The invoice ID |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/invoices/inv_001 \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "id": "inv_001",
+  "object": "invoice",
+  "invoice_number": "REC/2024/0001",
+  "customer_id": "cust_abc123",
+  "subscription_id": "sub_xyz789",
+  "status": "paid",
+  "currency": "INR",
+  "subtotal": 4999,
+  "tax_amount": 900,
+  "total": 5899,
+  "amount_paid": 5899,
+  "amount_due": 0,
+  "lines": [
+    {
+      "description": "Pro Plan - Jan 2024",
+      "quantity": 1,
+      "unit_amount": 4999,
+      "amount": 4999
+    }
+  ],
+  "gstin": "29ABCDE1234F1Z5",
+  "cgst_amount": 450,
+  "sgst_amount": 450,
+  "due_date": "2024-01-30T00:00:00Z",
+  "paid_at": "2024-01-15T12:00:00Z"
+}
+```

@@ -1,0 +1,46 @@
+---
+title: "List Customers"
+openapi: "GET /v1/customers"
+description: "Retrieve a list of customers"
+---
+
+## Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `email` | string | Filter by email |
+| `limit` | integer | Max results (default: 10, max: 100) |
+| `offset` | integer | Pagination offset |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/customers?limit=20 \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "cust_abc123",
+      "object": "customer",
+      "name": "Acme Corporation",
+      "email": "billing@acme.com",
+      "created_at": "2024-01-15T10:30:00Z"
+    },
+    {
+      "id": "cust_def456",
+      "object": "customer",
+      "name": "TechCorp",
+      "email": "accounts@techcorp.com",
+      "created_at": "2024-01-14T09:00:00Z"
+    }
+  ],
+  "has_more": true,
+  "total_count": 150
+}
+```

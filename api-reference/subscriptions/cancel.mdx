@@ -1,0 +1,49 @@
+---
+title: "Cancel Subscription"
+openapi: "POST /v1/subscriptions/{id}/cancel"
+description: "Cancel a subscription"
+---
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The subscription ID |
+
+## Request Body
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `cancel_at_period_end` | boolean | Cancel at end of period (default: true) |
+| `immediately` | boolean | Cancel immediately |
+| `reason` | string | Cancellation reason |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/subscriptions/sub_xyz/cancel \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cancel_at_period_end": true,
+    "reason": "switching_to_competitor"
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "sub_xyz789",
+  "object": "subscription",
+  "status": "active",
+  "cancel_at_period_end": true,
+  "cancelled_at": "2024-01-15T10:30:00Z",
+  "cancellation_reason": "switching_to_competitor",
+  "current_period_end": "2024-02-15T00:00:00Z"
+}
+```
+
+<Note>
+When `cancel_at_period_end` is true, the subscription remains active until `current_period_end`.
+</Note>

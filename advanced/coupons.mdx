@@ -1,0 +1,197 @@
+---
+title: "Coupons & Discounts"
+description: "Create promotional codes, discounts, and special offers"
+---
+
+## Overview
+
+Coupons let you offer discounts to customers:
+
+- **Percentage off** (e.g., 20% off)
+- **Fixed amount** (e.g., ₹500 off)
+- **Free trials** (extended trial periods)
+- **First month free**
+
+## Create a Coupon
+
+<CodeGroup>
+```typescript TypeScript
+const coupon = await recurso.coupons.create({
+  code: 'WELCOME20',
+  name: '20% Welcome Discount',
+  discount_type: 'percentage',
+  discount_value: 20,
+  duration: 'repeating',
+  duration_months: 3,  // Applied for 3 months
+  max_redemptions: 100,
+  valid_until: '2024-12-31'
+});
+```
+
+```bash cURL
+curl -X POST https://api.recurso.dev/v1/coupons \
+  -H "Authorization: Bearer $API_KEY" \
+  -d '{
+    "code": "WELCOME20",
+    "discount_type": "percentage",
+    "discount_value": 20,
+    "duration": "repeating",
+    "duration_months": 3
+  }'
+```
+</CodeGroup>
+
+## Discount Types
+
+### Percentage Discount
+
+```typescript
+{
+  discount_type: 'percentage',
+  discount_value: 25  // 25% off
+}
+```
+
+### Fixed Amount Discount
+
+```typescript
+{
+  discount_type: 'fixed',
+  discount_value: 500,  // ₹500 off
+  currency: 'INR'
+}
+```
+
+## Duration Options
+
+| Duration | Description |
+|----------|-------------|
+| `once` | First invoice only |
+| `repeating` | For N months |
+| `forever` | All future invoices |
+
+```typescript
+// First month free
+{
+  discount_type: 'percentage',
+  discount_value: 100,
+  duration: 'once'
+}
+
+// 50% off for 6 months
+{
+  discount_type: 'percentage',
+  discount_value: 50,
+  duration: 'repeating',
+  duration_months: 6
+}
+```
+
+## Apply to Subscription
+
+```typescript
+const subscription = await recurso.subscriptions.create({
+  customer_id: 'cust_abc',
+  plan_id: 'plan_pro',
+  coupon: 'WELCOME20'
+});
+```
+
+Or add to existing subscription:
+
+```typescript
+await recurso.subscriptions.update('sub_xyz', {
+  coupon: 'UPGRADE50'
+});
+```
+
+## Restrictions
+
+### Plan Restrictions
+
+```typescript
+{
+  code: 'PROONLY',
+  applies_to_plans: ['plan_pro', 'plan_enterprise']
+}
+```
+
+### Minimum Amount
+
+```typescript
+{
+  code: 'BIGSPEND',
+  minimum_amount: 10000  // ₹100+ purchases only
+}
+```
+
+### New Customers Only
+
+```typescript
+{
+  code: 'NEWUSER',
+  first_time_only: true
+}
+```
+
+## List Coupons
+
+```typescript
+const coupons = await recurso.coupons.list({
+  active: true
+});
+```
+
+## Validate a Coupon
+
+```typescript
+const validation = await recurso.coupons.validate({
+  code: 'WELCOME20',
+  customer_id: 'cust_abc',
+  plan_id: 'plan_pro'
+});
+
+// Returns
+{
+  valid: true,
+  discount_amount: 999,  // ₹999 off
+  message: null
+}
+
+// Or if invalid
+{
+  valid: false,
+  message: 'Coupon has expired'
+}
+```
+
+## Delete/Archive a Coupon
+
+```typescript
+// Prevent new redemptions
+await recurso.coupons.archive('OLDCODE');
+
+// Existing subscriptions keep their discount
+```
+
+## Redemption Tracking
+
+```typescript
+const coupon = await recurso.coupons.get('WELCOME20');
+
+// Returns
+{
+  code: 'WELCOME20',
+  times_redeemed: 47,
+  max_redemptions: 100,
+  remaining: 53
+}
+```
+
+## Webhooks
+
+| Event | Description |
+|-------|-------------|
+| `coupon.created` | New coupon created |
+| `coupon.redeemed` | Customer used coupon |
+| `coupon.expired` | Coupon validity ended |

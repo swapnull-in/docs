@@ -1,0 +1,45 @@
+---
+title: "List Invoices"
+openapi: "GET /v1/invoices"
+description: "Retrieve a list of invoices"
+---
+
+## Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `customer_id` | string | Filter by customer |
+| `subscription_id` | string | Filter by subscription |
+| `status` | string | `draft`, `open`, `paid`, `past_due`, `void` |
+| `limit` | integer | Max results (default: 10) |
+| `offset` | integer | Pagination offset |
+
+## Example Request
+
+```bash
+curl "https://api.recurso.dev/v1/invoices?customer_id=cust_abc&status=open" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "inv_001",
+      "object": "invoice",
+      "invoice_number": "REC/2024/0001",
+      "customer_id": "cust_abc123",
+      "status": "open",
+      "currency": "INR",
+      "total": 5899,
+      "amount_due": 5899,
+      "due_date": "2024-01-30T00:00:00Z"
+    }
+  ],
+  "has_more": false,
+  "total_count": 1
+}
+```

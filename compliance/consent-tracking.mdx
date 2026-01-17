@@ -1,0 +1,173 @@
+---
+title: "Consent Tracking"
+description: "Track and manage customer consent for recurring billing"
+---
+
+## Overview
+
+Consent tracking is required for RBI (India) and FTC (US) compliance for recurring payments. Recurso helps you:
+
+- Capture explicit consent before charging
+- Store consent records with timestamps
+- Send pre-charge notifications
+- Allow easy consent revocation
+
+## RBI Guidelines (India)
+
+The Reserve Bank of India requires:
+
+1. **Explicit consent** before first charge
+2. **24-hour notification** before subsequent charges
+3. **Easy cancellation** mechanism
+
+## Capture Consent
+
+### During Checkout
+
+```typescript
+// Frontend: Consent checkbox
+<ConsentCheckbox
+  type="recurring"
+  planName="Pro Plan"
+  amount="₹499/month"
+  checked={consented}
+  onChange={setConsented}
+/>
+
+// Backend: Store consent with subscription
+const subscription = await recurso.subscriptions.create({
+  customer_id: 'cust_abc',
+  plan_id: 'plan_pro',
+  consent: {
+    granted: true,
+    granted_at: new Date(),
+    ip_address: req.ip,
+    user_agent: req.headers['user-agent'],
+    text: 'I authorize recurring charges of ₹499/month...'
+  }
+});
+```
+
+### Consent Record
+
+```typescript
+{
+  id: 'con_xyz',
+  customer_id: 'cust_abc',
+  subscription_id: 'sub_xyz',
+  type: 'recurring_billing',
+  granted: true,
+  granted_at: '2024-01-15T10:30:00Z',
+  ip_address: '203.0.113.42',
+  user_agent: 'Mozilla/5.0...',
+  consent_text: 'I authorize recurring charges...',
+  version: '1.0'
+}
+```
+
+## Consent Types
+
+| Type | Purpose |
+|------|---------|
+| `recurring_billing` | Authorization for recurring charges |
+| `terms_of_service` | Acceptance of terms |
+| `email_marketing` | Marketing communications |
+| `data_processing` | GDPR data processing |
+
+## Pre-charge Notifications
+
+Recurso automatically sends 24-hour reminders:
+
+```typescript
+await recurso.settings.notifications.update({
+  precharge_reminder: {
+    enabled: true,
+    hours_before: 24,  // RBI requirement
+    template: 'precharge_reminder'
+  }
+});
+```
+
+Email content:
+
+```
+Subject: Payment Reminder: Your subscription renews tomorrow
+
+Hi {CustomerName},
+
+Your {PlanName} subscription will automatically renew tomorrow.
+
+Amount: {Amount}
+Date: {ChargeDate}
+Payment Method: Card ending in {Last4}
+
+To modify your subscription:
+[Manage Subscription]
+
+To cancel:
+[Cancel Subscription]
+```
+
+## Revoke Consent
+
+Customers can revoke consent through the portal:
+
+```typescript
+// Via API
+await recurso.subscriptions.cancel('sub_xyz', {
+  revoke_consent: true,
+  reason: 'consent_revoked'
+});
+
+// Records consent revocation
+{
+  consent_id: 'con_xyz',
+  revoked: true,
+  revoked_at: '2024-02-15T10:30:00Z',
+  revoked_by: 'customer'
+}
+```
+
+## View Consent History
+
+```typescript
+const consents = await recurso.consents.list({
+  customer_id: 'cust_abc'
+});
+
+// Returns all consent records with history
+```
+
+## Compliance Checklist
+
+<Steps>
+  <Step title="Add consent checkbox">
+    Require explicit opt-in before subscription
+  </Step>
+  <Step title="Store consent records">
+    Save timestamp, IP, user agent, consent text
+  </Step>
+  <Step title="Enable pre-charge emails">
+    Send 24-hour reminders (RBI requirement)
+  </Step>
+  <Step title="Provide easy cancellation">
+    Allow cancellation from portal and emails
+  </Step>
+</Steps>
+
+## Audit Trail
+
+All consent actions are logged for compliance:
+
+```typescript
+const auditLog = await recurso.consents.auditLog({
+  customer_id: 'cust_abc'
+});
+
+// Returns
+[
+  { action: 'granted', timestamp: '2024-01-15...', ip: '...' },
+  { action: 'reminder_sent', timestamp: '2024-02-14...' },
+  { action: 'revoked', timestamp: '2024-02-15...', reason: '...' }
+]
+```

@@ -1,0 +1,222 @@
+---
+title: "Go SDK"
+description: "Official Go SDK for backend services"
+---
+
+## Installation
+
+```bash
+go get github.com/recur-so/recurso-go
+```
+
+## Quick Start
+
+```go
+package main
+
+import (
+    "os"
+    "github.com/recur-so/recurso-go"
+)
+
+func main() {
+    client := recurso.NewClient(os.Getenv("RECURSO_API_KEY"))
+    
+    // Create a customer
+    customer, err := client.Customers.Create(&recurso.CustomerParams{
+        Name:  "Acme Corp",
+        Email: "billing@acme.com",
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // Start a subscription
+    subscription, err := client.Subscriptions.Create(&recurso.SubscriptionParams{
+        CustomerID: customer.ID,
+        PlanID:     "plan_pro",
+    })
+}
+```
+
+## Configuration
+
+```go
+client := recurso.NewClient(
+    os.Getenv("RECURSO_API_KEY"),
+    recurso.WithBaseURL("https://api.recurso.dev"),
+    recurso.WithTimeout(30 * time.Second),
+    recurso.WithMaxRetries(3),
+)
+```
+
+## Resources
+
+### Customers
+
+```go
+// Create
+customer, err := client.Customers.Create(&recurso.CustomerParams{
+    Name:  "Acme Corp",
+    Email: "billing@acme.com",
+    GSTIN: "29ABCDE1234F1Z5",
+})
+
+// Get
+customer, err := client.Customers.Get("cust_abc")
+
+// Update
+customer, err := client.Customers.Update("cust_abc", &recurso.CustomerParams{
+    Email: "new@acme.com",
+})
+
+// List
+params := &recurso.CustomerListParams{Limit: 20}
+iter := client.Customers.List(params)
+for iter.Next() {
+    customer := iter.Current()
+    fmt.Println(customer.Name)
+}
+if err := iter.Err(); err != nil {
+    log.Fatal(err)
+}
+
+// Delete
+err := client.Customers.Delete("cust_abc")
+```
+
+### Subscriptions
+
+```go
+// Create
+subscription, err := client.Subscriptions.Create(&recurso.SubscriptionParams{
+    CustomerID: "cust_abc",
+    PlanID:     "plan_pro",
+})
+
+// Cancel
+subscription, err := client.Subscriptions.Cancel("sub_xyz", &recurso.CancelParams{
+    CancelAtPeriodEnd: true,
+})
+
+// Update
+subscription, err := client.Subscriptions.Update("sub_xyz", &recurso.SubscriptionParams{
+    PlanID: "plan_enterprise",
+})
+```
+
+### Invoices
+
+```go
+// List
+params := &recurso.InvoiceListParams{
+    CustomerID: "cust_abc",
+    Status:     "open",
+}
+iter := client.Invoices.List(params)
+
+// Pay
+invoice, err := client.Invoices.Pay("inv_001")
+
+// Get PDF
+pdf, err := client.Invoices.PDF("inv_001")
+err = os.WriteFile("invoice.pdf", pdf, 0644)
+```
+
+## Error Handling
+
+```go
+customer, err := client.Customers.Get("invalid_id")
+if err != nil {
+    if e, ok := err.(*recurso.NotFoundError); ok {
+        fmt.Println("Customer not found:", e.Message)
+    } else if e, ok := err.(*recurso.ValidationError); ok {
+        fmt.Println("Validation errors:", e.Errors)
+    } else if e, ok := err.(*recurso.RateLimitError); ok {
+        fmt.Printf("Rate limited, retry after %d seconds\n", e.RetryAfter)
+    } else {
+        fmt.Println("API error:", err)
+    }
+}
+```
+
+## Pagination
+
+```go
+// Iterate through all customers
+params := &recurso.CustomerListParams{Limit: 20}
+iter := client.Customers.List(params)
+
+for iter.Next() {
+    customer := iter.Current()
+    fmt.Println(customer.Name)
+}
+
+if err := iter.Err(); err != nil {
+    log.Fatal(err)
+}
+```
+
+## Webhooks
+
+```go
+package main
+
+import (
+    "net/http"
+    "os"
+    "github.com/recur-so/recurso-go/webhook"
+)
+
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+    signature := r.Header.Get("Recurso-Signature")
+    
+    event, err := webhook.ConstructEvent(
+        r.Body,
+        signature,
+        os.Getenv("WEBHOOK_SECRET"),
+    )
+    if err != nil {
+        http.Error(w, "Invalid signature", http.StatusBadRequest)
+        return
+    }
+    
+    switch event.Type {
+    case "subscription.activated":
+        var sub recurso.Subscription
+        json.Unmarshal(event.Data, &sub)
+        handleActivation(sub)
+    case "payment.failed":
+        handleFailure(event.Data)
+    }
+    
+    w.WriteHeader(http.StatusOK)
+}
+```
+
+## Context Support
+
+All methods accept context for cancellation:
+
+```go
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
+
+customer, err := client.Customers.GetWithContext(ctx, "cust_abc")
+```
+
+## Thread Safety
+
+The client is safe for concurrent use:
+
+```go
+var client = recurso.NewClient(os.Getenv("RECURSO_API_KEY"))
+
+// Safe to use from multiple goroutines
+go func() {
+    client.Customers.Get("cust_1")
+}()
+go func() {
+    client.Customers.Get("cust_2")
+}()
+```

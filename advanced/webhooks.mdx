@@ -1,0 +1,211 @@
+---
+title: "Webhooks"
+description: "Receive real-time notifications for billing events"
+---
+
+## Overview
+
+Webhooks notify your application when events happen in Recurso:
+
+- Subscription changes
+- Payment events
+- Invoice updates
+- Customer actions
+
+## Register a Webhook
+
+```typescript
+const webhook = await recurso.webhooks.create({
+  url: 'https://yourapp.com/webhooks/recurso',
+  events: [
+    'subscription.activated',
+    'payment.succeeded',
+    'payment.failed',
+    'invoice.paid'
+  ],
+  secret: 'your-webhook-secret'  // Auto-generated if not provided
+});
+```
+
+## Event Payload
+
+```json
+{
+  "id": "evt_abc123",
+  "type": "subscription.activated",
+  "created_at": "2024-01-15T10:30:00Z",
+  "data": {
+    "id": "sub_xyz",
+    "object": "subscription",
+    "customer_id": "cust_abc",
+    "plan_id": "plan_pro",
+    "status": "active"
+  }
+}
+```
+
+## Verify Signature
+
+Always verify webhook signatures:
+
+<CodeGroup>
+```typescript TypeScript
+import express from 'express';
+
+app.post('/webhooks/recurso', 
+  express.raw({ type: 'application/json' }),
+  (req, res) => {
+    const signature = req.headers['recurso-signature'];
+    
+    try {
+      const event = recurso.webhooks.constructEvent(
+        req.body,
+        signature,
+        process.env.WEBHOOK_SECRET
+      );
+      
+      // Handle the event
+      switch (event.type) {
+        case 'subscription.activated':
+          handleSubscriptionActivated(event.data);
+          break;
+        case 'payment.failed':
+          handlePaymentFailed(event.data);
+          break;
+      }
+      
+      res.sendStatus(200);
+    } catch (err) {
+      console.error('Webhook signature verification failed');
+      res.sendStatus(400);
+    }
+  }
+);
+```
+
+```python Python
+from flask import Flask, request
+
+@app.route('/webhooks/recurso', methods=['POST'])
+def webhook():
+    signature = request.headers.get('Recurso-Signature')
+    
+    try:
+        event = recurso.webhooks.construct_event(
+            request.data,
+            signature,
+            os.environ['WEBHOOK_SECRET']
+        )
+        
+        if event['type'] == 'subscription.activated':
+            handle_activation(event['data'])
+            
+        return '', 200
+    except Exception as e:
+        return 'Invalid signature', 400
+```
+</CodeGroup>
+
+## Event Types
+
+### Subscription Events
+
+| Event | Description |
+|-------|-------------|
+| `subscription.created` | New subscription |
+| `subscription.activated` | First payment succeeded |
+| `subscription.updated` | Plan/quantity changed |
+| `subscription.paused` | Subscription paused |
+| `subscription.resumed` | Subscription resumed |
+| `subscription.cancelled` | Subscription cancelled |
+| `subscription.past_due` | Payment failed |
+
+### Payment Events
+
+| Event | Description |
+|-------|-------------|
+| `payment.succeeded` | Payment completed |
+| `payment.failed` | Payment attempt failed |
+| `payment.refunded` | Refund issued |
+| `payment.disputed` | Chargeback opened |
+
+### Invoice Events
+
+| Event | Description |
+|-------|-------------|
+| `invoice.created` | New invoice generated |
+| `invoice.finalized` | Invoice finalized |
+| `invoice.paid` | Invoice paid |
+| `invoice.payment_failed` | Payment attempt failed |
+| `invoice.past_due` | Invoice overdue |
+
+### Customer Events
+
+| Event | Description |
+|-------|-------------|
+| `customer.created` | New customer |
+| `customer.updated` | Customer updated |
+| `customer.deleted` | Customer deleted |
+
+## Retry Policy
+
+Failed webhooks are retried with exponential backoff:
+
+| Attempt | Delay |
+|---------|-------|
+| 1 | Immediate |
+| 2 | 5 minutes |
+| 3 | 30 minutes |
+| 4 | 2 hours |
+| 5 | 24 hours |
+
+After 5 failures, the webhook is marked as failing and you're notified.
+
+## View Webhook Logs
+
+```typescript
+const logs = await recurso.webhooks.logs('wh_xyz', {
+  limit: 20
+});
+
+// Returns
+{
+  data: [
+    {
+      id: 'log_123',
+      event_id: 'evt_abc',
+      status: 'succeeded',
+      response_code: 200,
+      duration_ms: 145,
+      created_at: '2024-01-15T10:30:00Z'
+    }
+  ]
+}
+```
+
+## Test Webhooks
+
+Send test events to verify your integration:
+
+```typescript
+await recurso.webhooks.test('wh_xyz', {
+  type: 'subscription.activated'
+});
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Return 200 Quickly" icon="bolt">
+    Acknowledge receipt immediately, process async
+  </Card>
+  <Card title="Handle Duplicates" icon="copy">
+    Use event IDs for idempotency
+  </Card>
+  <Card title="Verify Signatures" icon="shield">
+    Always validate webhook signatures
+  </Card>
+  <Card title="Log Everything" icon="scroll">
+    Log events for debugging
+  </Card>
+</CardGroup>

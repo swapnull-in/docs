@@ -1,0 +1,53 @@
+---
+title: "Create Webhook"
+openapi: "POST /v1/webhooks"
+description: "Register a new webhook endpoint"
+---
+
+## Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `url` | string | Yes | Webhook endpoint URL |
+| `events` | array | Yes | Events to subscribe to |
+| `secret` | string | No | Signing secret (auto-generated if omitted) |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/webhooks \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://yourapp.com/webhooks/recurso",
+    "events": [
+      "subscription.activated",
+      "payment.succeeded",
+      "payment.failed",
+      "invoice.paid"
+    ]
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "wh_abc123",
+  "object": "webhook",
+  "url": "https://yourapp.com/webhooks/recurso",
+  "events": [
+    "subscription.activated",
+    "payment.succeeded",
+    "payment.failed",
+    "invoice.paid"
+  ],
+  "secret": "whsec_xxx...",
+  "active": true,
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+<Warning>
+Store the `secret` securely. It's only shown once at creation.
+</Warning>

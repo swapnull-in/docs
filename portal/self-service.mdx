@@ -1,0 +1,164 @@
+---
+title: "Self-Service Actions"
+description: "Enable customers to manage their own subscriptions"
+---
+
+## Overview
+
+Self-service allows customers to manage their billing without contacting support:
+
+- Cancel subscriptions
+- Upgrade/downgrade plans
+- Update payment methods
+- View usage and invoices
+
+## Configure Self-Service
+
+Enable or disable features:
+
+```typescript
+await recurso.settings.portal.update({
+  self_service: {
+    allow_cancel: true,
+    allow_upgrade: true,
+    allow_downgrade: true,
+    allow_pause: false,
+    allow_payment_method_update: true,
+    require_cancellation_reason: true
+  }
+});
+```
+
+## Cancellation Flow
+
+### Portal Experience
+
+1. Customer clicks "Cancel Subscription"
+2. (Optional) Shown retention offers
+3. Asked for cancellation reason
+4. Confirms cancellation
+5. Receives confirmation email
+
+### Cancellation Reasons
+
+```typescript
+// Configure available reasons
+await recurso.settings.portal.update({
+  cancellation_reasons: [
+    { id: 'too_expensive', label: 'Too expensive' },
+    { id: 'not_using', label: 'Not using enough' },
+    { id: 'switching', label: 'Switching to competitor' },
+    { id: 'missing_features', label: 'Missing features' },
+    { id: 'other', label: 'Other', allows_comment: true }
+  ]
+});
+```
+
+### Cancellation Behavior
+
+```typescript
+await recurso.settings.portal.update({
+  cancellation: {
+    behavior: 'end_of_period',  // or 'immediate'
+    prorate_refund: false,  // Refund remaining time
+    allow_reactivate: true,
+    grace_period_days: 0
+  }
+});
+```
+
+## Upgrade/Downgrade
+
+### Available Plans
+
+Control which plans are visible:
+
+```typescript
+await recurso.settings.portal.update({
+  available_plans: ['plan_starter', 'plan_pro', 'plan_enterprise'],
+  show_plan_comparison: true
+});
+```
+
+### Proration
+
+Configure how mid-cycle changes are handled:
+
+```typescript
+await recurso.settings.portal.update({
+  plan_changes: {
+    proration: 'create_prorations',  // Prorate immediately
+    effective: 'immediately'  // or 'next_billing_cycle'
+  }
+});
+```
+
+## Payment Method Update
+
+### Add New Card
+
+1. Customer clicks "Add Payment Method"
+2. Razorpay/Stripe checkout opens
+3. Customer enters new card
+4. Card saved, optionally set as default
+
+### Remove Card
+
+```typescript
+await recurso.settings.portal.update({
+  payment_methods: {
+    allow_add: true,
+    allow_remove: true,
+    require_default: true,  // Must have at least one
+    show_last_charged: true
+  }
+});
+```
+
+## Usage Dashboard
+
+Show customers their usage:
+
+```typescript
+await recurso.settings.portal.update({
+  usage: {
+    show_current_usage: true,
+    show_historical: true,
+    show_estimates: true,
+    alert_threshold: 80  // Alert at 80% of limit
+  }
+});
+```
+
+## Audit Logging
+
+All self-service actions are logged:
+
+```typescript
+const logs = await recurso.portal.auditLogs({
+  customer_id: 'cust_abc',
+  limit: 50
+});
+
+// Returns
+{
+  data: [
+    {
+      action: 'subscription.cancelled',
+      actor: 'customer',
+      reason: 'too_expensive',
+      timestamp: '2024-01-15T10:30:00Z',
+      ip_address: '203.0.113.42'
+    }
+  ]
+}
+```
+
+## Webhooks
+
+| Event | Description |
+|-------|-------------|
+| `portal.session_created` | Customer accessed portal |
+| `portal.subscription_cancelled` | Self-service cancellation |
+| `portal.plan_changed` | Upgrade/downgrade |
+| `portal.payment_method_added` | New payment method |

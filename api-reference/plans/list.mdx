@@ -1,0 +1,48 @@
+---
+title: "List Plans"
+openapi: "GET /v1/plans"
+description: "Retrieve a list of plans"
+---
+
+## Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `active` | boolean | Filter by active status |
+| `limit` | integer | Max results (default: 10, max: 100) |
+| `offset` | integer | Pagination offset |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/plans?active=true&limit=20 \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "plan_starter",
+      "object": "plan",
+      "name": "Starter",
+      "interval": "month",
+      "prices": [{ "amount": 999, "currency": "INR" }],
+      "active": true
+    },
+    {
+      "id": "plan_pro",
+      "object": "plan",
+      "name": "Pro",
+      "interval": "month",
+      "prices": [{ "amount": 4999, "currency": "INR" }],
+      "active": true
+    }
+  ],
+  "has_more": false,
+  "total_count": 2
+}
+```

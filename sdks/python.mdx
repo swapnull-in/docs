@@ -1,0 +1,234 @@
+---
+title: "Python SDK"
+description: "Official Python SDK for Django, Flask, FastAPI, and more"
+---
+
+## Installation
+
+```bash
+pip install recurso
+# or
+poetry add recurso
+```
+
+## Quick Start
+
+```python
+import os
+from recurso import Recurso
+
+client = Recurso(api_key=os.environ['RECURSO_API_KEY'])
+
+# Create a customer
+customer = client.customers.create(
+    name='Acme Corp',
+    email='billing@acme.com'
+)
+
+# Start a subscription
+subscription = client.subscriptions.create(
+    customer_id=customer.id,
+    plan_id='plan_pro'
+)
+```
+
+## Configuration
+
+```python
+from recurso import Recurso
+
+client = Recurso(
+    api_key='rsk_live_xxx',
+    
+    # Optional settings
+    base_url='https://api.recurso.dev',  # For self-hosted
+    timeout=30.0,                         # Request timeout (seconds)
+    max_retries=3,                        # Auto-retry attempts
+)
+```
+
+## Async Support
+
+```python
+from recurso import AsyncRecurso
+
+client = AsyncRecurso(api_key=os.environ['RECURSO_API_KEY'])
+
+async def create_subscription():
+    customer = await client.customers.create(
+        name='Acme Corp',
+        email='billing@acme.com'
+    )
+    
+    subscription = await client.subscriptions.create(
+        customer_id=customer.id,
+        plan_id='plan_pro'
+    )
+    return subscription
+```
+
+## Resources
+
+### Customers
+
+```python
+# Create
+customer = client.customers.create(
+    name='Acme Corp',
+    email='billing@acme.com',
+    gstin='29ABCDE1234F1Z5'
+)
+
+# Get
+customer = client.customers.get('cust_abc')
+
+# Update
+client.customers.update('cust_abc', email='new@acme.com')
+
+# List
+customers = client.customers.list(limit=20)
+for customer in customers.data:
+    print(customer.name)
+
+# Delete
+client.customers.delete('cust_abc')
+```
+
+### Subscriptions
+
+```python
+# Create
+subscription = client.subscriptions.create(
+    customer_id='cust_abc',
+    plan_id='plan_pro'
+)
+
+# Cancel at period end
+client.subscriptions.cancel(
+    'sub_xyz',
+    cancel_at_period_end=True
+)
+
+# Upgrade
+client.subscriptions.update(
+    'sub_xyz',
+    plan_id='plan_enterprise'
+)
+```
+
+### Invoices
+
+```python
+# List
+invoices = client.invoices.list(
+    customer_id='cust_abc',
+    status='open'
+)
+
+# Pay
+client.invoices.pay('inv_001')
+
+# Get PDF
+pdf_bytes = client.invoices.pdf('inv_001')
+with open('invoice.pdf', 'wb') as f:
+    f.write(pdf_bytes)
+```
+
+## Error Handling
+
+```python
+from recurso.errors import (
+    RecursoError,
+    NotFoundError,
+    ValidationError,
+    RateLimitError
+)
+
+try:
+    customer = client.customers.get('invalid_id')
+except NotFoundError:
+    print('Customer not found')
+except ValidationError as e:
+    print(f'Validation errors: {e.errors}')
+except RateLimitError as e:
+    print(f'Rate limited, retry after {e.retry_after} seconds')
+except RecursoError as e:
+    print(f'API error: {e.message}')
+```
+
+## Pagination
+
+```python
+# Manual pagination
+page = client.customers.list(limit=20)
+
+while page.has_more:
+    for customer in page.data:
+        print(customer.name)
+    page = page.next_page()
+
+# Auto-pagination
+for customer in client.customers.list_all():
+    print(customer.name)
+```
+
+## Webhooks (Flask)
+
+```python
+from flask import Flask, request
+from recurso.webhooks import verify_signature
+
+app = Flask(__name__)
+
+@app.route('/webhooks/recurso', methods=['POST'])
+def webhook():
+    signature = request.headers.get('Recurso-Signature')
+    
+    try:
+        event = verify_signature(
+            payload=request.data,
+            signature=signature,
+            secret=os.environ['WEBHOOK_SECRET']
+        )
+        
+        if event['type'] == 'subscription.activated':
+            handle_activation(event['data'])
+        elif event['type'] == 'payment.failed':
+            handle_failure(event['data'])
+            
+        return '', 200
+    except Exception as e:
+        return 'Invalid signature', 400
+```
+
+## Django Integration
+
+```python
+# settings.py
+RECURSO_API_KEY = os.environ['RECURSO_API_KEY']
+
+# views.py
+from recurso import Recurso
+from django.conf import settings
+
+client = Recurso(api_key=settings.RECURSO_API_KEY)
+
+def create_subscription(request):
+    subscription = client.subscriptions.create(
+        customer_id=request.user.customer_id,
+        plan_id='plan_pro'
+    )
+    return redirect(subscription.checkout_url)
+```
+
+## Type Hints
+
+Full type hints for IDE support:
+
+```python
+from recurso import Recurso
+from recurso.types import Customer, Subscription
+
+def process_customer(customer: Customer) -> None:
+    print(customer.email)
+```

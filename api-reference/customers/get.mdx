@@ -1,0 +1,47 @@
+---
+title: "Get Customer"
+openapi: "GET /v1/customers/{id}"
+description: "Retrieve a specific customer by ID"
+---
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The customer ID |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/customers/cust_abc123 \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "id": "cust_abc123",
+  "object": "customer",
+  "name": "Acme Corporation",
+  "email": "billing@acme.com",
+  "phone": "+919876543210",
+  "gstin": "29ABCDE1234F1Z5",
+  "address": {
+    "line1": "123 MG Road",
+    "city": "Bangalore",
+    "state": "Karnataka",
+    "postal_code": "560001",
+    "country": "IN"
+  },
+  "subscriptions": [
+    {
+      "id": "sub_xyz",
+      "plan_id": "plan_pro",
+      "status": "active"
+    }
+  ],
+  "default_payment_method": "pm_card_visa",
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```

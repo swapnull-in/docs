@@ -1,0 +1,114 @@
+---
+title: "Webhook Events"
+description: "Complete list of webhook event types"
+---
+
+## Event Structure
+
+All webhook events follow this structure:
+
+```json
+{
+  "id": "evt_abc123",
+  "object": "event",
+  "type": "subscription.activated",
+  "created_at": "2024-01-15T10:30:00Z",
+  "data": {
+    // Event-specific payload
+  }
+}
+```
+
+## Subscription Events
+
+### `subscription.created`
+
+New subscription created (awaiting payment).
+
+```json
+{
+  "type": "subscription.created",
+  "data": {
+    "id": "sub_xyz",
+    "customer_id": "cust_abc",
+    "plan_id": "plan_pro",
+    "status": "created"
+  }
+}
+```
+
+### `subscription.activated`
+
+First payment successful, subscription now active.
+
+### `subscription.updated`
+
+Plan, quantity, or settings changed.
+
+### `subscription.cancelled`
+
+Subscription cancelled (may remain active until period end).
+
+### `subscription.past_due`
+
+Payment failed, subscription in dunning.
+
+## Payment Events
+
+### `payment.succeeded`
+
+```json
+{
+  "type": "payment.succeeded",
+  "data": {
+    "id": "pay_123",
+    "invoice_id": "inv_001",
+    "amount": 5899,
+    "currency": "INR",
+    "gateway": "razorpay"
+  }
+}
+```
+
+### `payment.failed`
+
+Payment attempt failed.
+
+### `payment.refunded`
+
+Refund issued.
+
+## Invoice Events
+
+### `invoice.created`
+
+New invoice generated.
+
+### `invoice.paid`
+
+Invoice paid in full.
+
+### `invoice.payment_failed`
+
+Payment attempt on invoice failed.
+
+### `invoice.past_due`
+
+Invoice past due date.
+
+## Customer Events
+
+### `customer.created`
+
+New customer added.
+
+### `customer.updated`
+
+Customer details changed.
+
+## Best Practices
+
+- **Respond quickly**: Return 200 within 5 seconds
+- **Process async**: Queue events for background processing
+- **Handle duplicates**: Use `event.id` for idempotency
+- **Verify signatures**: Always validate webhook signatures

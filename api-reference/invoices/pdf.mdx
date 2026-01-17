@@ -1,0 +1,43 @@
+---
+title: "Download Invoice PDF"
+openapi: "GET /v1/invoices/{id}/pdf"
+description: "Download invoice as PDF"
+---
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The invoice ID |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/invoices/inv_001/pdf \
+  -H "Authorization: Bearer $API_KEY" \
+  -o invoice.pdf
+```
+
+## Response
+
+Returns the PDF file with content type `application/pdf`.
+
+## Get Signed URL
+
+For frontend access, get a temporary signed URL:
+
+```bash
+curl https://api.recurso.dev/v1/invoices/inv_001/pdf-url \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+```json
+{
+  "url": "https://cdn.recurso.dev/invoices/inv_001.pdf?token=xxx",
+  "expires_at": "2024-01-15T11:30:00Z"
+}
+```
+
+<Note>
+Signed URLs expire after 1 hour.
+</Note>

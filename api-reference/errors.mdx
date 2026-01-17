@@ -1,0 +1,186 @@
+---
+title: "Errors"
+description: "Understanding and handling API errors"
+---
+
+## Error Response Format
+
+All errors return a consistent JSON structure:
+
+```json
+{
+  "error": {
+    "type": "invalid_request",
+    "code": "resource_not_found",
+    "message": "Customer cust_xyz not found",
+    "param": "customer_id",
+    "doc_url": "https://docs.recurso.dev/errors#resource_not_found"
+  }
+}
+```
+
+## HTTP Status Codes
+
+| Code | Meaning | Description |
+|------|---------|-------------|
+| `200` | OK | Request succeeded |
+| `201` | Created | Resource created |
+| `400` | Bad Request | Invalid parameters |
+| `401` | Unauthorized | Invalid or missing API key |
+| `403` | Forbidden | Insufficient permissions |
+| `404` | Not Found | Resource doesn't exist |
+| `409` | Conflict | Resource already exists |
+| `422` | Unprocessable Entity | Validation failed |
+| `429` | Too Many Requests | Rate limit exceeded |
+| `500` | Internal Server Error | Server-side error |
+
+## Error Types
+
+### `invalid_request`
+
+The request was malformed or missing required parameters.
+
+```json
+{
+  "error": {
+    "type": "invalid_request",
+    "code": "missing_parameter",
+    "message": "Missing required parameter: email",
+    "param": "email"
+  }
+}
+```
+
+### `authentication_error`
+
+Invalid or missing API key.
+
+```json
+{
+  "error": {
+    "type": "authentication_error",
+    "code": "invalid_api_key",
+    "message": "Invalid API key provided"
+  }
+}
+```
+
+### `resource_not_found`
+
+The requested resource doesn't exist.
+
+```json
+{
+  "error": {
+    "type": "resource_not_found",
+    "code": "customer_not_found",
+    "message": "Customer cust_xyz not found"
+  }
+}
+```
+
+### `validation_error`
+
+The request failed validation.
+
+```json
+{
+  "error": {
+    "type": "validation_error",
+    "code": "invalid_email",
+    "message": "Invalid email format",
+    "param": "email"
+  }
+}
+```
+
+### `rate_limit_error`
+
+Too many requests.
+
+```json
+{
+  "error": {
+    "type": "rate_limit_error",
+    "code": "rate_limit_exceeded",
+    "message": "Rate limit exceeded. Retry after 60 seconds"
+  }
+}
+```
+
+Headers include:
+```
+X-RateLimit-Limit: 600
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1705312800
+```
+
+### `idempotency_error`
+
+Conflicting idempotency key.
+
+```json
+{
+  "error": {
+    "type": "idempotency_error",
+    "code": "idempotency_conflict",
+    "message": "Idempotency key already used with different parameters"
+  }
+}
+```
+
+## Handling Errors
+
+<CodeGroup>
+```typescript TypeScript
+import { 
+  RecursoError, 
+  NotFoundError, 
+  ValidationError,
+  RateLimitError 
+} from '@recurso/sdk';
+
+try {
+  await recurso.customers.get('invalid');
+} catch (error) {
+  if (error instanceof NotFoundError) {
+    console.log('Not found:', error.message);
+  } else if (error instanceof ValidationError) {
+    error.errors.forEach(e => {
+      console.log(`${e.param}: ${e.message}`);
+    });
+  } else if (error instanceof RateLimitError) {
+    console.log(`Retry after ${error.retryAfter} seconds`);
+  }
+}
+```
+
+```python Python
+from recurso.errors import NotFoundError, ValidationError, RateLimitError
+
+try:
+    client.customers.get('invalid')
+except NotFoundError as e:
+    print(f"Not found: {e.message}")
+except ValidationError as e:
+    for error in e.errors:
+        print(f"{error['param']}: {error['message']}")
+except RateLimitError as e:
+    print(f"Retry after {e.retry_after} seconds")
+```
+</CodeGroup>
+
+## Retry Logic
+
+Recommended retry strategy:
+
+| Error Type | Should Retry | Strategy |
+|------------|--------------|----------|
+| 400 | No | Fix request |
+| 401 | No | Check API key |
+| 404 | No | Check resource ID |
+| 429 | Yes | Exponential backoff |
+| 500 | Yes | Exponential backoff |
+| 503 | Yes | Exponential backoff |
+
+SDKs automatically retry on 5xx errors with exponential backoff.

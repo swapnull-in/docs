@@ -1,0 +1,66 @@
+---
+title: "Create Plan"
+openapi: "POST /v1/plans"
+description: "Create a new pricing plan"
+---
+
+## Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Display name for the plan |
+| `description` | string | No | Plan description |
+| `interval` | string | Yes | Billing interval: `day`, `week`, `month`, `year` |
+| `interval_count` | integer | No | Number of intervals (default: 1) |
+| `trial_days` | integer | No | Free trial period in days |
+| `prices` | array | Yes | Price configurations |
+| `features` | array | No | List of included features |
+| `metadata` | object | No | Custom key-value data |
+
+### Price Object
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `amount` | integer | Yes | Price in smallest currency unit |
+| `currency` | string | Yes | Three-letter ISO currency code |
+| `billing_scheme` | string | No | `per_unit`, `tiered`, or `metered` |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/plans \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Pro Plan",
+    "description": "For growing teams",
+    "interval": "month",
+    "trial_days": 14,
+    "prices": [
+      { "amount": 4999, "currency": "INR" },
+      { "amount": 999, "currency": "USD" }
+    ],
+    "features": ["Unlimited users", "Priority support"]
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "plan_pro_01",
+  "object": "plan",
+  "name": "Pro Plan",
+  "description": "For growing teams",
+  "interval": "month",
+  "interval_count": 1,
+  "trial_days": 14,
+  "active": true,
+  "prices": [
+    { "amount": 4999, "currency": "INR" },
+    { "amount": 999, "currency": "USD" }
+  ],
+  "features": ["Unlimited users", "Priority support"],
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
