@@ -39,16 +39,6 @@ Choose your preferred setup method:
     make run
     ```
   </Tab>
-  <Tab title="SDK Only">
-    ```bash
-    # If using Recurso Cloud or existing deployment
-    npm install @recurso/sdk
-    # or
-    pip install recurso
-    # or
-    go get github.com/recur-so/recurso-go
-    ```
-  </Tab>
 </Tabs>
 
 ## Configuration
@@ -75,85 +65,85 @@ SMTP_USER=noreply@example.com
 SMTP_PASSWORD=xxx
 ```
 
-## Initialize the SDK
+## Create an API Key
 
-<CodeGroup>
-```typescript TypeScript
-import Recurso from '@recurso/sdk';
+1. Open the dashboard at `http://localhost:8080`
+2. Navigate to **Settings → API Keys**
+3. Click **Create API Key**
+4. Copy and store securely
 
-const recurso = new Recurso({
-  apiKey: process.env.RECURSO_API_KEY,
-  baseUrl: 'http://localhost:8080' // or your deployment URL
-});
+Test the connection:
+
+```bash
+curl http://localhost:8080/v1/customers \
+  -H "Authorization: Bearer your-api-key"
 ```
-
-```python Python
-from recurso import Recurso
-
-recurso = Recurso(
-    api_key=os.environ['RECURSO_API_KEY'],
-    base_url='http://localhost:8080'
-)
-```
-
-```go Go
-import "github.com/recur-so/recurso-go"
-
-client := recurso.NewClient(
-    os.Getenv("RECURSO_API_KEY"),
-    recurso.WithBaseURL("http://localhost:8080"),
-)
-```
-</CodeGroup>
 
 ## Create Your First Plan
 
 <Steps>
   <Step title="Create a pricing plan">
-    ```typescript
-    const plan = await recurso.plans.create({
-      name: 'Pro Plan',
-      description: 'For growing teams',
-      interval: 'month',
-      prices: [
-        { amount: 4999, currency: 'INR' }, // ₹49.99/month
-        { amount: 999, currency: 'USD' }   // $9.99/month
-      ]
-    });
+    ```bash
+    curl -X POST http://localhost:8080/v1/plans \
+      -H "Authorization: Bearer your-api-key" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Pro Plan",
+        "description": "For growing teams",
+        "interval": "month",
+        "prices": [
+          { "amount": 4999, "currency": "INR" },
+          { "amount": 999, "currency": "USD" }
+        ]
+      }'
     ```
   </Step>
-  
-  <Step title="Add a customer">
-    ```typescript
-    const customer = await recurso.customers.create({
-      name: 'Acme Corp',
-      email: 'billing@acme.com',
-      metadata: {
-        company_size: 'mid-market'
-      }
-    });
-    ```
-  </Step>
-  
-  <Step title="Start a subscription">
-    ```typescript
-    const subscription = await recurso.subscriptions.create({
-      customer_id: customer.id,
-      plan_id: plan.id,
-      payment_gateway: 'razorpay' // or 'stripe'
-    });
 
-    // Redirect customer to complete payment
-    console.log(subscription.checkout_url);
+  <Step title="Add a customer">
+    ```bash
+    curl -X POST http://localhost:8080/v1/customers \
+      -H "Authorization: Bearer your-api-key" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Acme Corp",
+        "email": "billing@acme.com",
+        "metadata": { "company_size": "mid-market" }
+      }'
     ```
   </Step>
-  
+
+  <Step title="Start a subscription">
+    ```bash
+    curl -X POST http://localhost:8080/v1/subscriptions \
+      -H "Authorization: Bearer your-api-key" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "customer_id": "cust_abc",
+        "plan_id": "plan_pro",
+        "payment_gateway": "razorpay"
+      }'
+    ```
+  </Step>
+
   <Step title="Handle webhooks">
-    ```typescript
-    app.post('/webhooks/recurso', (req, res) => {
-      const event = recurso.webhooks.verify(req.body, req.headers);
-      
-      switch (event.type) {
+    ```javascript
+    import express from 'express';
+    import crypto from 'crypto';
+
+    const app = express();
+
+    app.post('/webhooks/recurso', express.json(), (req, res) => {
+      const signature = req.headers['recurso-signature'];
+      const expected = crypto
+        .createHmac('sha256', process.env.WEBHOOK_SECRET)
+        .update(JSON.stringify(req.body))
+        .digest('hex');
+
+      if (signature !== expected) {
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+
+      switch (req.body.type) {
         case 'subscription.activated':
           // Grant access to your product
           break;
@@ -164,7 +154,7 @@ client := recurso.NewClient(
           // Revoke access
           break;
       }
-      
+
       res.sendStatus(200);
     });
     ```
@@ -173,22 +163,7 @@ client := recurso.NewClient(
 
 ## Self-Hosting
 
-For production deployments:
-
-<CardGroup cols={2}>
-  <Card title="Docker" icon="docker" href="/deployment/docker">
-    Deploy with Docker Compose or Kubernetes
-  </Card>
-  <Card title="Railway" icon="train" href="/deployment/railway">
-    One-click deploy to Railway
-  </Card>
-  <Card title="Render" icon="server" href="/deployment/render">
-    Deploy to Render with PostgreSQL
-  </Card>
-  <Card title="AWS" icon="aws" href="/deployment/aws">
-    Production setup on AWS
-  </Card>
-</CardGroup>
+For production deployments, see the [self-hosting guide on GitHub](https://github.com/recur-so/recurso).
 
 ## Next Steps
 

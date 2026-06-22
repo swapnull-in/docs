@@ -41,7 +41,7 @@ Recurso is an **open-source billing engine** designed for SaaS companies, subscr
     Get notified instantly about subscription changes, payment events, and invoice updates.
   </Accordion>
   <Accordion title="Developer-First" icon="terminal">
-    Clean REST API, TypeScript SDK, and comprehensive documentation.
+    Clean REST API and comprehensive documentation. Self-host on your own infrastructure.
   </Accordion>
 </AccordionGroup>
 
@@ -75,25 +75,27 @@ graph LR
 ## Get Started
 
 <Steps>
-  <Step title="Install the SDK">
+  <Step title="Clone and run">
     ```bash
-    npm install @recurso/sdk
+    git clone https://github.com/recur-so/recurso.git
+    cd recurso
+    docker compose up
     ```
   </Step>
   <Step title="Create a customer">
-    ```typescript
-    const customer = await recurso.customers.create({
-      name: 'Acme Corp',
-      email: 'billing@acme.com'
-    });
+    ```bash
+    curl -X POST http://localhost:3000/v1/customers \
+      -H "Authorization: Bearer your-api-key" \
+      -H "Content-Type: application/json" \
+      -d '{"name": "Acme Corp", "email": "billing@acme.com"}'
     ```
   </Step>
   <Step title="Start a subscription">
-    ```typescript
-    const subscription = await recurso.subscriptions.create({
-      customer_id: customer.id,
-      plan_id: 'plan_pro_monthly'
-    });
+    ```bash
+    curl -X POST http://localhost:3000/v1/subscriptions \
+      -H "Authorization: Bearer your-api-key" \
+      -H "Content-Type: application/json" \
+      -d '{"customer_id": "cust_123", "plan_id": "plan_pro_monthly"}'
     ```
   </Step>
 </Steps>

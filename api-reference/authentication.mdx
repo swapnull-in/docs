@@ -30,35 +30,18 @@ curl https://api.recurso.dev/v1/customers \
 3. Choose **Live** or **Test** mode
 4. Copy and store securely
 
-## SDK Usage
+## Usage
 
-<CodeGroup>
-```typescript TypeScript
-const recurso = new Recurso({
-  apiKey: process.env.RECURSO_API_KEY
-});
-```
+Pass your API key in the `Authorization` header as a Bearer token:
 
-```python Python
-client = Recurso(api_key=os.environ['RECURSO_API_KEY'])
+```bash
+curl https://api.recurso.dev/v1/customers \
+  -H "Authorization: Bearer $RECURSO_API_KEY"
 ```
-
-```go Go
-client := recurso.NewClient(os.Getenv("RECURSO_API_KEY"))
-```
-</CodeGroup>
 
 ## Scoped Keys (Coming Soon)
 
-Create keys with limited permissions:
-
-```typescript
-const key = await recurso.apiKeys.create({
-  name: 'Read-only integrations',
-  permissions: ['customers:read', 'invoices:read'],
-  expires_at: '2025-01-01'
-});
-```
+Create keys with limited permissions via the dashboard or API.
 
 ## Security Best Practices
 

@@ -131,44 +131,23 @@ Conflicting idempotency key.
 
 ## Handling Errors
 
-<CodeGroup>
-```typescript TypeScript
-import { 
-  RecursoError, 
-  NotFoundError, 
-  ValidationError,
-  RateLimitError 
-} from '@recurso/sdk';
+Check the HTTP status code and parse the error response body:
 
-try {
-  await recurso.customers.get('invalid');
-} catch (error) {
-  if (error instanceof NotFoundError) {
-    console.log('Not found:', error.message);
-  } else if (error instanceof ValidationError) {
-    error.errors.forEach(e => {
-      console.log(`${e.param}: ${e.message}`);
-    });
-  } else if (error instanceof RateLimitError) {
-    console.log(`Retry after ${error.retryAfter} seconds`);
-  }
-}
+```bash
+# Example: requesting a non-existent customer
+curl -s -w "\nHTTP Status: %{http_code}\n" \
+  http://localhost:3000/v1/customers/invalid_id \
+  -H "Authorization: Bearer your-api-key"
+
+# Response (404):
+# {
+#   "error": {
+#     "type": "resource_not_found",
+#     "code": "customer_not_found",
+#     "message": "Customer invalid_id not found"
+#   }
+# }
 ```
-
-```python Python
-from recurso.errors import NotFoundError, ValidationError, RateLimitError
-
-try:
-    client.customers.get('invalid')
-except NotFoundError as e:
-    print(f"Not found: {e.message}")
-except ValidationError as e:
-    for error in e.errors:
-        print(f"{error['param']}: {error['message']}")
-except RateLimitError as e:
-    print(f"Retry after {e.retry_after} seconds")
-```
-</CodeGroup>
 
 ## Retry Logic
 
@@ -183,4 +162,4 @@ Recommended retry strategy:
 | 500 | Yes | Exponential backoff |
 | 503 | Yes | Exponential backoff |
 
-SDKs automatically retry on 5xx errors with exponential backoff.
+Use exponential backoff when retrying failed requests.

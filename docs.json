@@ -110,20 +110,6 @@
             ]
           }
         ]
-      },
-      {
-        "tab": "SDKs",
-        "groups": [
-          {
-            "group": "SDK Guides",
-            "pages": [
-              "sdks/overview",
-              "sdks/typescript",
-              "sdks/python",
-              "sdks/go"
-            ]
-          }
-        ]
       }
     ],
     "global": {
@@ -132,11 +118,6 @@
           "anchor": "GitHub",
           "href": "https://github.com/recur-so/recurso",
           "icon": "github"
-        },
-        {
-          "anchor": "Discord",
-          "href": "https://discord.gg/recurso",
-          "icon": "discord"
         }
       ]
     }
@@ -169,9 +150,7 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/recurso_dev",
-      "github": "https://github.com/recur-so/recurso",
-      "discord": "https://discord.gg/recurso"
+      "github": "https://github.com/recur-so/recurso"
     }
   },
   "api": {
