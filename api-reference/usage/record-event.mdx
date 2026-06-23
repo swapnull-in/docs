@@ -1,0 +1,56 @@
+---
+title: "Record Usage Event"
+openapi: "POST /v1/usage/events"
+description: "Record a metered usage event for a customer"
+---
+
+## Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `customer_id` | string | Yes | Customer ID |
+| `meter_id` | string | Yes | Usage meter ID |
+| `value` | number | Yes | Usage quantity to record |
+| `timestamp` | string | No | Event time (ISO 8601). Defaults to now. |
+| `properties` | object | No | Additional event metadata |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/usage/events \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "cust_abc123",
+    "meter_id": "meter_api_calls",
+    "value": 150,
+    "timestamp": "2024-03-15T14:30:00Z",
+    "properties": {
+      "endpoint": "/v1/analyze",
+      "region": "ap-south-1"
+    }
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "evt_u9k3m7x2",
+  "object": "usage_event",
+  "customer_id": "cust_abc123",
+  "meter_id": "meter_api_calls",
+  "value": 150,
+  "timestamp": "2024-03-15T14:30:00Z",
+  "properties": {
+    "endpoint": "/v1/analyze",
+    "region": "ap-south-1"
+  },
+  "subscription_id": "sub_xyz789",
+  "created_at": "2024-03-15T14:30:01Z"
+}
+```
+
+<Note>
+Usage events are aggregated at the end of each billing period and included in the next invoice. You can backfill events by providing a past `timestamp`, as long as it falls within the current billing period.
+</Note>

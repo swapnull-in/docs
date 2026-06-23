@@ -1,0 +1,66 @@
+---
+title: "Get Dunning Campaign"
+openapi: "GET /v1/dunning-campaigns/{id}"
+description: "Retrieve a single dunning campaign including all of its configured steps."
+---
+
+## Path Parameters
+
+| Parameter | Type   | Required | Description                                       |
+|-----------|--------|----------|---------------------------------------------------|
+| `id`      | string | Yes      | The dunning campaign ID (`dc_` prefix).           |
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.io/v1/dunning-campaigns/dc_8mKp3vRn2wXq" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "id": "dc_8mKp3vRn2wXq",
+  "object": "dunning_campaign",
+  "name": "Standard Recovery",
+  "description": "Default dunning campaign with email reminders and payment wall",
+  "is_default": true,
+  "payment_wall_enabled": true,
+  "payment_wall_grace_days": 5,
+  "steps": [
+    {
+      "id": "dstep_5rMt8wVn3aZs",
+      "day_offset": 1,
+      "channel": "email",
+      "subject": "Action required: Your payment failed",
+      "is_active": true
+    },
+    {
+      "id": "dstep_6sNu9xWo4bAt",
+      "day_offset": 3,
+      "channel": "email",
+      "subject": "Reminder: Please update your payment method",
+      "is_active": true
+    },
+    {
+      "id": "dstep_7tOv0yXp5cBu",
+      "day_offset": 5,
+      "channel": "payment_wall",
+      "subject": null,
+      "is_active": true
+    },
+    {
+      "id": "dstep_8uPw1zYq6dCv",
+      "day_offset": 7,
+      "channel": "sms",
+      "subject": null,
+      "is_active": true
+    }
+  ],
+  "active_subscriptions": 237,
+  "created_at": "2026-03-15T08:00:00Z",
+  "updated_at": "2026-05-22T14:10:00Z"
+}
+```

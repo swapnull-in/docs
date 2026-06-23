@@ -1,0 +1,60 @@
+---
+title: "Create Virtual Account"
+openapi: "POST /v1/virtual-accounts"
+description: "Create a virtual bank account for collecting payments via bank transfer."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `customer_id` | string (UUID) | Yes | The customer this virtual account is created for. |
+| `invoice_id` | string | No | Associate the virtual account with a specific invoice for auto-reconciliation. |
+| `amount` | integer (int64) | Yes | Expected payment amount in smallest currency unit (paise). Must be greater than 0. |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/virtual-accounts \
+  -H "Authorization: Bearer rsk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "invoice_id": "inv_5d4c3b2a1f0e9876",
+    "amount": 249900
+  }'
+```
+
+## Response
+
+Returns the newly created virtual account with bank details.
+
+```json
+{
+  "id": "va_8e7d6c5b4a3f2109",
+  "object": "virtual_account",
+  "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "invoice_id": "inv_5d4c3b2a1f0e9876",
+  "amount": 249900,
+  "amount_received": 0,
+  "account_number": "9876540012345678",
+  "ifsc_code": "RATN0VAAPIS",
+  "bank_name": "RBL Bank",
+  "beneficiary_name": "Recurso Payments Pvt Ltd",
+  "status": "active",
+  "expires_at": "2026-07-23T23:59:59Z",
+  "created_at": "2026-06-23T10:15:30Z",
+  "updated_at": "2026-06-23T10:15:30Z"
+}
+```
+
+<Tip>
+When the customer transfers the exact amount to the virtual account, the linked
+invoice is automatically marked as paid. Partial payments update `amount_received`
+but do not close the invoice.
+</Tip>
+
+<Warning>
+Virtual accounts expire after 30 days by default. After expiry, any transfer to the
+account will be returned to the sender.
+</Warning>

@@ -1,0 +1,60 @@
+---
+title: "Update Payment Method"
+openapi: "PUT /v1/customers/{id}/payment-method"
+description: "Update a customer's payment method"
+---
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The customer ID |
+
+## Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `gateway` | string | Yes | Payment gateway: `razorpay` or `stripe` |
+| `gateway_payment_method_id` | string | Yes | Payment method ID from the gateway |
+| `type` | string | Yes | Payment method type: `card`, `upi`, or `bank_transfer` |
+| `set_default` | boolean | No | Set as default payment method (default: false) |
+
+## Example Request
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/customers/cust_abc123/payment-method \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gateway": "razorpay",
+    "gateway_payment_method_id": "pay_method_rzp_9k2m",
+    "type": "card",
+    "set_default": true
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "pm_7xq9r2",
+  "object": "payment_method",
+  "customer_id": "cust_abc123",
+  "gateway": "razorpay",
+  "gateway_payment_method_id": "pay_method_rzp_9k2m",
+  "type": "card",
+  "card": {
+    "brand": "visa",
+    "last4": "4242",
+    "exp_month": 12,
+    "exp_year": 2026
+  },
+  "is_default": true,
+  "created_at": "2024-02-10T08:15:00Z",
+  "updated_at": "2024-03-05T11:45:00Z"
+}
+```
+
+<Note>
+When `set_default` is true, this payment method will be used for all future automatic charges on the customer's subscriptions.
+</Note>

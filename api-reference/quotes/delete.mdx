@@ -1,0 +1,31 @@
+---
+title: "Delete Quote"
+openapi: "DELETE /v1/quotes/{id}"
+description: "Permanently delete a draft quote."
+---
+
+## Path Parameters
+
+| Parameter | Type   | Description                              |
+|-----------|--------|------------------------------------------|
+| `id`      | string | The unique identifier of the quote (e.g., `qt_4kR7LmNpXs`). |
+
+Only quotes with `status: "draft"` can be deleted. Quotes that have been sent or accepted cannot be deleted and must be voided instead.
+
+## Example Request
+
+```bash
+curl -X DELETE https://api.recurso.io/v1/quotes/qt_4kR7LmNpXs \
+  -H "Authorization: Bearer sk_live_26PHem9AhJZvU..." \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "id": "qt_4kR7LmNpXs",
+  "object": "quote",
+  "deleted": true
+}
+```

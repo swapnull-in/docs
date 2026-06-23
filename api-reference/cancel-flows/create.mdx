@@ -1,0 +1,113 @@
+---
+title: "Create Cancel Flow"
+openapi: "POST /v1/cancel-flows"
+description: "Create a cancellation flow with configurable steps to retain customers before they cancel."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Display name for the cancel flow (max 255 characters). |
+| `description` | string | No | Internal description of the flow's purpose. |
+| `cooldown_hours` | integer | No | Minimum hours before a customer can be shown this flow again (default `0`). |
+| `steps` | array | Yes | Ordered list of steps in the cancellation flow. |
+| `steps[].type` | string | Yes | Step type: `survey`, `offer`, or `confirmation`. |
+| `steps[].title` | string | Yes | Heading displayed to the customer for this step. |
+| `steps[].description` | string | No | Explanatory text shown below the title. |
+| `steps[].required` | boolean | No | Whether the customer must complete this step to proceed (default `false`). |
+| `steps[].offer` | object | No | Retention offer details. Only applicable when `type` is `offer`. |
+| `steps[].offer.type` | string | No | Offer type: `discount_percent`, `discount_fixed`, `extend_trial`, or `pause`. |
+| `steps[].offer.value` | number | No | Numeric value of the offer (e.g. `20` for 20% off, or amount in paise for fixed). |
+| `steps[].offer.duration_days` | integer | No | Number of days the offer is valid. |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/cancel-flows \
+  -H "Authorization: Bearer rsk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Standard Retention Flow",
+    "description": "Default flow for Pro plan customers attempting to cancel",
+    "cooldown_hours": 72,
+    "steps": [
+      {
+        "type": "survey",
+        "title": "We are sorry to see you go",
+        "description": "Help us understand why you are cancelling so we can improve.",
+        "required": true
+      },
+      {
+        "type": "offer",
+        "title": "How about a discount?",
+        "description": "We would love to keep you. Here is a special offer.",
+        "required": false,
+        "offer": {
+          "type": "discount_percent",
+          "value": 20,
+          "duration_days": 90
+        }
+      },
+      {
+        "type": "confirmation",
+        "title": "Confirm cancellation",
+        "description": "Your subscription will remain active until the end of the current billing period.",
+        "required": true
+      }
+    ]
+  }'
+```
+
+## Response
+
+Returns the newly created cancel flow object. The `id` uses the `cf_` prefix.
+
+```json
+{
+  "id": "cf_9a8b7c6d5e4f3210",
+  "object": "cancel_flow",
+  "name": "Standard Retention Flow",
+  "description": "Default flow for Pro plan customers attempting to cancel",
+  "cooldown_hours": 72,
+  "steps": [
+    {
+      "id": "step_001",
+      "type": "survey",
+      "title": "We are sorry to see you go",
+      "description": "Help us understand why you are cancelling so we can improve.",
+      "required": true,
+      "offer": null
+    },
+    {
+      "id": "step_002",
+      "type": "offer",
+      "title": "How about a discount?",
+      "description": "We would love to keep you. Here is a special offer.",
+      "required": false,
+      "offer": {
+        "type": "discount_percent",
+        "value": 20,
+        "duration_days": 90
+      }
+    },
+    {
+      "id": "step_003",
+      "type": "confirmation",
+      "title": "Confirm cancellation",
+      "description": "Your subscription will remain active until the end of the current billing period.",
+      "required": true,
+      "offer": null
+    }
+  ],
+  "status": "draft",
+  "created_at": "2026-06-23T10:15:30Z",
+  "updated_at": "2026-06-23T10:15:30Z"
+}
+```
+
+<Tip>
+Cancel flows are created in `draft` status. Publish a flow via
+`POST /v1/cancel-flows/{id}/publish` before it can be triggered during
+customer cancellation attempts.
+</Tip>

@@ -1,0 +1,57 @@
+---
+title: "Get Usage Statistics"
+openapi: "GET /v1/analytics/usage"
+description: "Retrieve aggregated usage statistics for metered billing events."
+---
+
+## Query Parameters
+
+| Parameter    | Type   | Required | Description                                                           |
+|--------------|--------|----------|-----------------------------------------------------------------------|
+| `start_date` | string | No       | ISO 8601 date for the beginning of the reporting period. Defaults to 30 days ago. |
+| `end_date`   | string | No       | ISO 8601 date for the end of the reporting period. Defaults to today. |
+| `meter_id`   | string | No       | Filter results to a specific usage meter (e.g., `mtr_7hN2XwLsRq`). If omitted, returns aggregated stats across all meters. |
+
+Returns usage statistics for the specified date range, including total events ingested, the number of unique customers who generated events, and the total metered value. When a `meter_id` is provided, results are scoped to that single meter.
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.io/v1/analytics/usage?start_date=2026-06-01&end_date=2026-06-30&meter_id=mtr_7hN2XwLsRq" \
+  -H "Authorization: Bearer sk_live_26PHem9AhJZvU..." \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "object": "usage_summary",
+  "start_date": "2026-06-01",
+  "end_date": "2026-06-30",
+  "meter_id": "mtr_7hN2XwLsRq",
+  "meter_name": "API Calls",
+  "total_events": 1847263,
+  "unique_customers": 189,
+  "total_value": 1847263,
+  "unit": "request",
+  "daily_breakdown": [
+    {
+      "date": "2026-06-01",
+      "events": 58420,
+      "value": 58420
+    },
+    {
+      "date": "2026-06-02",
+      "events": 62135,
+      "value": 62135
+    },
+    {
+      "date": "2026-06-03",
+      "events": 61890,
+      "value": 61890
+    }
+  ],
+  "computed_at": "2026-06-23T00:00:00Z"
+}
+```

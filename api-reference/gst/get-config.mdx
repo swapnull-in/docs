@@ -1,0 +1,52 @@
+---
+title: "Get GST Configuration"
+openapi: "GET /v1/settings/gst"
+description: "Retrieve the current GST configuration for your organization."
+---
+
+## Example Request
+
+```bash
+curl -X GET https://api.recurso.dev/v1/settings/gst \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a"
+```
+
+## Response
+
+```json
+{
+  "gstin": "29AABCT1332L1ZM",
+  "legal_name": "Recurso Technologies Pvt Ltd",
+  "trade_name": "Recurso",
+  "state_code": "29",
+  "sac_code": "998314",
+  "gst_rate": 18.0,
+  "einvoice_enabled": true,
+  "created_at": "2025-08-12T06:30:00Z",
+  "updated_at": "2026-03-15T10:45:22Z"
+}
+```
+
+## Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `gstin` | string | The 15-character GST Identification Number. |
+| `legal_name` | string | The registered legal name of the business. |
+| `trade_name` | string | The trade or brand name. |
+| `state_code` | string | The two-digit state code as per GST regulations. |
+| `sac_code` | string | The Services Accounting Code for classification of services. |
+| `gst_rate` | number | The GST rate applied to invoices, as a percentage (e.g., 18.0 for 18%). |
+| `einvoice_enabled` | boolean | Whether e-invoicing through the IRP portal is enabled. |
+| `created_at` | string | ISO 8601 timestamp of when the configuration was created. |
+| `updated_at` | string | ISO 8601 timestamp of the last update. |
+
+## Notes
+
+- Returns `404` if no GST configuration has been set up for the organization.
+- The `state_code` is used to determine CGST/SGST vs IGST applicability on invoices.
+- When `einvoice_enabled` is `true`, invoices above the threshold will automatically be submitted to the IRP.
+
+<Tip>
+To update your GST configuration, use the [Update GST Configuration](/api-reference/gst/update-config) endpoint.
+</Tip>

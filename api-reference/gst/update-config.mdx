@@ -1,0 +1,58 @@
+---
+title: "Update GST Configuration"
+openapi: "PUT /v1/settings/gst"
+description: "Update your organization's GST configuration for tax compliance and e-invoicing."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `gstin` | string | Yes | The 15-character GST Identification Number. Must match the standard GSTIN format. |
+| `legal_name` | string | Yes | The registered legal name of your business as per GST records. |
+| `trade_name` | string | No | The trade or brand name of your business. |
+| `state_code` | string | Yes | The two-digit state code (e.g., `"29"` for Karnataka, `"27"` for Maharashtra). |
+| `sac_code` | string | Yes | The Services Accounting Code for your primary service category. |
+| `gst_rate` | number | Yes | The GST rate to apply on invoices, as a percentage (e.g., `18.0`). |
+
+## Example Request
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/settings/gst \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gstin": "29AABCT1332L1ZM",
+    "legal_name": "Recurso Technologies Pvt Ltd",
+    "trade_name": "Recurso",
+    "state_code": "29",
+    "sac_code": "998314",
+    "gst_rate": 18.0
+  }'
+```
+
+## Response
+
+```json
+{
+  "gstin": "29AABCT1332L1ZM",
+  "legal_name": "Recurso Technologies Pvt Ltd",
+  "trade_name": "Recurso",
+  "state_code": "29",
+  "sac_code": "998314",
+  "gst_rate": 18.0,
+  "einvoice_enabled": true,
+  "created_at": "2025-08-12T06:30:00Z",
+  "updated_at": "2026-06-23T15:20:00Z"
+}
+```
+
+## Notes
+
+- The `gstin` format is validated against the standard 15-character pattern: 2 digits (state code) + 10 characters (PAN) + 1 digit (entity number) + 1 character (Z) + 1 check digit.
+- Changing the `state_code` will affect CGST/SGST vs IGST calculations on all future invoices.
+- This endpoint does not control `einvoice_enabled`. Use the [IRP Configuration](/api-reference/einvoice/irp-config) endpoint to manage e-invoicing settings.
+
+<Warning>
+Updating GST configuration applies to all future invoices. Existing finalized invoices are not retroactively modified.
+</Warning>

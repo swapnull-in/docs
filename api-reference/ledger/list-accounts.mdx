@@ -1,0 +1,65 @@
+---
+title: "List Ledger Accounts"
+openapi: "GET /v1/ledger/accounts"
+description: "Retrieve all ledger accounts with their current balances."
+---
+
+Returns every ledger account configured in your organization. Each account includes its current balance, currency, and type classification. Ledger accounts follow double-entry accounting principles and are used to track revenue, liabilities, and receivables.
+
+## Example Request
+
+```bash
+curl -X GET https://api.recurso.io/v1/ledger/accounts \
+  -H "Authorization: Bearer sk_live_26PHem9AhJZvU..." \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "acct_1aB2CdEfGh",
+      "code": "1000",
+      "name": "Accounts Receivable",
+      "type": "asset",
+      "balance": 12450000,
+      "currency": "usd"
+    },
+    {
+      "id": "acct_3iJ4KlMnOp",
+      "code": "2000",
+      "name": "Deferred Revenue",
+      "type": "liability",
+      "balance": 8730000,
+      "currency": "usd"
+    },
+    {
+      "id": "acct_5qR6StUvWx",
+      "code": "4000",
+      "name": "Subscription Revenue",
+      "type": "revenue",
+      "balance": 34520000,
+      "currency": "usd"
+    },
+    {
+      "id": "acct_7yZ8AbCdEf",
+      "code": "4100",
+      "name": "Usage Revenue",
+      "type": "revenue",
+      "balance": 5680000,
+      "currency": "usd"
+    },
+    {
+      "id": "acct_9gH0IjKlMn",
+      "code": "5000",
+      "name": "Refunds & Credits",
+      "type": "contra_revenue",
+      "balance": 1240000,
+      "currency": "usd"
+    }
+  ]
+}
+```

@@ -1,0 +1,54 @@
+---
+title: "Send Quote"
+openapi: "POST /v1/quotes/{id}/send"
+description: "Send a quote to the customer via email."
+---
+
+## Path Parameters
+
+| Parameter | Type   | Description                              |
+|-----------|--------|------------------------------------------|
+| `id`      | string | The unique identifier of the quote (e.g., `qt_4kR7LmNpXs`). |
+
+Sending a quote transitions its status from `draft` to `sent`. The customer receives an email with a link to review and accept the quote. A quote can only be sent if it is currently in `draft` status.
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.io/v1/quotes/qt_4kR7LmNpXs/send \
+  -H "Authorization: Bearer sk_live_26PHem9AhJZvU..." \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "id": "qt_4kR7LmNpXs",
+  "object": "quote",
+  "status": "sent",
+  "currency": "usd",
+  "customer": {
+    "id": "cus_8vTnRbWqYx",
+    "name": "Acme Corp",
+    "email": "billing@acmecorp.com"
+  },
+  "line_items": [
+    {
+      "id": "li_2mK9JwPqRt",
+      "description": "Pro Plan — Monthly",
+      "quantity": 5,
+      "unit_amount": 4900,
+      "amount": 24500
+    }
+  ],
+  "subtotal": 24500,
+  "tax": 2205,
+  "total": 26705,
+  "notes": "Volume discount applied for annual commitment.",
+  "sent_at": "2026-06-23T10:00:00Z",
+  "expires_at": "2026-07-15T00:00:00Z",
+  "created_at": "2026-06-10T14:32:00Z",
+  "updated_at": "2026-06-23T10:00:00Z"
+}
+```

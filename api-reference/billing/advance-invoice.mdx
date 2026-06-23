@@ -1,0 +1,72 @@
+---
+title: "Generate Advance Invoice"
+openapi: "POST /v1/subscriptions/{id}/advance"
+description: "Generate an advance invoice covering one or more future billing periods."
+---
+
+## Path Parameters
+
+| Parameter | Type   | Description                              |
+|-----------|--------|------------------------------------------|
+| `id`      | string | The unique identifier of the subscription (e.g., `sub_3jF6RtKmWp`). |
+
+## Request Body
+
+| Parameter | Type | Required | Description                                                                 |
+|-----------|------|----------|-----------------------------------------------------------------------------|
+| `periods` | int  | Yes      | The number of future billing periods to invoice in advance. Minimum value is `1`. |
+
+Generates a single invoice that covers the specified number of upcoming billing periods. Each period appears as a separate line item on the invoice. The invoice is created with `type: "advance"` and is immediately finalized.
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.io/v1/subscriptions/sub_3jF6RtKmWp/advance \
+  -H "Authorization: Bearer sk_live_26PHem9AhJZvU..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "periods": 3
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "inv_8xLpJnRtKw",
+  "object": "invoice",
+  "type": "advance",
+  "status": "open",
+  "currency": "usd",
+  "customer": {
+    "id": "cus_8vTnRbWqYx",
+    "name": "Acme Corp"
+  },
+  "subscription_id": "sub_3jF6RtKmWp",
+  "line_items": [
+    {
+      "id": "li_3nQ7RwYsKt",
+      "description": "Pro Plan — Jul 10 to Aug 10, 2026",
+      "amount": 4900
+    },
+    {
+      "id": "li_4pR8TxZtLu",
+      "description": "Pro Plan — Aug 10 to Sep 10, 2026",
+      "amount": 4900
+    },
+    {
+      "id": "li_5qS9UyAvMv",
+      "description": "Pro Plan — Sep 10 to Oct 10, 2026",
+      "amount": 4900
+    }
+  ],
+  "subtotal": 14700,
+  "tax": 1323,
+  "total": 16023,
+  "amount_due": 16023,
+  "amount_paid": 0,
+  "due_date": "2026-07-10T00:00:00Z",
+  "created_at": "2026-06-23T13:00:00Z",
+  "updated_at": "2026-06-23T13:00:00Z"
+}
+```

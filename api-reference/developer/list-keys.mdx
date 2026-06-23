@@ -1,0 +1,55 @@
+---
+title: "List API Keys"
+openapi: "GET /v1/developer/keys"
+description: "Retrieve all API keys for your account. Key values are masked for security."
+---
+
+## Query Parameters
+
+| Parameter     | Type   | Required | Description                                                  |
+|---------------|--------|----------|--------------------------------------------------------------|
+| `environment` | string | No       | Filter by environment. One of `test` or `live`.              |
+| `limit`       | integer| No       | Maximum number of keys to return. Default `20`, max `100`.   |
+| `offset`      | integer| No       | Number of records to skip for pagination. Default `0`.       |
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.io/v1/developer/keys?environment=live" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+API key values are permanently masked after creation. Only the prefix is visible.
+
+```json
+{
+  "data": [
+    {
+      "id": "key_4wRu5yBt8dFg",
+      "object": "api_key",
+      "name": "Production Backend",
+      "prefix": "rsk_live_9f8a****",
+      "environment": "live",
+      "scopes": ["subscriptions:read", "subscriptions:write", "customers:read", "invoices:read"],
+      "last_used_at": "2026-06-23T10:58:00Z",
+      "created_at": "2026-01-15T09:00:00Z"
+    },
+    {
+      "id": "key_8xSv6zCu9eGh",
+      "object": "api_key",
+      "name": "Analytics Service",
+      "prefix": "rsk_live_2a7b****",
+      "environment": "live",
+      "scopes": ["subscriptions:read", "customers:read", "analytics:read"],
+      "last_used_at": "2026-06-22T23:45:00Z",
+      "created_at": "2026-03-20T14:30:00Z"
+    }
+  ],
+  "total": 2,
+  "limit": 20,
+  "offset": 0
+}
+```

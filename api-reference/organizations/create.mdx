@@ -1,0 +1,47 @@
+---
+title: "Create Organization"
+openapi: "POST /v1/organizations"
+description: "Create a new organization to manage multiple tenants under a single entity."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Display name for the organization (max 255 characters). |
+| `owner_email` | string (email) | Yes | Email address of the organization owner. Must be a valid email format. |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/organizations \
+  -H "Authorization: Bearer rsk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme Holdings Pvt Ltd",
+    "owner_email": "cto@acmeholdings.com"
+  }'
+```
+
+## Response
+
+Returns the newly created organization object. The `id` uses the `org_` prefix.
+
+```json
+{
+  "id": "org_4f3e2d1c0b9a8765",
+  "object": "organization",
+  "name": "Acme Holdings Pvt Ltd",
+  "owner_email": "cto@acmeholdings.com",
+  "tenant_count": 0,
+  "created_at": "2026-06-23T10:15:30Z",
+  "updated_at": "2026-06-23T10:15:30Z"
+}
+```
+
+<Tip>
+After creating an organization, use the
+[Add Tenant](/api-reference/organizations/add-tenant) endpoint to associate existing
+tenants. You can then view consolidated billing metrics via the
+[Consolidated MRR](/api-reference/organizations/consolidated-mrr) endpoint.
+</Tip>

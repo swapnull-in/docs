@@ -1,0 +1,56 @@
+---
+title: "Create API Key"
+openapi: "POST /v1/developer/keys"
+description: "Generate a new API key. The full key value is only returned once at creation time."
+---
+
+## Body Parameters
+
+| Parameter     | Type   | Required | Description                                                                      |
+|---------------|--------|----------|----------------------------------------------------------------------------------|
+| `name`        | string | Yes      | A human-readable label for this key (e.g. "Production Backend").                 |
+| `environment` | string | Yes      | The environment for this key. One of `test` or `live`.                           |
+| `scopes`      | array  | No       | Array of permission scopes. If omitted, the key receives full access.            |
+
+### Available Scopes
+
+| Scope                    | Description                          |
+|--------------------------|--------------------------------------|
+| `subscriptions:read`     | Read subscription data               |
+| `subscriptions:write`    | Create and modify subscriptions      |
+| `customers:read`         | Read customer data                   |
+| `customers:write`        | Create and modify customers          |
+| `invoices:read`          | Read invoices and credit notes       |
+| `invoices:write`         | Create and modify invoices           |
+| `analytics:read`         | Access analytics and reporting data  |
+
+## Example Request
+
+```bash
+curl -X POST "https://api.recurso.io/v1/developer/keys" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Checkout Service",
+    "environment": "live",
+    "scopes": ["subscriptions:read", "subscriptions:write", "customers:read", "customers:write"]
+  }'
+```
+
+## Response
+
+The `key` field contains the full API key. Store it securely -- it cannot be retrieved again.
+
+```json
+{
+  "id": "key_9yTw7aDv0fHi",
+  "object": "api_key",
+  "name": "Checkout Service",
+  "key": "rsk_live_4c8d2e6f1a3b5g7h9i0j4k8l2m6n0p3q",
+  "prefix": "rsk_live_4c8d****",
+  "environment": "live",
+  "scopes": ["subscriptions:read", "subscriptions:write", "customers:read", "customers:write"],
+  "last_used_at": null,
+  "created_at": "2026-06-23T11:20:00Z"
+}
+```

@@ -1,0 +1,59 @@
+---
+title: "Update Account"
+openapi: "PUT /v1/account"
+description: "Update your Recurso account settings."
+---
+
+## Body Parameters
+
+| Parameter          | Type   | Required | Description                                                            |
+|--------------------|--------|----------|------------------------------------------------------------------------|
+| `name`             | string | No       | The display name for your account.                                     |
+| `email`            | string | No       | Primary billing contact email address.                                 |
+| `timezone`         | string | No       | IANA timezone identifier (e.g. `America/New_York`, `Europe/London`).   |
+| `default_currency` | string | No       | Three-letter ISO 4217 currency code (e.g. `usd`, `eur`, `gbp`).      |
+| `webhook_url`      | string | No       | URL where Recurso sends webhook event payloads.                        |
+
+Only the fields you include in the request body will be updated. Omitted fields remain unchanged.
+
+## Example Request
+
+```bash
+curl -X PUT "https://api.recurso.io/v1/account" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme Corp International",
+    "timezone": "Europe/London",
+    "default_currency": "gbp",
+    "webhook_url": "https://api.acmecorp.com/webhooks/recurso/v2"
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "acct_1aXm4nBo7pQr",
+  "object": "account",
+  "name": "Acme Corp International",
+  "email": "billing@acmecorp.com",
+  "plan": "growth",
+  "settings": {
+    "timezone": "Europe/London",
+    "default_currency": "gbp",
+    "webhook_url": "https://api.acmecorp.com/webhooks/recurso/v2",
+    "invoice_prefix": "INV",
+    "auto_collection": true,
+    "dunning_enabled": true,
+    "tax_inclusive_pricing": false
+  },
+  "usage": {
+    "active_subscriptions": 4821,
+    "monthly_revenue": 287450.00,
+    "currency": "usd"
+  },
+  "created_at": "2025-08-12T10:00:00Z",
+  "updated_at": "2026-06-23T11:30:00Z"
+}
+```

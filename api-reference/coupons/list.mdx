@@ -1,0 +1,59 @@
+---
+title: "List Coupons"
+openapi: "GET /v1/coupons"
+description: "Retrieve a list of coupons"
+---
+
+## Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `limit` | integer | Max results (default: 10) |
+| `offset` | integer | Pagination offset |
+
+## Example Request
+
+```bash
+curl "https://api.recurso.dev/v1/coupons?limit=10&offset=0" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "cpn_s25_3mo",
+      "object": "coupon",
+      "code": "SUMMER25",
+      "discount_type": "percentage",
+      "discount_value": 25,
+      "currency": null,
+      "duration": "repeating",
+      "duration_in_months": 3,
+      "max_redemptions": 500,
+      "times_redeemed": 142,
+      "active": true,
+      "created_at": "2024-04-01T09:00:00Z"
+    },
+    {
+      "id": "cpn_flat500",
+      "object": "coupon",
+      "code": "FLAT500OFF",
+      "discount_type": "fixed",
+      "discount_value": 50000,
+      "currency": "INR",
+      "duration": "once",
+      "duration_in_months": null,
+      "max_redemptions": 100,
+      "times_redeemed": 38,
+      "active": true,
+      "created_at": "2024-03-15T12:00:00Z"
+    }
+  ],
+  "has_more": false,
+  "total_count": 2
+}
+```

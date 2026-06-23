@@ -1,0 +1,53 @@
+---
+title: "Get Subscription"
+openapi: "GET /v1/subscriptions/{id}"
+description: "Retrieve a specific subscription"
+---
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The subscription ID |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/subscriptions/sub_xyz789 \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "id": "sub_xyz789",
+  "object": "subscription",
+  "customer_id": "cust_abc123",
+  "plan_id": "plan_pro_01",
+  "plan": {
+    "id": "plan_pro_01",
+    "name": "Pro Plan",
+    "interval": "month",
+    "interval_count": 1
+  },
+  "status": "active",
+  "quantity": 1,
+  "current_period_start": "2024-03-15T00:00:00Z",
+  "current_period_end": "2024-04-15T00:00:00Z",
+  "trial_start": "2024-03-01T00:00:00Z",
+  "trial_end": "2024-03-15T00:00:00Z",
+  "cancel_at_period_end": false,
+  "cancelled_at": null,
+  "payment_gateway": "razorpay",
+  "latest_invoice": {
+    "id": "inv_003",
+    "status": "paid",
+    "total": 5899,
+    "currency": "INR"
+  },
+  "metadata": {},
+  "created_at": "2024-03-01T10:30:00Z",
+  "updated_at": "2024-03-15T00:00:00Z"
+}
+```

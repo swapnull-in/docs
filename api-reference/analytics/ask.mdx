@@ -1,0 +1,54 @@
+---
+title: "Ask Analytics"
+openapi: "POST /v1/analytics/ask"
+description: "Query your billing data using natural language questions."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `question` | string | Yes | A natural language question about your billing data. For example: "What was the MRR growth last quarter?" or "Which plans have the highest churn rate?" |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/analytics/ask \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "What is our monthly recurring revenue trend for the last 6 months?"
+  }'
+```
+
+## Response
+
+```json
+{
+  "answer": "Your MRR has grown from $42,350 to $58,920 over the last 6 months, representing a 39.1% increase. The strongest growth occurred in March 2026 with a 12.3% month-over-month increase driven by 47 new subscriptions on the Pro plan.",
+  "data": {
+    "series": [
+      { "month": "2026-01", "mrr": 42350 },
+      { "month": "2026-02", "mrr": 44780 },
+      { "month": "2026-03", "mrr": 50290 },
+      { "month": "2026-04", "mrr": 53100 },
+      { "month": "2026-05", "mrr": 56440 },
+      { "month": "2026-06", "mrr": 58920 }
+    ],
+    "total_growth_pct": 39.1,
+    "avg_monthly_growth_pct": 5.7
+  },
+  "query": "SELECT DATE_TRUNC('month', period_start) AS month, SUM(amount) AS mrr FROM invoices WHERE status = 'paid' AND period_start >= NOW() - INTERVAL '6 months' GROUP BY 1 ORDER BY 1"
+}
+```
+
+## Notes
+
+- The AI engine translates your natural language question into a structured query against your billing database.
+- The `query` field in the response shows the generated SQL for transparency and debugging.
+- Complex questions may take up to 10 seconds to process.
+- Results are scoped to your organization's data and respect role-based access controls.
+
+<Warning>
+The `query` field is provided for informational purposes only. Do not execute it directly against your database.
+</Warning>

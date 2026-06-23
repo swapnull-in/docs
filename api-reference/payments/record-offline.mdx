@@ -1,0 +1,65 @@
+---
+title: "Record Offline Payment"
+openapi: "POST /v1/payments/offline"
+description: "Record a payment received outside of online channels such as bank transfer, cash, or cheque."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `customer_id` | string (UUID) | Yes | The customer who made the payment. |
+| `invoice_id` | string | No | The invoice this payment applies to. If provided, the invoice balance is updated. |
+| `payment_type` | string | Yes | The type of offline payment. One of `bank_transfer`, `cash`, or `cheque`. |
+| `amount` | integer (int64) | Yes | Payment amount in smallest currency unit (paise). Must be greater than 0. |
+| `currency` | string | No | Three-letter ISO currency code (default `INR`). |
+| `reference_number` | string | No | External reference such as UTR number, cheque number, or receipt ID. |
+| `notes` | string | No | Free-text notes about the payment (max 500 characters). |
+| `recorded_by` | string | No | Email or user ID of the staff member recording this payment. |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/payments/offline \
+  -H "Authorization: Bearer rsk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "invoice_id": "inv_5d4c3b2a1f0e9876",
+    "payment_type": "bank_transfer",
+    "amount": 249900,
+    "currency": "INR",
+    "reference_number": "UTR-ICIC-20260623-001234",
+    "notes": "NEFT payment received from HDFC account ending 4521",
+    "recorded_by": "finance@acmecorp.com"
+  }'
+```
+
+## Response
+
+Returns the recorded offline payment object.
+
+```json
+{
+  "id": "pay_3c2b1a0f9e8d7654",
+  "object": "payment",
+  "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "invoice_id": "inv_5d4c3b2a1f0e9876",
+  "payment_type": "bank_transfer",
+  "amount": 249900,
+  "currency": "INR",
+  "reference_number": "UTR-ICIC-20260623-001234",
+  "notes": "NEFT payment received from HDFC account ending 4521",
+  "recorded_by": "finance@acmecorp.com",
+  "status": "succeeded",
+  "channel": "offline",
+  "created_at": "2026-06-23T10:15:30Z",
+  "updated_at": "2026-06-23T10:15:30Z"
+}
+```
+
+<Tip>
+When an `invoice_id` is provided and the payment amount matches the invoice balance,
+the invoice is automatically marked as `paid`. Partial payments update the invoice
+balance without closing it.
+</Tip>

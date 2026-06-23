@@ -42,11 +42,60 @@
             ]
           },
           {
+            "group": "Financial Infrastructure",
+            "pages": [
+              "advanced/ledger",
+              "advanced/revenue-recognition",
+              "advanced/multi-currency"
+            ]
+          },
+          {
+            "group": "Billing Extensions",
+            "pages": [
+              "advanced/advanced-billing",
+              "advanced/referrals",
+              "advanced/gifts"
+            ]
+          },
+          {
+            "group": "Payment Recovery",
+            "pages": [
+              "advanced/smart-retry",
+              "advanced/dunning-campaigns",
+              "advanced/cancel-flows"
+            ]
+          },
+          {
+            "group": "Churn & Analytics",
+            "pages": [
+              "advanced/churn-prediction",
+              "advanced/analytics"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "advanced/accounting",
+              "advanced/payment-gateways"
+            ]
+          },
+          {
+            "group": "Infrastructure",
+            "pages": [
+              "advanced/organizations",
+              "advanced/virtual-accounts",
+              "advanced/developer-settings",
+              "advanced/idempotency"
+            ]
+          },
+          {
             "group": "Compliance",
             "pages": [
               "compliance/gst-invoicing",
               "compliance/consent-tracking",
-              "compliance/dunning"
+              "compliance/dunning",
+              "compliance/e-invoicing",
+              "compliance/upi-mandates"
             ]
           },
           {
@@ -54,7 +103,8 @@
             "pages": [
               "portal/overview",
               "portal/magic-links",
-              "portal/self-service"
+              "portal/self-service",
+              "portal/cancel-self-service"
             ]
           }
         ]
@@ -75,7 +125,8 @@
             "pages": [
               "api-reference/plans/create",
               "api-reference/plans/list",
-              "api-reference/plans/get"
+              "api-reference/plans/get",
+              "api-reference/plans/update"
             ]
           },
           {
@@ -83,7 +134,8 @@
             "pages": [
               "api-reference/customers/create",
               "api-reference/customers/list",
-              "api-reference/customers/get"
+              "api-reference/customers/get",
+              "api-reference/customers/update-payment-method"
             ]
           },
           {
@@ -91,7 +143,11 @@
             "pages": [
               "api-reference/subscriptions/create",
               "api-reference/subscriptions/list",
-              "api-reference/subscriptions/cancel"
+              "api-reference/subscriptions/get",
+              "api-reference/subscriptions/update",
+              "api-reference/subscriptions/cancel",
+              "api-reference/subscriptions/pause",
+              "api-reference/subscriptions/resume"
             ]
           },
           {
@@ -99,7 +155,187 @@
             "pages": [
               "api-reference/invoices/list",
               "api-reference/invoices/get",
-              "api-reference/invoices/pdf"
+              "api-reference/invoices/pdf",
+              "api-reference/invoices/einvoice-status",
+              "api-reference/invoices/payment-wall"
+            ]
+          },
+          {
+            "group": "Usage",
+            "pages": [
+              "api-reference/usage/record-event"
+            ]
+          },
+          {
+            "group": "Coupons",
+            "pages": [
+              "api-reference/coupons/create",
+              "api-reference/coupons/list"
+            ]
+          },
+          {
+            "group": "Credit Notes",
+            "pages": [
+              "api-reference/credit-notes/create",
+              "api-reference/credit-notes/list"
+            ]
+          },
+          {
+            "group": "Quotes",
+            "pages": [
+              "api-reference/quotes/create",
+              "api-reference/quotes/list",
+              "api-reference/quotes/get",
+              "api-reference/quotes/update",
+              "api-reference/quotes/delete",
+              "api-reference/quotes/send",
+              "api-reference/quotes/accept",
+              "api-reference/quotes/convert"
+            ]
+          },
+          {
+            "group": "Cancellation",
+            "pages": [
+              "api-reference/cancellation/cancel",
+              "api-reference/cancellation/reactivate",
+              "api-reference/cancellation/reasons"
+            ]
+          },
+          {
+            "group": "Advanced Billing",
+            "pages": [
+              "api-reference/billing/add-charge",
+              "api-reference/billing/list-charges",
+              "api-reference/billing/advance-invoice"
+            ]
+          },
+          {
+            "group": "Ledger",
+            "pages": [
+              "api-reference/ledger/list-accounts",
+              "api-reference/ledger/entries"
+            ]
+          },
+          {
+            "group": "Analytics",
+            "pages": [
+              "api-reference/analytics/mrr",
+              "api-reference/analytics/usage",
+              "api-reference/analytics/ask",
+              "api-reference/analytics/dunning-overview",
+              "api-reference/analytics/dunning-weights"
+            ]
+          },
+          {
+            "group": "Consent",
+            "pages": [
+              "api-reference/consent/record",
+              "api-reference/consent/revoke",
+              "api-reference/consent/customer-consents"
+            ]
+          },
+          {
+            "group": "GST",
+            "pages": [
+              "api-reference/gst/get-config",
+              "api-reference/gst/update-config"
+            ]
+          },
+          {
+            "group": "E-Invoice",
+            "pages": [
+              "api-reference/einvoice/retry",
+              "api-reference/einvoice/cancel",
+              "api-reference/einvoice/irp-config"
+            ]
+          },
+          {
+            "group": "Referrals",
+            "pages": [
+              "api-reference/referrals/create",
+              "api-reference/referrals/list",
+              "api-reference/referrals/generate-code"
+            ]
+          },
+          {
+            "group": "Gifts",
+            "pages": [
+              "api-reference/gifts/purchase",
+              "api-reference/gifts/redeem"
+            ]
+          },
+          {
+            "group": "Mandates",
+            "pages": [
+              "api-reference/mandates/create",
+              "api-reference/mandates/list",
+              "api-reference/mandates/revoke"
+            ]
+          },
+          {
+            "group": "Virtual Accounts",
+            "pages": [
+              "api-reference/virtual-accounts/create",
+              "api-reference/virtual-accounts/list",
+              "api-reference/payments/record-offline"
+            ]
+          },
+          {
+            "group": "Organizations",
+            "pages": [
+              "api-reference/organizations/create",
+              "api-reference/organizations/get",
+              "api-reference/organizations/add-tenant",
+              "api-reference/organizations/consolidated-mrr"
+            ]
+          },
+          {
+            "group": "Churn",
+            "pages": [
+              "api-reference/churn/customer-score",
+              "api-reference/churn/high-risk",
+              "api-reference/churn/alerts"
+            ]
+          },
+          {
+            "group": "Cancel Flows",
+            "pages": [
+              "api-reference/cancel-flows/create",
+              "api-reference/cancel-flows/list",
+              "api-reference/cancel-flows/start-session",
+              "api-reference/cancel-flows/submit-step",
+              "api-reference/cancel-flows/stats"
+            ]
+          },
+          {
+            "group": "Dunning Campaigns",
+            "pages": [
+              "api-reference/dunning-campaigns/create",
+              "api-reference/dunning-campaigns/list",
+              "api-reference/dunning-campaigns/get",
+              "api-reference/dunning-campaigns/create-step"
+            ]
+          },
+          {
+            "group": "Accounting",
+            "pages": [
+              "api-reference/accounting/connections",
+              "api-reference/accounting/connect",
+              "api-reference/accounting/sync"
+            ]
+          },
+          {
+            "group": "Developer",
+            "pages": [
+              "api-reference/developer/list-keys",
+              "api-reference/developer/create-key"
+            ]
+          },
+          {
+            "group": "Account",
+            "pages": [
+              "api-reference/account/get",
+              "api-reference/account/update"
             ]
           },
           {

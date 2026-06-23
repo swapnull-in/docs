@@ -1,0 +1,52 @@
+---
+title: "Revoke Mandate"
+openapi: "POST /v1/mandates/{id}/revoke"
+description: "Revoke an active UPI mandate to stop future recurring debits."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the mandate to revoke (e.g. `mdt_7a6b5c4d3e2f1098`). |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/mandates/mdt_7a6b5c4d3e2f1098/revoke \
+  -H "Authorization: Bearer rsk_live_xxx"
+```
+
+## Response
+
+Returns the updated mandate object with `status` set to `revoked`.
+
+```json
+{
+  "id": "mdt_7a6b5c4d3e2f1098",
+  "object": "mandate",
+  "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "subscription_id": "sub_9f8e7d6c5b4a3210",
+  "vpa": "rajesh.kumar@okicici",
+  "max_amount": 99900,
+  "frequency": "monthly",
+  "status": "revoked",
+  "umn": "UMN-202606231015-ABCDEF",
+  "valid_from": "2026-06-23T00:00:00Z",
+  "valid_until": "2031-06-23T00:00:00Z",
+  "revoked_at": "2026-06-25T11:30:00Z",
+  "created_at": "2026-06-23T10:15:30Z",
+  "updated_at": "2026-06-25T11:30:00Z"
+}
+```
+
+<Warning>
+Revoking a mandate is permanent and cannot be undone. If the mandate is linked to an
+active subscription, the subscription will fail to collect its next payment. You must
+set up a new mandate or alternative payment method to continue billing.
+</Warning>
+
+<Tip>
+Only mandates with `authorized` or `paused` status can be revoked. Attempting to
+revoke a mandate that is already `revoked` or `expired` returns a `422` error.
+</Tip>

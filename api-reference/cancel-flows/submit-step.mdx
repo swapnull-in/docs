@@ -1,0 +1,72 @@
+---
+title: "Submit Step Response"
+openapi: "POST /v1/cancel-flows/sessions/{id}/submit"
+description: "Submit a response for the current step in a cancel flow session."
+---
+
+## Path Parameters
+
+| Parameter | Type   | Required | Description                              |
+|-----------|--------|----------|------------------------------------------|
+| `id`      | string | Yes      | The cancel flow session ID (`csess_` prefix). |
+
+## Body Parameters
+
+| Parameter        | Type    | Required | Description                                                         |
+|------------------|---------|----------|---------------------------------------------------------------------|
+| `step_id`        | string  | Yes      | The ID of the step being submitted.                                 |
+| `response`       | object  | No       | A key-value map of the customer's response for this step.           |
+| `accepted_offer` | boolean | No       | Whether the customer accepted a retention offer. Defaults to `false`. |
+
+## Example Request
+
+```bash
+curl -X POST "https://api.recurso.io/v1/cancel-flows/sessions/csess_0a3f7c9e1b5d/submit" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "step_id": "cstep_01h8x3mw9n4q",
+    "response": {
+      "reason": "too_expensive",
+      "comment": "The price increased too much at renewal."
+    },
+    "accepted_offer": false
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "csess_0a3f7c9e1b5d",
+  "object": "cancel_flow_session",
+  "status": "in_progress",
+  "flow_id": "cflow_01h8x3kv7m2p",
+  "customer_id": "cust_4kTg8LpR2mXn",
+  "subscription_id": "sub_7vWq3JsN9bYz",
+  "current_step_index": 1,
+  "current_step": {
+    "id": "cstep_01h8x3pw2r6s",
+    "type": "offer",
+    "title": "How about a discount?",
+    "offer": {
+      "type": "percentage_discount",
+      "value": 25,
+      "duration_months": 3
+    }
+  },
+  "responses": [
+    {
+      "step_id": "cstep_01h8x3mw9n4q",
+      "response": {
+        "reason": "too_expensive",
+        "comment": "The price increased too much at renewal."
+      },
+      "accepted_offer": false,
+      "submitted_at": "2026-06-23T11:05:10Z"
+    }
+  ],
+  "started_at": "2026-06-23T11:04:22Z",
+  "completed_at": null
+}
+```

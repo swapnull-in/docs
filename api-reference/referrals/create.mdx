@@ -1,0 +1,56 @@
+---
+title: "Create Referral"
+openapi: "POST /v1/referrals"
+description: "Create a new referral linking a referrer to a referred customer with an optional reward."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `referrer_id` | string (UUID) | Yes | The unique identifier of the customer making the referral. |
+| `referred_id` | string (UUID) | Yes | The unique identifier of the newly referred customer. |
+| `reward_amount` | integer | No | The reward amount in the smallest currency unit (e.g., cents). Defaults to `500` (i.e., $5.00 USD). |
+| `currency` | string | No | The three-letter ISO 4217 currency code. Defaults to `USD`. |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/referrals \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "referrer_id": "d4e5f6a7-b8c9-4d0e-a1f2-b3c4d5e6f7a8",
+    "referred_id": "f7a8b9c0-d1e2-4f3a-b4c5-d6e7f8a9b0c1",
+    "reward_amount": 1000,
+    "currency": "USD"
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "ref_Kp8mN2xLvQ",
+  "referrer_id": "d4e5f6a7-b8c9-4d0e-a1f2-b3c4d5e6f7a8",
+  "referred_id": "f7a8b9c0-d1e2-4f3a-b4c5-d6e7f8a9b0c1",
+  "reward_amount": 1000,
+  "currency": "USD",
+  "status": "pending",
+  "reward_credited": false,
+  "created_at": "2026-06-23T17:00:00Z",
+  "updated_at": "2026-06-23T17:00:00Z",
+  "completed_at": null
+}
+```
+
+## Notes
+
+- The referral is created with a `pending` status. It transitions to `completed` once the referred customer completes their first payment.
+- The reward is credited to the referrer's account balance only after the referral reaches `completed` status.
+- A customer cannot refer themselves. Attempting to set `referrer_id` equal to `referred_id` returns a `422` error.
+- Each referred customer can only be linked to one referrer. Duplicate referrals for the same `referred_id` return a `409 Conflict`.
+
+<Tip>
+Use the [Generate Referral Code](/api-reference/referrals/generate-code) endpoint to create shareable referral codes that automatically link referrals on sign-up.
+</Tip>

@@ -1,0 +1,77 @@
+---
+title: "Get Customer Consents"
+openapi: "GET /v1/customers/{id}/consents"
+description: "Retrieve all consent records for a specific customer, grouped by consent type."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the customer (e.g., `cust_8Hx4kLm2Qr`). |
+
+## Example Request
+
+```bash
+curl -X GET https://api.recurso.dev/v1/customers/cust_8Hx4kLm2Qr/consents \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a"
+```
+
+## Response
+
+```json
+{
+  "data": {
+    "marketing": [
+      {
+        "id": "cons_Tn4vW9xKpL",
+        "channel": "email",
+        "granted": true,
+        "ip_address": "203.0.113.42",
+        "timestamp": "2026-06-23T14:32:10Z",
+        "revoked_at": null
+      },
+      {
+        "id": "cons_Qm7yR3bFwJ",
+        "channel": "sms",
+        "granted": false,
+        "ip_address": "203.0.113.42",
+        "timestamp": "2026-06-20T09:15:00Z",
+        "revoked_at": null
+      }
+    ],
+    "billing": [
+      {
+        "id": "cons_Xk2pN8dVsH",
+        "channel": "email",
+        "granted": true,
+        "ip_address": "198.51.100.14",
+        "timestamp": "2026-05-10T11:00:00Z",
+        "revoked_at": null
+      }
+    ],
+    "data_processing": [
+      {
+        "id": "cons_Lw9eA5gCtR",
+        "channel": "email",
+        "granted": true,
+        "ip_address": "198.51.100.14",
+        "timestamp": "2026-05-10T11:00:05Z",
+        "revoked_at": null
+      }
+    ]
+  },
+  "customer_id": "cust_8Hx4kLm2Qr"
+}
+```
+
+## Notes
+
+- Consents are grouped by `type` (`marketing`, `billing`, `data_processing`) for easy lookup.
+- Each group contains all consent records for that type, including both active and revoked consents.
+- A consent with `granted: true` and `revoked_at: null` is currently active.
+- A consent with a non-null `revoked_at` was previously granted but has since been revoked.
+
+<Tip>
+Use this endpoint to build a consent management UI that shows customers their current consent preferences.
+</Tip>

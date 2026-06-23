@@ -1,0 +1,48 @@
+---
+title: "Create Credit Note"
+openapi: "POST /v1/credit-notes"
+description: "Create a credit note against an invoice"
+---
+
+## Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `invoice_id` | string | Yes | The invoice ID to issue the credit note against |
+| `amount` | integer | Yes | Credit amount in smallest currency unit |
+| `reason` | string | Yes | Reason for the credit note |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/credit-notes \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "invoice_id": "inv_001",
+    "amount": 2500,
+    "reason": "Service downtime on 2024-03-12"
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "cn_r4t8w1",
+  "object": "credit_note",
+  "invoice_id": "inv_001",
+  "customer_id": "cust_abc123",
+  "status": "issued",
+  "currency": "INR",
+  "amount": 2500,
+  "amount_remaining": 2500,
+  "reason": "Service downtime on 2024-03-12",
+  "credit_note_number": "REC-CN/2024/0012",
+  "created_at": "2024-03-15T11:00:00Z"
+}
+```
+
+<Note>
+The credit note amount cannot exceed the original invoice total. The `amount_remaining` decreases as the credit is applied to future invoices.
+</Note>

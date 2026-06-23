@@ -1,0 +1,63 @@
+---
+title: "Update Subscription"
+openapi: "PUT /v1/subscriptions/{id}"
+description: "Update an existing subscription"
+---
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The subscription ID |
+
+## Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `plan_id` | string | No | New plan ID to switch to |
+| `quantity` | integer | No | Updated seat or unit quantity |
+| `proration_behavior` | string | No | `create_prorations`, `none`, or `always_invoice` |
+| `metadata` | object | No | Custom key-value data |
+
+## Example Request
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/subscriptions/sub_xyz789 \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plan_id": "plan_enterprise_01",
+    "quantity": 10,
+    "proration_behavior": "create_prorations",
+    "metadata": {
+      "upgraded_by": "admin@acme.com"
+    }
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "sub_xyz789",
+  "object": "subscription",
+  "customer_id": "cust_abc123",
+  "plan_id": "plan_enterprise_01",
+  "status": "active",
+  "quantity": 10,
+  "current_period_start": "2024-03-15T00:00:00Z",
+  "current_period_end": "2024-04-15T00:00:00Z",
+  "cancel_at_period_end": false,
+  "proration_behavior": "create_prorations",
+  "payment_gateway": "razorpay",
+  "metadata": {
+    "upgraded_by": "admin@acme.com"
+  },
+  "created_at": "2024-03-01T10:30:00Z",
+  "updated_at": "2024-03-20T16:45:00Z"
+}
+```
+
+<Note>
+When changing plans with `proration_behavior` set to `create_prorations`, a credit is issued for the unused portion of the current plan and a charge is created for the new plan.
+</Note>

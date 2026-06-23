@@ -1,0 +1,41 @@
+---
+title: "Get MRR Metrics"
+openapi: "GET /v1/analytics/mrr"
+description: "Retrieve monthly recurring revenue metrics broken down by movement category."
+---
+
+## Query Parameters
+
+| Parameter    | Type   | Required | Description                                                       |
+|--------------|--------|----------|-------------------------------------------------------------------|
+| `start_date` | string | No       | ISO 8601 date for the beginning of the reporting period. Defaults to 30 days ago. |
+| `end_date`   | string | No       | ISO 8601 date for the end of the reporting period. Defaults to today. |
+
+Returns MRR metrics for the specified date range, broken down into the standard SaaS categories: new, expansion, contraction, and churn. All monetary values are expressed in the smallest currency unit (e.g., cents for USD).
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.io/v1/analytics/mrr?start_date=2026-06-01&end_date=2026-06-30" \
+  -H "Authorization: Bearer sk_live_26PHem9AhJZvU..." \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "object": "mrr_summary",
+  "currency": "usd",
+  "start_date": "2026-06-01",
+  "end_date": "2026-06-30",
+  "total_mrr": 28450000,
+  "new_mrr": 3200000,
+  "expansion_mrr": 1850000,
+  "contraction_mrr": -620000,
+  "churn_mrr": -980000,
+  "net_new_mrr": 3450000,
+  "customer_count": 342,
+  "computed_at": "2026-06-23T00:00:00Z"
+}
+```

@@ -1,0 +1,84 @@
+---
+title: "Get Churn Alerts"
+openapi: "GET /v1/churn/alerts"
+description: "Retrieve active churn risk alerts that require attention from your team."
+---
+
+## Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `acknowledged` | boolean | No | Filter by acknowledgement status. `false` returns only unacknowledged alerts. |
+| `limit` | integer | No | Number of records to return (default `10`, max `100`). |
+| `offset` | integer | No | Number of records to skip (default `0`). |
+
+## Example Request
+
+```bash
+curl -G https://api.recurso.dev/v1/churn/alerts \
+  -H "Authorization: Bearer rsk_live_xxx" \
+  -d acknowledged=false \
+  -d limit=20
+```
+
+## Response
+
+Returns a list of churn alert objects sorted by score descending.
+
+```json
+{
+  "data": [
+    {
+      "id": "alert_6a5b4c3d2e1f0987",
+      "object": "churn_alert",
+      "type": "churn_risk_high",
+      "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "customer_name": "Pinnacle Digital Solutions",
+      "score": 0.91,
+      "risk_factors": [
+        "Subscription cancelled and reactivated twice in 60 days",
+        "4 failed payment attempts in last 30 days",
+        "Support ticket volume increased 150% month-over-month"
+      ],
+      "acknowledged_at": null,
+      "created_at": "2026-06-23T06:00:00Z"
+    },
+    {
+      "id": "alert_7b6c5d4e3f2a1098",
+      "object": "churn_alert",
+      "type": "churn_risk_high",
+      "customer_id": "cust_f0e1d2c3-b4a5-6789-0abc-def123456789",
+      "customer_name": "NovaTech Labs",
+      "score": 0.82,
+      "risk_factors": [
+        "Usage dropped 70% compared to 90-day average",
+        "Downgraded plan from Enterprise to Pro 21 days ago"
+      ],
+      "acknowledged_at": null,
+      "created_at": "2026-06-23T06:00:00Z"
+    },
+    {
+      "id": "alert_8c7d6e5f4a3b2109",
+      "object": "churn_alert",
+      "type": "churn_risk_high",
+      "customer_id": "cust_d4e5f6a7-b8c9-0123-4567-89abcdef0123",
+      "customer_name": "Greenfield Analytics",
+      "score": 0.76,
+      "risk_factors": [
+        "No API calls recorded in the last 14 days",
+        "Invoice overdue by 12 days"
+      ],
+      "acknowledged_at": "2026-06-22T15:30:00Z",
+      "created_at": "2026-06-21T06:00:00Z"
+    }
+  ],
+  "has_more": false,
+  "total_count": 3
+}
+```
+
+<Tip>
+Churn alerts are generated daily at 06:00 UTC. Acknowledge alerts via
+`POST /v1/churn/alerts/{id}/acknowledge` to track which risks your team
+has reviewed.
+</Tip>

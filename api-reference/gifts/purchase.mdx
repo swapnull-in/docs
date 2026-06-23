@@ -1,0 +1,73 @@
+---
+title: "Purchase Gift Subscription"
+openapi: "POST /v1/gifts/purchase"
+description: "Purchase a gift subscription that can be redeemed by a recipient via email."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `buyer_customer_id` | string (UUID) | Yes | The unique identifier of the customer purchasing the gift. |
+| `plan_id` | string (UUID) | Yes | The subscription plan to gift. Must be an active, non-archived plan. |
+| `recipient_email` | string | Yes | The email address of the gift recipient. A redemption email will be sent to this address. |
+| `duration_months` | integer | Yes | The duration of the gift subscription in months. Minimum `1`, maximum `24`. |
+| `message` | string | No | An optional personal message from the buyer to include in the gift email. Max 500 characters. |
+| `deliver_at` | string | No | ISO 8601 timestamp for scheduled delivery. If omitted, the gift email is sent immediately. |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/gifts/purchase \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "buyer_customer_id": "d4e5f6a7-b8c9-4d0e-a1f2-b3c4d5e6f7a8",
+    "plan_id": "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+    "recipient_email": "alex.johnson@example.com",
+    "duration_months": 6,
+    "message": "Happy birthday! Enjoy six months on us."
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "gift_Vm4wR8pNtK",
+  "buyer_customer_id": "d4e5f6a7-b8c9-4d0e-a1f2-b3c4d5e6f7a8",
+  "plan_id": "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+  "plan_name": "Pro Monthly",
+  "recipient_email": "alex.johnson@example.com",
+  "duration_months": 6,
+  "code": "GIFT-VM4WR8PNTK",
+  "status": "purchased",
+  "amount": 29400,
+  "currency": "USD",
+  "message": "Happy birthday! Enjoy six months on us.",
+  "deliver_at": null,
+  "redeemed_at": null,
+  "expires_at": "2027-06-23T17:30:00Z",
+  "created_at": "2026-06-23T17:30:00Z"
+}
+```
+
+## Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `code` | string | The unique gift redemption code. The recipient uses this to activate their subscription. |
+| `status` | string | The gift status. One of: `purchased`, `delivered`, `redeemed`, `expired`, `refunded`. |
+| `amount` | integer | The total cost charged to the buyer, in smallest currency unit (cents). Calculated as plan price multiplied by `duration_months`. |
+| `expires_at` | string | The gift code expiration date. Defaults to one year from purchase. |
+
+## Notes
+
+- The buyer is charged immediately for the full duration of the gift subscription.
+- The recipient receives an email with the redemption code and instructions. If `deliver_at` is set, the email is scheduled accordingly.
+- Gift codes expire one year after purchase if not redeemed.
+- The recipient does not need an existing account. Redeeming a gift code creates an account if one does not exist.
+
+<Warning>
+Refunds for gift subscriptions are only available before the gift is redeemed. Once redeemed, standard cancellation policies apply.
+</Warning>

@@ -1,0 +1,60 @@
+---
+title: "List Cancellation Reasons"
+openapi: "GET /v1/cancellation-reasons"
+description: "Retrieve all available cancellation reasons that can be attached to a subscription cancellation."
+---
+
+Returns the full list of cancellation reasons configured for your account. Each reason has a unique identifier, a human-readable label, and a category for grouping in UI flows. These reason identifiers are passed to the Cancel Subscription endpoint.
+
+## Example Request
+
+```bash
+curl -X GET https://api.recurso.io/v1/cancellation-reasons \
+  -H "Authorization: Bearer sk_live_26PHem9AhJZvU..." \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "too_expensive",
+      "label": "Too expensive",
+      "category": "pricing"
+    },
+    {
+      "id": "missing_features",
+      "label": "Missing features I need",
+      "category": "product"
+    },
+    {
+      "id": "switched_competitor",
+      "label": "Switched to a competitor",
+      "category": "competitive"
+    },
+    {
+      "id": "not_using_enough",
+      "label": "Not using the product enough",
+      "category": "usage"
+    },
+    {
+      "id": "poor_support",
+      "label": "Customer support was not helpful",
+      "category": "support"
+    },
+    {
+      "id": "temporary_pause",
+      "label": "Temporarily pausing my account",
+      "category": "usage"
+    },
+    {
+      "id": "other",
+      "label": "Other",
+      "category": "other"
+    }
+  ]
+}
+```

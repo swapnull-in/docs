@@ -1,0 +1,72 @@
+---
+title: "Get High-Risk Customers"
+openapi: "GET /v1/churn/high-risk"
+description: "Retrieve a list of customers whose churn score exceeds a given threshold."
+---
+
+## Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `threshold` | float | No | Minimum churn score to include in results (default `0.7`, range `0.0` to `1.0`). |
+| `limit` | integer | No | Number of records to return (default `10`, max `100`). |
+| `offset` | integer | No | Number of records to skip (default `0`). |
+
+## Example Request
+
+```bash
+curl -G https://api.recurso.dev/v1/churn/high-risk \
+  -H "Authorization: Bearer rsk_live_xxx" \
+  -d threshold=0.75 \
+  -d limit=20
+```
+
+## Response
+
+Returns a list of customers with churn scores above the threshold, sorted by score descending.
+
+```json
+{
+  "data": [
+    {
+      "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Pinnacle Digital Solutions",
+      "email": "billing@pinnacledigi.com",
+      "score": 0.91,
+      "risk_level": "high",
+      "risk_factors": [
+        "Subscription cancelled and reactivated twice in 60 days",
+        "4 failed payment attempts in last 30 days"
+      ],
+      "current_plan": "plan_enterprise_monthly",
+      "mrr": 149900,
+      "computed_at": "2026-06-23T10:00:00Z"
+    },
+    {
+      "customer_id": "cust_f0e1d2c3-b4a5-6789-0abc-def123456789",
+      "name": "NovaTech Labs",
+      "email": "accounts@novatechlabs.in",
+      "score": 0.82,
+      "risk_level": "high",
+      "risk_factors": [
+        "Usage dropped 70% compared to 90-day average",
+        "Downgraded plan 21 days ago"
+      ],
+      "current_plan": "plan_pro_monthly",
+      "mrr": 49900,
+      "computed_at": "2026-06-23T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "threshold": 0.75,
+    "total_count": 2
+  }
+}
+```
+
+<Tip>
+Use this endpoint in combination with the
+[Churn Alerts](/api-reference/churn/alerts) endpoint to build automated
+retention workflows. Lowering the threshold surfaces more customers for
+proactive outreach.
+</Tip>

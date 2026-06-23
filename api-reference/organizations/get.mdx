@@ -1,0 +1,58 @@
+---
+title: "Get Organization"
+openapi: "GET /v1/organizations/{id}"
+description: "Retrieve details of a specific organization by its ID."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the organization (e.g. `org_4f3e2d1c0b9a8765`). |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/organizations/org_4f3e2d1c0b9a8765 \
+  -H "Authorization: Bearer rsk_live_xxx"
+```
+
+## Response
+
+Returns the organization object with its current details.
+
+```json
+{
+  "data": {
+    "id": "org_4f3e2d1c0b9a8765",
+    "object": "organization",
+    "name": "Acme Holdings Pvt Ltd",
+    "owner_email": "cto@acmeholdings.com",
+    "tenant_count": 3,
+    "tenants": [
+      {
+        "id": "tenant_a1b2c3d4",
+        "name": "Acme SaaS India",
+        "added_at": "2026-06-23T12:00:00Z"
+      },
+      {
+        "id": "tenant_e5f6a7b8",
+        "name": "Acme SaaS SEA",
+        "added_at": "2026-06-24T09:30:00Z"
+      },
+      {
+        "id": "tenant_c9d0e1f2",
+        "name": "Acme SaaS EU",
+        "added_at": "2026-06-25T14:00:00Z"
+      }
+    ],
+    "created_at": "2026-06-23T10:15:30Z",
+    "updated_at": "2026-06-25T14:00:00Z"
+  }
+}
+```
+
+<Tip>
+Use the [Consolidated MRR](/api-reference/organizations/consolidated-mrr) endpoint
+to view aggregated revenue metrics across all tenants in the organization.
+</Tip>

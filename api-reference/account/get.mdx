@@ -1,0 +1,54 @@
+---
+title: "Get Account"
+openapi: "GET /v1/account"
+description: "Retrieve the details and settings of your Recurso account."
+---
+
+## Query Parameters
+
+This endpoint does not accept any query parameters.
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.io/v1/account" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "id": "acct_1aXm4nBo7pQr",
+  "object": "account",
+  "name": "Acme Corp",
+  "email": "billing@acmecorp.com",
+  "plan": "growth",
+  "settings": {
+    "timezone": "America/New_York",
+    "default_currency": "usd",
+    "webhook_url": "https://api.acmecorp.com/webhooks/recurso",
+    "invoice_prefix": "INV",
+    "auto_collection": true,
+    "dunning_enabled": true,
+    "tax_inclusive_pricing": false
+  },
+  "usage": {
+    "active_subscriptions": 4821,
+    "monthly_revenue": 287450.00,
+    "currency": "usd"
+  },
+  "created_at": "2025-08-12T10:00:00Z",
+  "updated_at": "2026-06-20T16:45:00Z"
+}
+```
+
+### Plan Values
+
+| Plan         | Description                                |
+|--------------|--------------------------------------------|
+| `starter`    | Up to 500 active subscriptions             |
+| `growth`     | Up to 10,000 active subscriptions          |
+| `scale`      | Up to 100,000 active subscriptions         |
+| `enterprise` | Unlimited subscriptions, dedicated support |

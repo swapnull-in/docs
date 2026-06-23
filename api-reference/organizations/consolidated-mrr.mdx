@@ -1,0 +1,64 @@
+---
+title: "Get Consolidated MRR"
+openapi: "GET /v1/organizations/{id}/analytics/mrr"
+description: "Retrieve consolidated monthly recurring revenue across all tenants in an organization."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the organization (e.g. `org_4f3e2d1c0b9a8765`). |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/organizations/org_4f3e2d1c0b9a8765/analytics/mrr \
+  -H "Authorization: Bearer rsk_live_xxx"
+```
+
+## Response
+
+Returns consolidated MRR data with a per-tenant breakdown.
+
+```json
+{
+  "data": {
+    "organization_id": "org_4f3e2d1c0b9a8765",
+    "total_mrr": 1285000,
+    "currency": "INR",
+    "total_active_subscriptions": 347,
+    "by_tenant": [
+      {
+        "tenant_id": "tenant_a1b2c3d4",
+        "tenant_name": "Acme SaaS India",
+        "mrr": 725000,
+        "active_subscriptions": 195
+      },
+      {
+        "tenant_id": "tenant_e5f6a7b8",
+        "tenant_name": "Acme SaaS SEA",
+        "mrr": 340000,
+        "active_subscriptions": 98
+      },
+      {
+        "tenant_id": "tenant_c9d0e1f2",
+        "tenant_name": "Acme SaaS EU",
+        "mrr": 220000,
+        "active_subscriptions": 54
+      }
+    ],
+    "computed_at": "2026-06-23T10:15:30Z"
+  }
+}
+```
+
+<Tip>
+MRR values are in the smallest currency unit (paise for INR). Divide by 100 to get
+the amount in the base unit. For example, `1285000` paise equals INR 12,850.00.
+</Tip>
+
+<Warning>
+MRR is computed as a point-in-time snapshot. The `computed_at` field indicates when
+the calculation was last performed. Data may be cached for up to 5 minutes.
+</Warning>

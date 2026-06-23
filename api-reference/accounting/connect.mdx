@@ -1,0 +1,47 @@
+---
+title: "Initiate Accounting OAuth"
+openapi: "POST /v1/accounting/connect/{provider}"
+description: "Start an OAuth flow to connect an accounting provider."
+---
+
+## Path Parameters
+
+| Parameter  | Type   | Required | Description                                                  |
+|------------|--------|----------|--------------------------------------------------------------|
+| `provider` | string | Yes      | The accounting provider to connect. One of `quickbooks` or `xero`. |
+
+## Body Parameters
+
+| Parameter      | Type   | Required | Description                                                            |
+|----------------|--------|----------|------------------------------------------------------------------------|
+| `redirect_uri` | string | No       | The URL to redirect to after authorization. Defaults to your dashboard. |
+| `state`        | string | No       | An opaque value to maintain state between the request and callback.    |
+
+## Example Request
+
+```bash
+curl -X POST "https://api.recurso.io/v1/accounting/connect/quickbooks" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "redirect_uri": "https://app.example.com/settings/integrations/callback",
+    "state": "usr_session_abc123"
+  }'
+```
+
+## Response
+
+Redirect the user's browser to the returned `auth_url` to complete the OAuth authorization.
+
+```json
+{
+  "auth_url": "https://appcenter.intuit.com/connect/oauth2?client_id=ABcDeFgHiJkLmNoPqRsTuVwXyZ&redirect_uri=https%3A%2F%2Fapi.recurso.io%2Fv1%2Faccounting%2Fcallback%2Fquickbooks&response_type=code&scope=com.intuit.quickbooks.accounting&state=usr_session_abc123",
+  "provider": "quickbooks",
+  "expires_in": 600
+}
+```
+
+After the user authorizes the connection, they will be redirected to your `redirect_uri` with an
+authorization code. Recurso handles the token exchange automatically. You can verify the connection
+was established by calling the [List Accounting Connections](/api-reference/accounting/connections)
+endpoint.

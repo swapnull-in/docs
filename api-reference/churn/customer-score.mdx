@@ -1,0 +1,56 @@
+---
+title: "Get Customer Churn Score"
+openapi: "GET /v1/customers/{id}/churn"
+description: "Retrieve the churn risk score and contributing factors for a specific customer."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string (UUID) | Yes | The unique identifier of the customer (e.g. `cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890`). |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/customers/cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890/churn \
+  -H "Authorization: Bearer rsk_live_xxx"
+```
+
+## Response
+
+Returns the churn risk assessment for the customer.
+
+```json
+{
+  "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "score": 0.73,
+  "risk_level": "high",
+  "risk_factors": [
+    "3 failed payment attempts in last 30 days",
+    "Support ticket volume increased 200% month-over-month",
+    "Usage dropped 65% compared to 90-day average",
+    "Downgraded plan from Enterprise to Pro 14 days ago"
+  ],
+  "recommendations": [
+    "Reach out via customer success team within 48 hours",
+    "Offer a 20% retention discount for the next 3 billing cycles",
+    "Schedule a product feedback call to address usage concerns",
+    "Review and resolve open support tickets as priority"
+  ],
+  "model_version": "v2.4.1",
+  "computed_at": "2026-06-23T10:15:30Z"
+}
+```
+
+<Tip>
+The `score` ranges from `0.0` (no churn risk) to `1.0` (highest churn risk).
+Customers with a score above `0.7` are classified as `high` risk, between `0.4`
+and `0.7` as `medium`, and below `0.4` as `low`.
+</Tip>
+
+<Warning>
+Churn scores require at least 30 days of customer activity data. New customers
+without sufficient history will return a score of `null` with `risk_level`
+set to `insufficient_data`.
+</Warning>

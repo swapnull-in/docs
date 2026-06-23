@@ -1,0 +1,300 @@
+---
+title: "Payment Gateway Configuration"
+description: "Configure Razorpay and Stripe for multi-currency payment collection"
+---
+
+## Overview
+
+Recurso supports multiple payment gateways to collect payments across currencies and regions. Configure Razorpay for INR payments in India (including UPI, cards, and net banking) and Stripe for USD payments internationally (cards, ACH, and SEPA).
+
+<CardGroup cols={2}>
+  <Card title="Razorpay" icon="indian-rupee-sign">
+    INR payments -- UPI, cards, net banking, wallets, and mandates for recurring billing
+  </Card>
+  <Card title="Stripe" icon="dollar-sign">
+    USD payments -- cards, ACH, SEPA, and automatic card updater for reduced churn
+  </Card>
+</CardGroup>
+
+## Multi-Gateway Architecture
+
+Recurso routes payments to the appropriate gateway based on currency, customer region, and your configuration rules.
+
+```mermaid
+flowchart TD
+    A[Payment Request] --> B{Currency / Region}
+    B -->|INR / India| C[Razorpay]
+    B -->|USD / International| D[Stripe]
+    C --> E{Payment Method}
+    E -->|UPI| F[UPI Collect / Intent]
+    E -->|Card| G[Card Payment]
+    E -->|Net Banking| H[Net Banking]
+    D --> I{Payment Method}
+    I -->|Card| J[Card Payment]
+    I -->|ACH| K[ACH Debit]
+    I -->|SEPA| L[SEPA Direct Debit]
+    F --> M[Payment Result]
+    G --> M
+    H --> M
+    J --> M
+    K --> M
+    L --> M
+```
+
+## Configuring Razorpay
+
+### Prerequisites
+
+1. A [Razorpay](https://razorpay.com) account with API access enabled
+2. Razorpay Key ID and Key Secret from the Razorpay Dashboard
+
+### Setup
+
+<Steps>
+  <Step title="Add Razorpay credentials">
+    Configure the following in your Recurso tenant settings or environment:
+
+    ```
+    RAZORPAY_KEY_ID=rzp_live_xxxxxxxxxx
+    RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxx
+    ```
+  </Step>
+  <Step title="Configure webhook endpoint">
+    In the Razorpay Dashboard, add a webhook pointing to your Recurso instance:
+
+    ```
+    URL: https://api.recurso.dev/v1/webhooks/razorpay
+    Events: payment.authorized, payment.captured, payment.failed, refund.created, subscription.charged
+    ```
+  </Step>
+  <Step title="Set as default for INR">
+    When creating subscriptions for INR customers, specify `razorpay` as the payment gateway:
+
+    ```typescript
+    const subscription = await recurso.subscriptions.create({
+      customer_id: 'cust_abc123',
+      plan_id: 'plan_pro_inr',
+      payment_gateway: 'razorpay'
+    });
+    ```
+  </Step>
+</Steps>
+
+### Razorpay-Specific Features
+
+<AccordionGroup>
+  <Accordion title="UPI Payments">
+    Razorpay enables UPI collect and UPI intent flows for Indian customers. Recurso supports both:
+
+    - **UPI Collect**: Customer enters their VPA (e.g., `user@upi`) and approves the payment on their UPI app
+    - **UPI Intent**: On mobile, opens the customer's UPI app directly for one-tap approval
+
+    UPI is ideal for recurring mandate registration and one-time payments under INR 1,00,000.
+  </Accordion>
+  <Accordion title="eMandate / Auto-Debit">
+    For recurring subscriptions, Razorpay supports eMandate registration via UPI, debit card, or net banking. Once registered, Recurso can auto-debit the customer on each billing cycle without manual intervention.
+  </Accordion>
+  <Accordion title="Net Banking & Wallets">
+    Razorpay supports 50+ Indian banks for net banking and popular wallets like Paytm, PhonePe, and Amazon Pay.
+  </Accordion>
+</AccordionGroup>
+
+## Configuring Stripe
+
+### Prerequisites
+
+1. A [Stripe](https://stripe.com) account
+2. Stripe Publishable Key and Secret Key from the Stripe Dashboard
+
+### Setup
+
+<Steps>
+  <Step title="Add Stripe credentials">
+    Configure the following in your Recurso tenant settings or environment:
+
+    ```
+    STRIPE_PUBLISHABLE_KEY=pk_live_xxxxxxxxxx
+    STRIPE_SECRET_KEY=sk_live_xxxxxxxxxx
+    ```
+  </Step>
+  <Step title="Configure webhook endpoint">
+    In the Stripe Dashboard, add a webhook endpoint:
+
+    ```
+    URL: https://api.recurso.dev/v1/webhooks/stripe
+    Events: payment_intent.succeeded, payment_intent.payment_failed, charge.refunded, invoice.payment_succeeded, customer.subscription.updated
+    ```
+  </Step>
+  <Step title="Set as default for USD">
+    When creating subscriptions for USD customers, specify `stripe` as the payment gateway:
+
+    ```typescript
+    const subscription = await recurso.subscriptions.create({
+      customer_id: 'cust_xyz789',
+      plan_id: 'plan_pro_usd',
+      payment_gateway: 'stripe'
+    });
+    ```
+  </Step>
+</Steps>
+
+### Stripe-Specific Features
+
+<AccordionGroup>
+  <Accordion title="Automatic Card Updater">
+    Stripe's card network integrations automatically update expired or replaced card numbers, reducing involuntary churn from outdated payment methods.
+  </Accordion>
+  <Accordion title="3D Secure / SCA">
+    Stripe handles Strong Customer Authentication (SCA) requirements for European cards automatically. Recurso passes through the authentication flow seamlessly.
+  </Accordion>
+  <Accordion title="ACH & SEPA Direct Debit">
+    For larger B2B payments, Stripe supports ACH Direct Debit (US) and SEPA Direct Debit (EU) with lower transaction fees than card payments.
+  </Accordion>
+</AccordionGroup>
+
+## Gateway Selection Per Subscription
+
+Specify the gateway when creating a subscription. Recurso stores the gateway association and uses it for all future payments on that subscription.
+
+<CodeGroup>
+```typescript TypeScript
+// INR subscription via Razorpay
+const inrSub = await recurso.subscriptions.create({
+  customer_id: 'cust_india01',
+  plan_id: 'plan_starter_inr',
+  payment_gateway: 'razorpay'
+});
+
+// USD subscription via Stripe
+const usdSub = await recurso.subscriptions.create({
+  customer_id: 'cust_us01',
+  plan_id: 'plan_starter_usd',
+  payment_gateway: 'stripe'
+});
+```
+
+```bash cURL
+curl -X POST https://api.recurso.dev/v1/subscriptions \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "cust_india01",
+    "plan_id": "plan_starter_inr",
+    "payment_gateway": "razorpay"
+  }'
+```
+</CodeGroup>
+
+## Payment Method Management
+
+Customers can have multiple payment methods across gateways. Recurso tracks which methods belong to which gateway.
+
+```typescript
+// Attach a Razorpay payment method
+await recurso.customers.attachPaymentMethod('cust_india01', {
+  gateway: 'razorpay',
+  gateway_payment_method_id: 'method_rzp_xxx',
+  type: 'upi',
+  set_default: true
+});
+
+// Attach a Stripe payment method
+await recurso.customers.attachPaymentMethod('cust_us01', {
+  gateway: 'stripe',
+  gateway_payment_method_id: 'pm_stripe_xxx',
+  type: 'card',
+  set_default: true
+});
+```
+
+### Payment Method Types by Gateway
+
+| Gateway | Method Types | Best For |
+|---------|-------------|----------|
+| Razorpay | `card`, `upi`, `netbanking`, `wallet`, `emandate` | Indian customers, INR billing |
+| Stripe | `card`, `ach_debit`, `sepa_debit` | International customers, USD billing |
+
+## Webhook Handling from Gateways
+
+Recurso receives webhooks from both gateways and normalizes them into a unified event format. You do not need to handle gateway-specific webhook payloads yourself.
+
+```mermaid
+flowchart LR
+    A[Razorpay Webhook] --> C[Recurso Webhook Processor]
+    B[Stripe Webhook] --> C
+    C --> D[Normalize to Recurso Event]
+    D --> E[Update Payment Status]
+    D --> F[Emit Recurso Webhook]
+    F --> G[Your App]
+```
+
+### Gateway Webhook to Recurso Event Mapping
+
+| Gateway Event | Recurso Event |
+|---------------|---------------|
+| Razorpay `payment.captured` | `payment.succeeded` |
+| Razorpay `payment.failed` | `payment.failed` |
+| Razorpay `refund.created` | `payment.refunded` |
+| Stripe `payment_intent.succeeded` | `payment.succeeded` |
+| Stripe `payment_intent.payment_failed` | `payment.failed` |
+| Stripe `charge.refunded` | `payment.refunded` |
+
+<Info>
+Recurso verifies webhook signatures from both Razorpay (using webhook secret) and Stripe (using signing secret) before processing any event. Configure these secrets alongside your API credentials.
+</Info>
+
+## Failover Strategies
+
+While Recurso does not automatically fail over between gateways (a Razorpay subscription stays on Razorpay), you can implement retry logic at the application level.
+
+<AccordionGroup>
+  <Accordion title="Retry with the same gateway">
+    Recurso's built-in dunning system automatically retries failed payments on the same gateway with exponential backoff. Configure retry attempts and intervals in your subscription settings.
+  </Accordion>
+  <Accordion title="Offer an alternate payment method">
+    If a payment method fails, prompt the customer to add a new payment method on the same gateway. Use the customer portal or a custom checkout flow.
+
+    ```typescript
+    // After payment.failed webhook
+    const session = await recurso.portal.createSession({
+      customer_id: 'cust_india01',
+      return_url: 'https://yourapp.com/billing',
+      flow: 'update_payment_method'
+    });
+    ```
+  </Accordion>
+  <Accordion title="Manual gateway migration">
+    For customers switching gateways (e.g., INR to USD billing), cancel the existing subscription with proration and create a new one on the target gateway.
+  </Accordion>
+</AccordionGroup>
+
+## Gateway Configuration Reference
+
+| Setting | Razorpay | Stripe |
+|---------|----------|--------|
+| API Key env var | `RAZORPAY_KEY_ID` | `STRIPE_SECRET_KEY` |
+| Webhook secret env var | `RAZORPAY_WEBHOOK_SECRET` | `STRIPE_WEBHOOK_SECRET` |
+| Supported currencies | INR | USD, EUR, GBP, and 130+ |
+| Recurring support | eMandate, auto-debit | Cards, ACH, SEPA |
+| Checkout flow | Razorpay Checkout.js | Stripe Elements / Checkout |
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Match Gateway to Currency" icon="coins">
+    Use Razorpay for INR and Stripe for USD to get the best payment success rates and lowest fees
+  </Card>
+  <Card title="Verify Webhook Secrets" icon="shield-check">
+    Always configure webhook signing secrets for both gateways to prevent spoofed payment events
+  </Card>
+  <Card title="Store Gateway on Subscription" icon="link">
+    Let Recurso manage the gateway-to-subscription mapping rather than routing payments yourself
+  </Card>
+  <Card title="Monitor Payment Success Rates" icon="chart-simple">
+    Use Recurso analytics to track payment success rates per gateway and optimize your checkout flow
+  </Card>
+</CardGroup>
+
+<Warning>
+Never expose your gateway secret keys (`RAZORPAY_KEY_SECRET`, `STRIPE_SECRET_KEY`) in client-side code or API responses. Use server-side calls only for payment operations.
+</Warning>

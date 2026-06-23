@@ -1,0 +1,44 @@
+---
+title: "Resume Subscription"
+openapi: "POST /v1/subscriptions/{id}/resume"
+description: "Resume a paused subscription"
+---
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The subscription ID |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/subscriptions/sub_xyz789/resume \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "id": "sub_xyz789",
+  "object": "subscription",
+  "customer_id": "cust_abc123",
+  "plan_id": "plan_pro_01",
+  "status": "active",
+  "quantity": 1,
+  "current_period_start": "2024-05-01T00:00:00Z",
+  "current_period_end": "2024-06-01T00:00:00Z",
+  "paused_at": null,
+  "resume_at": null,
+  "cancel_at_period_end": false,
+  "payment_gateway": "razorpay",
+  "metadata": {},
+  "created_at": "2024-03-01T10:30:00Z",
+  "updated_at": "2024-05-01T00:00:00Z"
+}
+```
+
+<Note>
+Resuming a subscription starts a new billing period immediately. An invoice is generated for the upcoming period.
+</Note>

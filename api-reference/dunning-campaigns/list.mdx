@@ -1,0 +1,59 @@
+---
+title: "List Dunning Campaigns"
+openapi: "GET /v1/dunning-campaigns"
+description: "Retrieve all dunning campaigns configured for your account."
+---
+
+## Query Parameters
+
+| Parameter    | Type    | Required | Description                                                   |
+|--------------|---------|----------|---------------------------------------------------------------|
+| `limit`      | integer | No       | Maximum number of campaigns to return. Default `20`, max `100`. |
+| `offset`     | integer | No       | Number of records to skip for pagination. Default `0`.        |
+| `is_default` | boolean | No       | Filter by default or non-default campaigns.                   |
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.io/v1/dunning-campaigns?limit=10" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "data": [
+    {
+      "id": "dc_8mKp3vRn2wXq",
+      "object": "dunning_campaign",
+      "name": "Standard Recovery",
+      "description": "Default dunning campaign with email reminders and payment wall",
+      "is_default": true,
+      "payment_wall_enabled": true,
+      "payment_wall_grace_days": 5,
+      "steps_count": 4,
+      "active_subscriptions": 237,
+      "created_at": "2026-03-15T08:00:00Z",
+      "updated_at": "2026-05-22T14:10:00Z"
+    },
+    {
+      "id": "dc_2nLq7wTs4xYr",
+      "object": "dunning_campaign",
+      "name": "Enterprise Recovery",
+      "description": "Gentler dunning flow for enterprise accounts with longer grace period",
+      "is_default": false,
+      "payment_wall_enabled": false,
+      "payment_wall_grace_days": 14,
+      "steps_count": 6,
+      "active_subscriptions": 42,
+      "created_at": "2026-04-01T12:00:00Z",
+      "updated_at": "2026-06-10T09:45:00Z"
+    }
+  ],
+  "total": 2,
+  "limit": 10,
+  "offset": 0
+}
+```

@@ -1,0 +1,56 @@
+---
+title: "Redeem Gift Subscription"
+openapi: "POST /v1/gifts/redeem"
+description: "Redeem a gift code to activate a subscription for a recipient customer."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `code` | string | Yes | The unique gift code to redeem (e.g. `GIFT-AB12-CD34-EF56`). |
+| `recipient_customer_id` | string (UUID) | Yes | The ID of the customer who will receive the subscription. |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/gifts/redeem \
+  -H "Authorization: Bearer rsk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "GIFT-AB12-CD34-EF56",
+    "recipient_customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  }'
+```
+
+## Response
+
+Returns the subscription object created from the redeemed gift.
+
+```json
+{
+  "id": "sub_9f8e7d6c5b4a3210",
+  "object": "subscription",
+  "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "plan_id": "plan_pro_monthly",
+  "status": "active",
+  "gift_code": "GIFT-AB12-CD34-EF56",
+  "gifted_by": "cust_f0e1d2c3-b4a5-6789-0abc-def123456789",
+  "current_period_start": "2026-06-23T00:00:00Z",
+  "current_period_end": "2026-12-23T00:00:00Z",
+  "cancel_at_period_end": true,
+  "created_at": "2026-06-23T10:15:30Z",
+  "updated_at": "2026-06-23T10:15:30Z"
+}
+```
+
+<Warning>
+Each gift code can only be redeemed once. Attempting to redeem an already-used code
+returns a `422` validation error.
+</Warning>
+
+<Tip>
+Gift subscriptions automatically expire at the end of the gifted period. The
+`cancel_at_period_end` flag is set to `true` by default. The recipient can convert
+to a paid subscription before the gift period ends.
+</Tip>

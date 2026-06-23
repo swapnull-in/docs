@@ -1,0 +1,55 @@
+---
+title: "Start Cancel Flow Session"
+openapi: "POST /v1/cancel-flows/sessions/start"
+description: "Initiate a new cancellation flow session for a customer."
+---
+
+## Body Parameters
+
+| Parameter         | Type   | Required | Description                                                        |
+|-------------------|--------|----------|--------------------------------------------------------------------|
+| `customer_id`     | string | Yes      | The unique identifier of the customer initiating cancellation.     |
+| `subscription_id` | string | Yes      | The subscription the customer wants to cancel.                     |
+| `flow_id`         | string | No       | Specific cancel flow to use. If omitted, the default flow is used. |
+| `metadata`        | object | No       | Arbitrary key-value pairs to attach to the session.                |
+
+## Example Request
+
+```bash
+curl -X POST "https://api.recurso.io/v1/cancel-flows/sessions/start" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "cust_4kTg8LpR2mXn",
+    "subscription_id": "sub_7vWq3JsN9bYz",
+    "flow_id": "cflow_01h8x3kv7m2p"
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "csess_0a3f7c9e1b5d",
+  "object": "cancel_flow_session",
+  "status": "in_progress",
+  "flow_id": "cflow_01h8x3kv7m2p",
+  "customer_id": "cust_4kTg8LpR2mXn",
+  "subscription_id": "sub_7vWq3JsN9bYz",
+  "current_step_index": 0,
+  "current_step": {
+    "id": "cstep_01h8x3mw9n4q",
+    "type": "survey",
+    "title": "We're sorry to see you go",
+    "options": [
+      { "key": "too_expensive", "label": "Too expensive" },
+      { "key": "missing_features", "label": "Missing features" },
+      { "key": "switched_competitor", "label": "Switched to a competitor" },
+      { "key": "other", "label": "Other" }
+    ]
+  },
+  "metadata": {},
+  "started_at": "2026-06-23T11:04:22Z",
+  "completed_at": null
+}
+```

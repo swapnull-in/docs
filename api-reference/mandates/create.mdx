@@ -1,0 +1,59 @@
+---
+title: "Create UPI Mandate"
+openapi: "POST /v1/mandates"
+description: "Create a new UPI autopay mandate for recurring payments."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `customer_id` | string (UUID) | Yes | The ID of the customer to create the mandate for. |
+| `subscription_id` | string | No | Associate the mandate with a specific subscription. |
+| `vpa` | string | Yes | The customer's UPI Virtual Payment Address (e.g. `user@upi`). |
+| `max_amount` | integer (int64) | Yes | Maximum debit amount per cycle in smallest currency unit (paise). Must be greater than 0. |
+| `frequency` | string | Yes | Debit frequency. One of `weekly`, `monthly`, `quarterly`, or `yearly`. |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/mandates \
+  -H "Authorization: Bearer rsk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "subscription_id": "sub_9f8e7d6c5b4a3210",
+    "vpa": "rajesh.kumar@okicici",
+    "max_amount": 99900,
+    "frequency": "monthly"
+  }'
+```
+
+## Response
+
+Returns the newly created mandate object with `status` set to `created`.
+
+```json
+{
+  "id": "mdt_7a6b5c4d3e2f1098",
+  "object": "mandate",
+  "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "subscription_id": "sub_9f8e7d6c5b4a3210",
+  "vpa": "rajesh.kumar@okicici",
+  "max_amount": 99900,
+  "frequency": "monthly",
+  "status": "created",
+  "umn": "UMN-202606231015-ABCDEF",
+  "mandate_url": "https://api.recurso.dev/v1/mandates/mdt_7a6b5c4d3e2f1098/authorize",
+  "valid_from": "2026-06-23T00:00:00Z",
+  "valid_until": "2031-06-23T00:00:00Z",
+  "created_at": "2026-06-23T10:15:30Z",
+  "updated_at": "2026-06-23T10:15:30Z"
+}
+```
+
+<Tip>
+After creating the mandate, redirect the customer to the `mandate_url` to complete
+authorization via their UPI app. The mandate status will transition from `created`
+to `authorized` once the customer approves.
+</Tip>

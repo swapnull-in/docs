@@ -1,0 +1,66 @@
+---
+title: "Update IRP Configuration"
+openapi: "PUT /v1/settings/irp"
+description: "Configure or update the Invoice Registration Portal (IRP) credentials for e-invoicing."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `client_id` | string | Yes | The OAuth client ID provided by the IRP portal. |
+| `client_secret` | string | Yes | The OAuth client secret provided by the IRP portal. |
+| `username` | string | Yes | Your IRP portal login username. |
+| `password` | string | Yes | Your IRP portal login password. |
+| `gstin` | string | Yes | The 15-character GSTIN to associate with this IRP configuration. |
+| `environment` | string | Yes | Target environment. One of: `sandbox`, `production`. |
+| `is_enabled` | boolean | Yes | Set to `true` to enable e-invoicing, `false` to disable. |
+
+## Example Request
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/settings/irp \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_id": "ABCD1234EF",
+    "client_secret": "sk_irp_9f8e7d6c5b4a3210",
+    "username": "recurso_einv",
+    "password": "s3cureP@ssw0rd",
+    "gstin": "29AABCT1332L1ZM",
+    "environment": "production",
+    "is_enabled": true
+  }'
+```
+
+## Response
+
+```json
+{
+  "client_id": "ABCD1234EF",
+  "client_secret": "sk_irp_****3210",
+  "username": "recurso_einv",
+  "password": "****",
+  "gstin": "29AABCT1332L1ZM",
+  "environment": "production",
+  "is_enabled": true,
+  "last_token_refresh": "2026-06-23T16:30:00Z",
+  "created_at": "2025-11-01T08:00:00Z",
+  "updated_at": "2026-06-23T16:30:00Z"
+}
+```
+
+## Notes
+
+- Sensitive fields (`client_secret`, `password`) are masked in the response for security.
+- Recurso automatically manages IRP token refresh. The `last_token_refresh` field shows when the OAuth token was last renewed.
+- Use `environment: "sandbox"` for testing before enabling production e-invoicing.
+- Setting `is_enabled: false` pauses all e-invoice generation without removing credentials.
+
+<Note>
+To retrieve the current IRP configuration, use `GET /v1/settings/irp` with the same authorization header. The GET endpoint returns the same response structure with sensitive fields masked.
+</Note>
+
+<Warning>
+Ensure your IRP credentials are valid before switching to `production`. Invalid credentials will cause all e-invoice submissions to fail.
+</Warning>

@@ -1,0 +1,58 @@
+---
+title: "Revoke Consent"
+openapi: "POST /v1/consents/revoke"
+description: "Revoke a previously granted consent for a customer."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `customer_id` | string | Yes | The unique identifier of the customer whose consent is being revoked. |
+| `type` | string | Yes | The consent category to revoke. One of: `marketing`, `billing`, `data_processing`. |
+| `channel` | string | Yes | The communication channel to revoke. One of: `email`, `sms`, `phone`. |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/consents/revoke \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "cust_8Hx4kLm2Qr",
+    "type": "marketing",
+    "channel": "email"
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "cons_Tn4vW9xKpL",
+  "customer_id": "cust_8Hx4kLm2Qr",
+  "type": "marketing",
+  "channel": "email",
+  "granted": false,
+  "ip_address": "203.0.113.42",
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+  "timestamp": "2026-06-23T14:32:10Z",
+  "revoked_at": "2026-06-23T16:45:33Z",
+  "created_at": "2026-06-23T14:32:10Z"
+}
+```
+
+## Notes
+
+- Revoking consent sets the `revoked_at` timestamp and updates `granted` to `false` on the most recent matching consent record.
+- If no active consent exists for the given `customer_id`, `type`, and `channel` combination, a `404` error is returned.
+- Revocation is effective immediately. Any scheduled communications for this customer on this channel will be cancelled.
+- The original consent record is preserved for audit purposes. A new event is appended to the consent history.
+
+<Warning>
+Revoking `billing` consent may affect your ability to send invoices and payment reminders to this customer. Ensure this is intentional before proceeding.
+</Warning>
+
+<Tip>
+To view the full consent history for a customer, use the [Get Customer Consents](/api-reference/consent/customer-consents) endpoint.
+</Tip>

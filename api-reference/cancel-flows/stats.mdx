@@ -1,0 +1,70 @@
+---
+title: "Get Cancel Flow Statistics"
+openapi: "GET /v1/cancel-flows/stats"
+description: "Retrieve aggregated statistics for cancel flow sessions."
+---
+
+## Query Parameters
+
+| Parameter    | Type   | Required | Description                                                        |
+|--------------|--------|----------|--------------------------------------------------------------------|
+| `flow_id`    | string | No       | Filter stats to a specific cancel flow. Returns all flows if omitted. |
+| `start_date` | string | No       | Start of the date range in ISO 8601 format (e.g. `2026-01-01`).   |
+| `end_date`   | string | No       | End of the date range in ISO 8601 format (e.g. `2026-06-30`).     |
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.io/v1/cancel-flows/stats?start_date=2026-01-01&end_date=2026-06-23" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "total_sessions": 1842,
+  "completed_sessions": 1607,
+  "retained_customers": 491,
+  "cancelled_customers": 1116,
+  "abandoned_sessions": 235,
+  "retention_rate": 0.3054,
+  "top_reasons": [
+    {
+      "reason": "too_expensive",
+      "label": "Too expensive",
+      "count": 624,
+      "percentage": 0.3882
+    },
+    {
+      "reason": "missing_features",
+      "label": "Missing features",
+      "count": 389,
+      "percentage": 0.2420
+    },
+    {
+      "reason": "switched_competitor",
+      "label": "Switched to a competitor",
+      "count": 297,
+      "percentage": 0.1848
+    },
+    {
+      "reason": "not_using_enough",
+      "label": "Not using it enough",
+      "count": 185,
+      "percentage": 0.1151
+    },
+    {
+      "reason": "other",
+      "label": "Other",
+      "count": 112,
+      "percentage": 0.0697
+    }
+  ],
+  "period": {
+    "start_date": "2026-01-01",
+    "end_date": "2026-06-23"
+  }
+}
+```

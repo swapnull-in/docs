@@ -1,0 +1,74 @@
+---
+title: "Update Quote"
+openapi: "PUT /v1/quotes/{id}"
+description: "Update an existing quote. Only quotes in draft status can be modified."
+---
+
+## Path Parameters
+
+| Parameter | Type   | Description                              |
+|-----------|--------|------------------------------------------|
+| `id`      | string | The unique identifier of the quote (e.g., `qt_4kR7LmNpXs`). |
+
+## Request Body
+
+| Parameter    | Type     | Required | Description                                           |
+|--------------|----------|----------|-------------------------------------------------------|
+| `line_items` | array    | No       | Array of line item objects with `description`, `quantity`, and `unit_amount`. |
+| `currency`   | string   | No       | Three-letter ISO currency code (e.g., `usd`, `eur`).  |
+| `expires_at` | string   | No       | ISO 8601 expiration timestamp for the quote.           |
+| `notes`      | string   | No       | Internal or customer-facing notes attached to the quote. |
+
+Only quotes with `status: "draft"` can be updated. Attempting to update a sent or accepted quote returns a `400` error.
+
+## Example Request
+
+```bash
+curl -X PUT https://api.recurso.io/v1/quotes/qt_4kR7LmNpXs \
+  -H "Authorization: Bearer sk_live_26PHem9AhJZvU..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "line_items": [
+      {
+        "description": "Pro Plan — Monthly",
+        "quantity": 10,
+        "unit_amount": 4900
+      }
+    ],
+    "currency": "usd",
+    "expires_at": "2026-08-01T00:00:00Z",
+    "notes": "Updated seat count per customer request."
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "qt_4kR7LmNpXs",
+  "object": "quote",
+  "status": "draft",
+  "currency": "usd",
+  "customer": {
+    "id": "cus_8vTnRbWqYx",
+    "name": "Acme Corp",
+    "email": "billing@acmecorp.com"
+  },
+  "line_items": [
+    {
+      "id": "li_2mK9JwPqRt",
+      "description": "Pro Plan — Monthly",
+      "quantity": 10,
+      "unit_amount": 4900,
+      "amount": 49000
+    }
+  ],
+  "subtotal": 49000,
+  "tax": 4410,
+  "total": 53410,
+  "notes": "Updated seat count per customer request.",
+  "expires_at": "2026-08-01T00:00:00Z",
+  "created_at": "2026-06-10T14:32:00Z",
+  "updated_at": "2026-06-23T09:15:00Z"
+}
+```

@@ -1,0 +1,62 @@
+---
+title: "List Cancel Flows"
+openapi: "GET /v1/cancel-flows"
+description: "Retrieve all cancel flows configured for your account."
+---
+
+## Query Parameters
+
+| Parameter    | Type    | Required | Description                                              |
+|--------------|---------|----------|----------------------------------------------------------|
+| `limit`      | integer | No       | Maximum number of flows to return. Default `20`, max `100`. |
+| `offset`     | integer | No       | Number of records to skip for pagination. Default `0`.   |
+| `is_active`  | boolean | No       | Filter by active or inactive flows.                      |
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.io/v1/cancel-flows?limit=10" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "data": [
+    {
+      "id": "cflow_01h8x3kv7m2p",
+      "name": "Default Cancellation Flow",
+      "description": "Standard 3-step cancel flow with discount offer",
+      "is_active": true,
+      "is_default": true,
+      "steps": [
+        {
+          "id": "cstep_01h8x3mw9n4q",
+          "type": "survey",
+          "title": "We're sorry to see you go",
+          "order": 0
+        },
+        {
+          "id": "cstep_01h8x3pw2r6s",
+          "type": "offer",
+          "title": "How about a discount?",
+          "order": 1
+        },
+        {
+          "id": "cstep_01h8x3rz5t8u",
+          "type": "confirmation",
+          "title": "Confirm cancellation",
+          "order": 2
+        }
+      ],
+      "created_at": "2026-03-10T14:22:00Z",
+      "updated_at": "2026-05-18T09:15:30Z"
+    }
+  ],
+  "total": 1,
+  "limit": 10,
+  "offset": 0
+}
+```

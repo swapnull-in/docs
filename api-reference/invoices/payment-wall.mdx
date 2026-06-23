@@ -1,0 +1,41 @@
+---
+title: "Get Payment Wall Status"
+openapi: "GET /v1/invoices/{id}/payment-wall"
+description: "Retrieve the payment wall status for an invoice"
+---
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The invoice ID |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/invoices/inv_005/payment-wall \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "object": "payment_wall",
+  "invoice_id": "inv_005",
+  "payment_wall_active": true,
+  "grace_days_remaining": 3,
+  "grace_period_start": "2024-02-01T00:00:00Z",
+  "grace_period_end": "2024-02-08T00:00:00Z",
+  "blocked_at": null,
+  "customer_id": "cust_abc123",
+  "subscription_id": "sub_xyz789",
+  "invoice_total": 5899,
+  "currency": "INR",
+  "checkout_url": "https://pay.recurso.dev/wall/inv_005"
+}
+```
+
+<Info>
+A payment wall restricts customer access to your product when an invoice is overdue. Once the grace period expires and `grace_days_remaining` reaches 0, the `blocked_at` timestamp is set and the customer is blocked until payment is collected.
+</Info>

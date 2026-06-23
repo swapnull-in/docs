@@ -1,0 +1,69 @@
+---
+title: "Get Dunning Overview"
+openapi: "GET /v1/analytics/dunning/overview"
+description: "Retrieve a summary of dunning performance including retry counts, recovery rates, and per-action breakdowns."
+---
+
+## Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `start_date` | string | No | ISO 8601 date. Filters results from this date onward. Defaults to 30 days ago. |
+| `end_date` | string | No | ISO 8601 date. Filters results up to this date. Defaults to today. |
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.dev/v1/analytics/dunning/overview?start_date=2026-05-01&end_date=2026-06-01" \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a"
+```
+
+## Response
+
+```json
+{
+  "total_retries": 1247,
+  "successful_retries": 843,
+  "recovery_rate": 0.676,
+  "period": {
+    "start": "2026-05-01T00:00:00Z",
+    "end": "2026-06-01T00:00:00Z"
+  },
+  "by_action": [
+    {
+      "action_id": "retry_payment",
+      "attempts": 680,
+      "successes": 512,
+      "success_rate": 0.753
+    },
+    {
+      "action_id": "send_reminder_email",
+      "attempts": 342,
+      "successes": 198,
+      "success_rate": 0.579
+    },
+    {
+      "action_id": "card_update_request",
+      "attempts": 155,
+      "successes": 89,
+      "success_rate": 0.574
+    },
+    {
+      "action_id": "escalate_to_phone",
+      "attempts": 70,
+      "successes": 44,
+      "success_rate": 0.629
+    }
+  ]
+}
+```
+
+## Notes
+
+- The `recovery_rate` is the ratio of `successful_retries` to `total_retries` across all dunning actions.
+- Each entry in `by_action` represents a distinct dunning action configured in your dunning campaigns.
+- Success is defined as the customer resolving the failed payment within the dunning window.
+
+<Tip>
+Use this endpoint alongside the [dunning weights](/api-reference/analytics/dunning-weights) endpoint to understand which actions the system is learning to prioritize.
+</Tip>

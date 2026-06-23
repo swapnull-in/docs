@@ -1,0 +1,45 @@
+---
+title: "Trigger Accounting Sync"
+openapi: "POST /v1/accounting/sync"
+description: "Trigger an immediate sync of revenue data to all active accounting connections."
+---
+
+## Body Parameters
+
+| Parameter       | Type   | Required | Description                                                               |
+|-----------------|--------|----------|---------------------------------------------------------------------------|
+| `connection_id` | string | No       | Sync a specific connection only. If omitted, all active connections sync. |
+| `full_sync`     | boolean| No       | If `true`, performs a full historical sync instead of incremental. Default `false`. |
+
+This endpoint triggers an asynchronous sync job. Revenue recognition entries, invoices, and payment
+records are pushed to the connected accounting provider. Syncs typically complete within a few
+minutes depending on data volume.
+
+## Example Request
+
+```bash
+curl -X POST "https://api.recurso.io/v1/accounting/sync" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "status": "sync_triggered",
+  "sync_id": "sync_9vQt3xAs7cDe",
+  "connections": [
+    {
+      "id": "aconn_3pRs6tUv9wXy",
+      "provider": "quickbooks",
+      "previous_sync_at": "2026-06-23T06:00:00Z"
+    }
+  ],
+  "triggered_at": "2026-06-23T11:15:00Z"
+}
+```
+
+You can poll the [List Accounting Connections](/api-reference/accounting/connections) endpoint to
+check the `sync_status` field for completion. A webhook event `accounting.sync.completed` is also
+fired when the sync finishes.

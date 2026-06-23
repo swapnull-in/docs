@@ -1,0 +1,52 @@
+---
+title: "Add Tenant to Organization"
+openapi: "POST /v1/organizations/{id}/tenants"
+description: "Associate an existing tenant with an organization for consolidated billing and analytics."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the organization (e.g. `org_4f3e2d1c0b9a8765`). |
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tenant_id` | string | Yes | The unique identifier of the tenant to add to the organization. |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/organizations/org_4f3e2d1c0b9a8765/tenants \
+  -H "Authorization: Bearer rsk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tenant_id": "tenant_a1b2c3d4"
+  }'
+```
+
+## Response
+
+Returns a confirmation that the tenant has been added to the organization.
+
+```json
+{
+  "status": "added",
+  "organization_id": "org_4f3e2d1c0b9a8765",
+  "tenant_id": "tenant_a1b2c3d4",
+  "added_at": "2026-06-23T12:00:00Z"
+}
+```
+
+<Warning>
+A tenant can only belong to one organization at a time. If the tenant is already
+associated with a different organization, the request returns a `409 Conflict` error.
+Remove the tenant from the existing organization first.
+</Warning>
+
+<Tip>
+After adding tenants, you can view consolidated billing data using the
+[Consolidated MRR](/api-reference/organizations/consolidated-mrr) endpoint.
+</Tip>

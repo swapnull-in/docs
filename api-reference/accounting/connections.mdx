@@ -1,0 +1,56 @@
+---
+title: "List Accounting Connections"
+openapi: "GET /v1/accounting/connections"
+description: "Retrieve all connected accounting integrations for your account."
+---
+
+## Query Parameters
+
+| Parameter   | Type    | Required | Description                                                   |
+|-------------|---------|----------|---------------------------------------------------------------|
+| `provider`  | string  | No       | Filter by provider name. One of `quickbooks` or `xero`.       |
+| `is_active` | boolean | No       | Filter by active or disconnected integrations.                |
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.io/v1/accounting/connections" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "data": [
+    {
+      "id": "aconn_3pRs6tUv9wXy",
+      "object": "accounting_connection",
+      "provider": "quickbooks",
+      "realm_id": "4620816365185389250",
+      "company_name": "Acme Corp",
+      "sync_status": "synced",
+      "last_synced_at": "2026-06-23T06:00:00Z",
+      "is_active": true,
+      "token_expires_at": "2026-07-23T06:00:00Z",
+      "created_at": "2026-02-10T15:30:00Z",
+      "updated_at": "2026-06-23T06:00:00Z"
+    },
+    {
+      "id": "aconn_7qWt2uZx5aBc",
+      "object": "accounting_connection",
+      "provider": "xero",
+      "realm_id": "b1c2d3e4-f5a6-7890-abcd-ef1234567890",
+      "company_name": "Acme EU GmbH",
+      "sync_status": "token_expired",
+      "last_synced_at": "2026-05-15T12:00:00Z",
+      "is_active": false,
+      "token_expires_at": "2026-05-30T12:00:00Z",
+      "created_at": "2026-01-05T09:00:00Z",
+      "updated_at": "2026-05-30T12:00:00Z"
+    }
+  ],
+  "total": 2
+}
+```
