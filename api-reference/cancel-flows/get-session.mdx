@@ -1,0 +1,48 @@
+---
+title: "Get Cancel Flow Session"
+openapi: "GET /v1/cancel-flows/sessions/{id}"
+description: "Retrieve the details of a specific cancel flow session."
+---
+
+## Path Parameters
+
+| Parameter | Type   | Required | Description                                          |
+|-----------|--------|----------|------------------------------------------------------|
+| `id`      | string | Yes      | The cancel flow session ID (`csess_` prefix).        |
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.dev/v1/cancel-flows/sessions/csess_0a3f7c9e1b5d" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "id": "csess_0a3f7c9e1b5d",
+  "object": "cancel_flow_session",
+  "customer_id": "cust_4kTg8LpR2mXn",
+  "subscription_id": "sub_7vWq3JsN9bYz",
+  "flow_id": "cflow_01h8x3kv7m2p",
+  "status": "completed",
+  "current_step_index": 2,
+  "cancellation_reason": "too_expensive",
+  "feedback": "The price increased too much at renewal.",
+  "offer_presented": {
+    "type": "discount_percent",
+    "value": 25,
+    "duration_days": 90
+  },
+  "offer_accepted": false,
+  "saved_by_offer": false,
+  "started_at": "2026-06-23T11:04:22Z",
+  "completed_at": "2026-06-23T11:07:45Z"
+}
+```
+
+<Note>
+The `status` field can be one of `in_progress`, `completed`, `cancelled`, or `saved`. A status of `saved` indicates the customer accepted a retention offer and did not cancel.
+</Note>

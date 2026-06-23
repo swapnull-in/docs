@@ -1,0 +1,60 @@
+---
+title: "Create Cancel Flow Step"
+openapi: "POST /v1/cancel-flows/{id}/steps"
+description: "Add a new step to an existing cancel flow."
+---
+
+## Path Parameters
+
+| Parameter | Type   | Required | Description                                       |
+|-----------|--------|----------|---------------------------------------------------|
+| `id`      | string | Yes      | The cancel flow ID (`cflow_` prefix).             |
+
+## Body Parameters
+
+| Parameter    | Type    | Required | Description                                                             |
+|--------------|---------|----------|-------------------------------------------------------------------------|
+| `step_order` | integer | Yes      | Position of this step in the flow (0-indexed).                          |
+| `step_type`  | string  | Yes      | Step type. One of `survey`, `offer`, or `confirmation`.                 |
+| `config`     | object  | No       | JSON configuration for the step (e.g. survey options, offer details).   |
+
+## Example Request
+
+```bash
+curl -X POST "https://api.recurso.dev/v1/cancel-flows/cflow_01h8x3kv7m2p/steps" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "step_order": 1,
+    "step_type": "offer",
+    "config": {
+      "title": "How about a discount?",
+      "offer_type": "discount_percent",
+      "offer_value": 25,
+      "duration_days": 90
+    }
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "cstep_01h8x4qw3s7v",
+  "object": "cancel_flow_step",
+  "flow_id": "cflow_01h8x3kv7m2p",
+  "step_order": 1,
+  "step_type": "offer",
+  "config": {
+    "title": "How about a discount?",
+    "offer_type": "discount_percent",
+    "offer_value": 25,
+    "duration_days": 90
+  },
+  "created_at": "2026-06-23T11:20:00Z"
+}
+```
+
+<Note>
+Step order is 0-indexed. If a step already exists at the given `step_order`, existing steps are shifted forward automatically.
+</Note>

@@ -1,0 +1,40 @@
+---
+title: "Portal Logout"
+openapi: "POST /portal/api/logout"
+description: "Logout from the customer portal and invalidate the current session."
+---
+
+<Note>
+This endpoint requires an active portal session. No request body is needed.
+</Note>
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/portal/api/logout \
+  -H "Cookie: portal_session=ps_abc123..."
+```
+
+## Response
+
+Returns a confirmation message. The portal session cookie is invalidated and can
+no longer be used for authenticated requests.
+
+```json
+{
+  "message": "Logged out successfully"
+}
+```
+
+## Error Responses
+
+| Status | Description |
+|--------|-------------|
+| `401 Unauthorized` | No active portal session found. The session may have already expired or been invalidated. |
+| `500 Internal Server Error` | An unexpected error occurred while invalidating the session. |
+
+<Tip>
+After logout, any subsequent requests using the same portal session cookie will
+receive a `401 Unauthorized` response. The customer must log in again to access
+portal features.
+</Tip>

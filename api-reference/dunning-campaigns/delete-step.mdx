@@ -1,0 +1,46 @@
+---
+title: "Delete Campaign Step"
+openapi: "DELETE /v1/dunning-campaigns/steps/{id}"
+description: "Remove a step from a dunning campaign."
+---
+
+## Path Parameters
+
+| Parameter | Type   | Required | Description                                       |
+|-----------|--------|----------|---------------------------------------------------|
+| `id`      | string | Yes      | The dunning step ID (`dstep_` prefix).            |
+
+## Example Request
+
+```bash
+curl -X DELETE "https://api.recurso.dev/v1/dunning-campaigns/steps/dstep_8uPw1zYq6dCv" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+Returns a confirmation message on success.
+
+```json
+{
+  "message": "Step deleted successfully"
+}
+```
+
+### Error Response
+
+Returns a `404` if the step ID does not exist.
+
+```json
+{
+  "error": {
+    "code": "step_not_found",
+    "message": "No dunning campaign step found with ID dstep_8uPw1zYq6dCv"
+  }
+}
+```
+
+<Warning>
+Deleting a step from an active dunning campaign takes effect immediately. Subscriptions currently in dunning will skip this step if they have not already reached it.
+</Warning>

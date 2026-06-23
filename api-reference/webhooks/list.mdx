@@ -1,0 +1,64 @@
+---
+title: "List Webhooks"
+openapi: "GET /v1/webhooks"
+description: "Retrieve all webhook endpoints configured for your account."
+---
+
+## Query Parameters
+
+| Parameter | Type    | Required | Description                                                     |
+|-----------|---------|----------|-----------------------------------------------------------------|
+| `limit`   | integer | No       | Maximum number of endpoints to return. Default `20`, max `100`. |
+| `offset`  | integer | No       | Number of records to skip for pagination. Default `0`.          |
+| `status`  | string  | No       | Filter by status: `active` or `inactive`.                       |
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.dev/v1/webhooks?limit=10" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+```json
+{
+  "data": [
+    {
+      "id": "wh_3nRv7tXq9mKs",
+      "object": "webhook",
+      "url": "https://yourapp.com/webhooks/recurso",
+      "secret": "whsec_••••••••••••",
+      "events": [
+        "subscription.activated",
+        "subscription.cancelled",
+        "payment.succeeded",
+        "payment.failed"
+      ],
+      "status": "active",
+      "created_at": "2026-04-10T09:00:00Z"
+    },
+    {
+      "id": "wh_8pLw2kYr4jBt",
+      "object": "webhook",
+      "url": "https://yourapp.com/webhooks/billing",
+      "secret": "whsec_••••••••••••",
+      "events": [
+        "invoice.created",
+        "invoice.paid",
+        "invoice.payment_failed"
+      ],
+      "status": "active",
+      "created_at": "2026-05-22T14:30:00Z"
+    }
+  ],
+  "total": 2,
+  "limit": 10,
+  "offset": 0
+}
+```
+
+<Note>
+Webhook secrets are masked in list responses. The full secret is only returned when the endpoint is first created.
+</Note>

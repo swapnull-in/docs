@@ -1,0 +1,62 @@
+---
+title: "List Customer Invoices"
+openapi: "GET /portal/api/invoices"
+description: "List invoices for the authenticated customer in the portal"
+---
+
+Requires a valid portal session token obtained via magic link authentication.
+
+## Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `status` | string | Filter by status: `draft`, `open`, `paid`, `past_due`, `void` |
+| `limit` | integer | Max results (default: 10, max: 100) |
+| `offset` | integer | Pagination offset |
+
+## Example Request
+
+```bash
+curl "https://api.recurso.dev/portal/api/invoices?status=open&limit=10" \
+  -H "Authorization: Bearer sess_x9y8z7w6v5u4t3s2"
+```
+
+## Response
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "inv_001",
+      "object": "invoice",
+      "invoice_number": "REC/2024/0001",
+      "status": "open",
+      "currency": "INR",
+      "total": 5899,
+      "amount_due": 5899,
+      "due_date": "2024-01-30T00:00:00Z",
+      "checkout_url": "https://api.recurso.dev/checkout/inv_001",
+      "created_at": "2024-01-15T10:30:00Z"
+    },
+    {
+      "id": "inv_002",
+      "object": "invoice",
+      "invoice_number": "REC/2024/0002",
+      "status": "paid",
+      "currency": "INR",
+      "total": 11999,
+      "amount_due": 0,
+      "due_date": "2024-02-15T00:00:00Z",
+      "checkout_url": null,
+      "created_at": "2024-02-01T00:00:00Z"
+    }
+  ],
+  "has_more": false,
+  "total_count": 2
+}
+```
+
+<Tip>
+Each open invoice includes a `checkout_url` that can be used to complete payment directly.
+</Tip>

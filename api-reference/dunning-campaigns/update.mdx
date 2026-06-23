@@ -1,0 +1,63 @@
+---
+title: "Update Dunning Campaign"
+openapi: "PUT /v1/dunning-campaigns/{id}"
+description: "Update the settings of an existing dunning campaign."
+---
+
+## Path Parameters
+
+| Parameter | Type   | Required | Description                                       |
+|-----------|--------|----------|---------------------------------------------------|
+| `id`      | string | Yes      | The dunning campaign ID (`dc_` prefix).           |
+
+## Body Parameters
+
+| Parameter                  | Type    | Required | Description                                                                 |
+|----------------------------|---------|----------|-----------------------------------------------------------------------------|
+| `name`                     | string  | No       | A human-readable name for the campaign.                                     |
+| `description`              | string  | No       | A longer description of the campaign's purpose.                             |
+| `is_default`               | boolean | No       | Whether this campaign should be the default for all subscriptions.          |
+| `payment_wall_enabled`     | boolean | No       | If `true`, blocks product access after the grace period expires.            |
+| `payment_wall_grace_days`  | integer | No       | Number of days before the payment wall takes effect.                        |
+
+## Example Request
+
+```bash
+curl -X PUT "https://api.recurso.dev/v1/dunning-campaigns/dc_8mKp3vRn2wXq" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Standard Recovery v2",
+    "payment_wall_grace_days": 7
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "dc_8mKp3vRn2wXq",
+  "object": "dunning_campaign",
+  "name": "Standard Recovery v2",
+  "description": "Default dunning campaign with email reminders and payment wall",
+  "is_default": true,
+  "payment_wall_enabled": true,
+  "payment_wall_grace_days": 7,
+  "steps": [
+    {
+      "id": "dstep_5rMt8wVn3aZs",
+      "day_offset": 1,
+      "channel": "email",
+      "subject": "Action required: Your payment failed",
+      "is_active": true
+    }
+  ],
+  "active_subscriptions": 237,
+  "created_at": "2026-03-15T08:00:00Z",
+  "updated_at": "2026-06-23T15:30:00Z"
+}
+```
+
+<Tip>
+You only need to include the fields you want to update. Omitted fields retain their current values.
+</Tip>

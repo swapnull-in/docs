@@ -1,0 +1,39 @@
+---
+title: "Request Magic Link"
+openapi: "POST /portal/auth/request"
+description: "Request a magic link for customer portal authentication"
+---
+
+<Note>
+This is a public endpoint. No authentication is required. The magic link is sent to the customer's email address.
+</Note>
+
+## Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `email` | string | Yes | Customer email address |
+| `tenant_id` | string | Yes | Your organization's tenant ID |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/portal/auth/request \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "customer@example.com",
+    "tenant_id": "org_abc123"
+  }'
+```
+
+## Response
+
+```json
+{
+  "message": "Magic link sent to email"
+}
+```
+
+<Warning>
+For security, this endpoint always returns a success response regardless of whether the email exists. This prevents email enumeration attacks.
+</Warning>

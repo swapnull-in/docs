@@ -1,0 +1,55 @@
+---
+title: "Get Subscription Consent"
+openapi: "GET /v1/subscriptions/{id}/consent"
+description: "Retrieve the consent status associated with a specific subscription."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the subscription (e.g., `sub_9f8e7d6c5b4a3210`). |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/subscriptions/sub_9f8e7d6c5b4a3210/consent \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a"
+```
+
+## Response
+
+Returns the consent record linked to the subscription.
+
+```json
+{
+  "id": "cons_Kp8wN3xRtL",
+  "subscription_id": "sub_9f8e7d6c5b4a3210",
+  "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "type": "billing",
+  "granted": true,
+  "granted_at": "2026-06-23T09:45:00Z",
+  "ip_address": "203.0.113.42",
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+  "revoked_at": null,
+  "created_at": "2026-06-23T09:45:00Z"
+}
+```
+
+## Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | The consent category. One of: `marketing`, `billing`, `data_processing`. |
+| `granted` | boolean | Whether consent is currently active. `false` if consent has been revoked. |
+| `granted_at` | string | ISO 8601 timestamp when consent was granted. |
+| `ip_address` | string | The IP address of the user at the time consent was collected. May be `null`. |
+| `user_agent` | string | The browser user agent string at the time consent was collected. May be `null`. |
+
+<Note>
+If no consent record exists for the subscription, this endpoint returns a `404 Not Found` response. Use the [Record Consent](/api-reference/consent/record) endpoint to create one.
+</Note>
+
+<Warning>
+Subscriptions without a valid consent record may be paused automatically depending on your compliance settings. Ensure consent is collected before activating subscriptions.
+</Warning>

@@ -1,0 +1,46 @@
+---
+title: "Create Payment Order"
+openapi: "POST /payments/order"
+description: "Create a payment order for an invoice to initiate the checkout flow."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `invoice_id` | string | Yes | The ID of the invoice to create a payment order for. |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/payments/order \
+  -H "Content-Type: application/json" \
+  -d '{
+    "invoice_id": "inv_5d4c3b2a1f0e9876"
+  }'
+```
+
+## Response
+
+Returns the payment order details including the gateway public key needed for the client-side checkout.
+
+```json
+{
+  "order_id": "ord_7a8b9c0d1e2f3456",
+  "gateway": "razorpay",
+  "amount": 249900,
+  "currency": "INR",
+  "key": "rzp_live_xxxxxxxxxx"
+}
+```
+
+<Note>
+The `gateway` field indicates which payment provider is configured for the tenant.
+Possible values are `razorpay` or `stripe`. Use the returned `key` to initialize
+the corresponding client-side checkout SDK.
+</Note>
+
+<Tip>
+This is a public endpoint used by the checkout flow. The `key` returned is the
+gateway's publishable/public key, safe to use on the client side.
+</Tip>

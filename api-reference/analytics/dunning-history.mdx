@@ -1,0 +1,71 @@
+---
+title: "Get Dunning History"
+openapi: "GET /v1/analytics/dunning/history"
+description: "Retrieve historical dunning retry data with per-attempt outcomes."
+---
+
+## Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `start_date` | string | No | ISO 8601 date. Filters results from this date onward. Defaults to 30 days ago. |
+| `end_date` | string | No | ISO 8601 date. Filters results up to this date. Defaults to today. |
+| `invoice_id` | string | No | Filter dunning history for a specific invoice. |
+| `limit` | integer | No | Maximum number of records to return. Default `20`, max `100`. |
+| `offset` | integer | No | Number of records to skip for pagination. Default `0`. |
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.dev/v1/analytics/dunning/history?start_date=2026-05-01&end_date=2026-06-01&limit=10" \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a"
+```
+
+## Response
+
+```json
+{
+  "data": [
+    {
+      "id": "dh_8xKp3mNv2qRs",
+      "invoice_id": "inv_4a7b9c2d1e",
+      "context_key": "past_due_3d",
+      "action_id": "retry_payment",
+      "retry_interval": 72,
+      "outcome": "success",
+      "reward": 1.0,
+      "created_at": "2026-05-18T14:30:00Z"
+    },
+    {
+      "id": "dh_2wLt6rPx9sFq",
+      "invoice_id": "inv_9e3f1a8b5c",
+      "context_key": "past_due_7d",
+      "action_id": "send_reminder_email",
+      "retry_interval": 168,
+      "outcome": "failure",
+      "reward": -0.5,
+      "created_at": "2026-05-20T09:15:00Z"
+    }
+  ],
+  "total": 843,
+  "limit": 10,
+  "offset": 0
+}
+```
+
+## Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique identifier for the dunning history entry. |
+| `invoice_id` | string | The invoice this dunning attempt was made against. |
+| `context_key` | string | The dunning context state (e.g. `past_due_3d`, `past_due_7d`). |
+| `action_id` | string | The dunning action that was taken (e.g. `retry_payment`, `send_reminder_email`). |
+| `retry_interval` | integer | Hours between the failed payment and this retry attempt. |
+| `outcome` | string | Result of the attempt: `success` or `failure`. |
+| `reward` | number | The reinforcement learning reward signal assigned to this outcome. |
+| `created_at` | string | ISO 8601 timestamp of when the attempt occurred. |
+
+<Tip>
+Use this endpoint alongside the [dunning weights](/api-reference/analytics/dunning-weights) endpoint to understand how the AI agent is learning from past retry outcomes.
+</Tip>

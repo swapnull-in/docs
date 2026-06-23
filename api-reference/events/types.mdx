@@ -1,0 +1,36 @@
+---
+title: "List Event Types"
+openapi: "GET /v1/events/types"
+description: "Get all supported webhook event types"
+---
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/events/types \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "object": "list",
+  "data": [
+    "invoice.created",
+    "invoice.paid",
+    "invoice.payment_failed",
+    "subscription.created",
+    "subscription.canceled",
+    "subscription.renewed",
+    "customer.created",
+    "customer.updated",
+    "payment.succeeded",
+    "payment.failed"
+  ]
+}
+```
+
+<Note>
+New event types may be added over time. Build your webhook handlers to gracefully ignore unrecognized event types.
+</Note>

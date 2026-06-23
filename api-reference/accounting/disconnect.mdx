@@ -1,0 +1,40 @@
+---
+title: "Disconnect Accounting Integration"
+openapi: "DELETE /v1/accounting/connections/{id}"
+description: "Disconnect an accounting integration and stop all data syncing."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the accounting connection (e.g. `aconn_3pRs6tUv9wXy`). |
+
+<Warning>
+Disconnecting an accounting integration is permanent. All sync configuration will be removed and data will stop flowing to the provider. You will need to re-authorize via OAuth to reconnect.
+</Warning>
+
+## Example Request
+
+```bash
+curl -X DELETE "https://api.recurso.dev/v1/accounting/connections/aconn_3pRs6tUv9wXy" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c"
+```
+
+## Response
+
+```json
+{
+  "message": "Connection disconnected successfully"
+}
+```
+
+## Notes
+
+- Any in-progress sync jobs for this connection will be cancelled.
+- Historical data that was already synced to the accounting provider is not deleted.
+- To reconnect the same provider, use the [Initiate Accounting OAuth](/api-reference/accounting/connect) endpoint.
+
+<Tip>
+Before disconnecting, check the current sync status using the [List Accounting Connections](/api-reference/accounting/connections) endpoint to ensure no critical sync is in progress.
+</Tip>

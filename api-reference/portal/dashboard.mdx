@@ -1,0 +1,42 @@
+---
+title: "Portal Dashboard"
+openapi: "GET /portal/{customer_id}"
+description: "Render the customer portal dashboard with subscription info, invoices, and self-service options."
+---
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `customer_id` | string (UUID) | The ID of the customer whose portal to display. |
+
+<Note>
+This endpoint renders a server-side HTML page, not a JSON API response. It is
+designed to be opened in a browser. Use the
+[Get Portal Data](/api-reference/portal/data) endpoint if you need structured JSON.
+</Note>
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/portal/cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+## Response
+
+Returns an HTML page containing:
+
+- **Customer details** — name, email, and billing address
+- **Active subscriptions** — plan, status, current period, and renewal date
+- **Recent invoices** — amount, status, and download links
+- **Self-service options** — update payment method, cancel subscription, redeem gift codes
+
+```text
+Content-Type: text/html; charset=utf-8
+Status: 200 OK
+```
+
+<Tip>
+You can embed the portal in your application using an iframe or link customers
+directly to this URL from your product.
+</Tip>

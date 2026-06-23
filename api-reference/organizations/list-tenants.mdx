@@ -1,0 +1,54 @@
+---
+title: "List Organization Tenants"
+openapi: "GET /v1/organizations/{id}/tenants"
+description: "Retrieve all tenants associated with an organization."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the organization (e.g., `org_4f3e2d1c0b9a8765`). |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/organizations/org_4f3e2d1c0b9a8765/tenants \
+  -H "Authorization: Bearer rsk_live_xxx"
+```
+
+## Response
+
+Returns a list of tenant objects belonging to the organization.
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "tenant_a1b2c3d4",
+      "name": "Acme SaaS India",
+      "email": "admin@acme-india.com",
+      "created_at": "2026-06-23T12:00:00Z"
+    },
+    {
+      "id": "tenant_e5f6a7b8",
+      "name": "Acme SaaS SEA",
+      "email": "admin@acme-sea.com",
+      "created_at": "2026-06-24T09:30:00Z"
+    },
+    {
+      "id": "tenant_c9d0e1f2",
+      "name": "Acme SaaS EU",
+      "email": "admin@acme-eu.com",
+      "created_at": "2026-06-25T14:00:00Z"
+    }
+  ],
+  "has_more": false,
+  "total_count": 3
+}
+```
+
+<Tip>
+Use the [Add Tenant](/api-reference/organizations/add-tenant) endpoint to associate new tenants, or the [Consolidated MRR](/api-reference/organizations/consolidated-mrr) endpoint to view aggregated revenue across all tenants.
+</Tip>

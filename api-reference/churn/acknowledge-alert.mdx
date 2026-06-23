@@ -1,0 +1,51 @@
+---
+title: "Acknowledge Churn Alert"
+openapi: "POST /v1/churn/alerts/{id}/ack"
+description: "Mark a churn risk alert as acknowledged by your team."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the churn alert (e.g., `alert_6a5b4c3d2e1f0987`). |
+
+Acknowledging an alert signals that your team has reviewed the churn risk and is taking action. No request body is required.
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/churn/alerts/alert_6a5b4c3d2e1f0987/ack \
+  -H "Authorization: Bearer rsk_live_xxx" \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+Returns the updated churn alert object with the `acknowledged_at` timestamp populated.
+
+```json
+{
+  "id": "alert_6a5b4c3d2e1f0987",
+  "object": "churn_alert",
+  "type": "churn_risk_high",
+  "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "customer_name": "Pinnacle Digital Solutions",
+  "score": 0.91,
+  "risk_factors": [
+    "Subscription cancelled and reactivated twice in 60 days",
+    "4 failed payment attempts in last 30 days",
+    "Support ticket volume increased 150% month-over-month"
+  ],
+  "acknowledged_at": "2026-06-23T14:10:00Z",
+  "created_at": "2026-06-23T06:00:00Z"
+}
+```
+
+<Note>
+Acknowledging an alert is idempotent. Calling this endpoint on an already-acknowledged alert returns the existing `acknowledged_at` timestamp without modification.
+</Note>
+
+<Tip>
+Use the [Get Churn Alerts](/api-reference/churn/alerts) endpoint with `acknowledged=false` to retrieve only alerts that still need review.
+</Tip>

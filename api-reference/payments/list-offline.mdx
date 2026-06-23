@@ -1,0 +1,75 @@
+---
+title: "List Offline Payments"
+openapi: "GET /v1/payments/offline"
+description: "Retrieve a paginated list of offline payments recorded via bank transfer, cash, or cheque."
+---
+
+## Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `customer_id` | string (UUID) | No | Filter payments by customer ID. |
+| `invoice_id` | string | No | Filter payments linked to a specific invoice. |
+| `limit` | integer | No | Number of records to return (default `10`, max `100`). |
+| `offset` | integer | No | Number of records to skip (default `0`). |
+
+## Example Request
+
+```bash
+curl -G https://api.recurso.dev/v1/payments/offline \
+  -H "Authorization: Bearer rsk_live_xxx" \
+  -d customer_id="cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890" \
+  -d limit=10
+```
+
+## Response
+
+Returns a paginated list of offline payment objects.
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "pay_3c2b1a0f9e8d7654",
+      "object": "payment",
+      "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "invoice_id": "inv_5d4c3b2a1f0e9876",
+      "payment_type": "bank_transfer",
+      "amount": 249900,
+      "currency": "INR",
+      "reference_number": "UTR-ICIC-20260623-001234",
+      "notes": "NEFT payment received from HDFC account ending 4521",
+      "recorded_by": "finance@acmecorp.com",
+      "status": "succeeded",
+      "channel": "offline",
+      "recorded_at": "2026-06-23T10:15:30Z",
+      "created_at": "2026-06-23T10:15:30Z",
+      "updated_at": "2026-06-23T10:15:30Z"
+    },
+    {
+      "id": "pay_8f7e6d5c4b3a2109",
+      "object": "payment",
+      "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "invoice_id": null,
+      "payment_type": "cheque",
+      "amount": 150000,
+      "currency": "INR",
+      "reference_number": "CHQ-004782",
+      "notes": "Post-dated cheque deposited on 2026-06-20",
+      "recorded_by": "accounts@acmecorp.com",
+      "status": "succeeded",
+      "channel": "offline",
+      "recorded_at": "2026-06-20T14:30:00Z",
+      "created_at": "2026-06-20T14:30:00Z",
+      "updated_at": "2026-06-20T14:30:00Z"
+    }
+  ],
+  "has_more": false,
+  "total_count": 2
+}
+```
+
+<Tip>
+Combine `customer_id` and `invoice_id` filters to find all offline payments a customer has made toward a specific invoice.
+</Tip>

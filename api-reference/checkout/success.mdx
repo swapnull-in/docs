@@ -1,0 +1,40 @@
+---
+title: "Checkout Success"
+openapi: "GET /checkout/{id}/success"
+description: "Display the checkout success confirmation page"
+---
+
+<Note>
+This is a public endpoint called automatically after the payment gateway confirms a successful payment. You do not need to call this endpoint directly.
+</Note>
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The invoice ID |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/checkout/inv_001/success
+```
+
+## Response
+
+Returns an HTML page confirming that the payment was completed successfully. The page displays a receipt summary with the invoice amount and payment details.
+
+```
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+
+<!DOCTYPE html>
+<html>
+  <!-- Recurso payment success confirmation -->
+  ...
+</html>
+```
+
+<Tip>
+You can customize the success page appearance and redirect URL from the Recurso dashboard under **Settings > Checkout**.
+</Tip>

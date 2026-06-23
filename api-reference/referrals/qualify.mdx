@@ -1,0 +1,49 @@
+---
+title: "Qualify Referral"
+openapi: "POST /v1/referrals/{id}/qualify"
+description: "Qualify a referral so that rewards can be issued to the referrer."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the referral to qualify (e.g. `ref_Kp8mN2xLvQ`). |
+
+This endpoint marks a referral as qualified, indicating that the referred customer has met the criteria for the referrer to receive their reward. No request body is required.
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/referrals/ref_Kp8mN2xLvQ/qualify \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a"
+```
+
+## Response
+
+Returns the updated referral object with `status` set to `qualified`.
+
+```json
+{
+  "id": "ref_Kp8mN2xLvQ",
+  "referrer_id": "d4e5f6a7-b8c9-4d0e-a1f2-b3c4d5e6f7a8",
+  "referred_id": "f7a8b9c0-d1e2-4f3a-b4c5-d6e7f8a9b0c1",
+  "reward_amount": 1000,
+  "currency": "USD",
+  "status": "qualified",
+  "reward_credited": false,
+  "created_at": "2026-05-10T09:30:00Z",
+  "qualified_at": "2026-06-23T17:00:00Z",
+  "completed_at": null
+}
+```
+
+## Notes
+
+- Only referrals with `pending` status can be qualified. Attempting to qualify a referral that is already `qualified`, `completed`, or `expired` returns a `422` error.
+- Qualifying a referral does not automatically credit the reward. The reward is credited once the referral transitions to `completed` status.
+- Use this endpoint to manually approve referrals when you have custom qualification criteria beyond the default first-payment trigger.
+
+<Tip>
+If your referral program uses automatic qualification, referrals transition to `qualified` automatically when the referred customer completes their first payment. This endpoint is only needed for manual approval workflows.
+</Tip>

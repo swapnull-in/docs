@@ -1,0 +1,50 @@
+---
+title: "Get IRP Configuration"
+openapi: "GET /v1/settings/irp"
+description: "Retrieve the current Invoice Registration Portal (IRP) configuration for e-invoicing."
+---
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/settings/irp \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a"
+```
+
+## Response
+
+Returns the IRP configuration object. Sensitive fields are masked for security.
+
+```json
+{
+  "client_id": "ABCD****EF",
+  "client_secret": "sk_irp_****3210",
+  "username": "recurso_einv",
+  "password": "****",
+  "gstin": "29AABCT1332L1ZM",
+  "environment": "production",
+  "is_enabled": true,
+  "last_token_refresh": "2026-06-23T16:30:00Z",
+  "created_at": "2025-11-01T08:00:00Z",
+  "updated_at": "2026-06-23T16:30:00Z"
+}
+```
+
+## Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `client_id` | string | The OAuth client ID, partially masked. |
+| `username` | string | The IRP portal login username. |
+| `gstin` | string | The 15-character GSTIN associated with this configuration. |
+| `environment` | string | Target environment. One of: `sandbox`, `production`. |
+| `is_enabled` | boolean | Whether e-invoicing is currently enabled. |
+| `last_token_refresh` | string | ISO 8601 timestamp of the last OAuth token refresh. `null` if credentials have not been validated. |
+
+<Note>
+Sensitive fields (`client_id`, `client_secret`, `password`) are partially masked in the response. Full credentials are never returned by the API.
+</Note>
+
+<Tip>
+Use the [Update IRP Configuration](/api-reference/einvoice/irp-config) endpoint to modify credentials or toggle the `is_enabled` flag.
+</Tip>

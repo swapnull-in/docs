@@ -1,0 +1,53 @@
+---
+title: "Stripe Webhook"
+openapi: "POST /webhooks/stripe"
+description: "Receive and process webhook events from Stripe."
+---
+
+This endpoint receives webhook events from Stripe when payment-related events
+occur, such as successful charges, failed payments, and subscription updates.
+
+<Note>
+This endpoint verifies the webhook signature using your Stripe webhook secret.
+Configure this URL in your Stripe Dashboard under **Developers > Webhooks** with
+the URL `https://api.recurso.dev/webhooks/stripe`.
+</Note>
+
+## Example Request
+
+Stripe sends a POST request with event data:
+
+```bash
+curl -X POST https://api.recurso.dev/webhooks/stripe \
+  -H "Content-Type: application/json" \
+  -H "Stripe-Signature: t=1687000000,v1=stripe_hmac_signature_here" \
+  -d '{
+    "id": "evt_StripeABC123",
+    "object": "event",
+    "type": "payment_intent.succeeded",
+    "data": {
+      "object": {
+        "id": "pi_StripeDEF456",
+        "amount": 5899,
+        "currency": "usd",
+        "status": "succeeded"
+      }
+    }
+  }'
+```
+
+## Response
+
+Returns `200 OK` on successful processing.
+
+```json
+{
+  "status": "ok"
+}
+```
+
+<Warning>
+If signature verification fails, the endpoint returns `400 Bad Request` and the
+event is not processed. Ensure your Stripe webhook secret in Recurso matches
+the one configured in the Stripe Dashboard.
+</Warning>

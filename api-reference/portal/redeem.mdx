@@ -1,0 +1,52 @@
+---
+title: "Redeem Gift Code"
+openapi: "POST /portal/api/redeem"
+description: "Redeem a gift code through the customer portal to activate a subscription."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `code` | string | Yes | The gift code to redeem (e.g. `GIFT-ABC123`). |
+
+<Note>
+This endpoint requires an active portal session. The customer must be logged into the portal before redeeming a gift code.
+</Note>
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/portal/api/redeem \
+  -H "Content-Type: application/json" \
+  -H "Cookie: portal_session=ps_abc123..." \
+  -d '{
+    "code": "GIFT-ABC123"
+  }'
+```
+
+## Response
+
+Returns the subscription object created from the redeemed gift.
+
+```json
+{
+  "id": "sub_9f8e7d6c5b4a3210",
+  "object": "subscription",
+  "customer_id": "cust_a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "plan_id": "plan_pro_monthly",
+  "status": "active",
+  "gift_code": "GIFT-ABC123",
+  "gifted_by": "cust_f0e1d2c3-b4a5-6789-0abc-def123456789",
+  "current_period_start": "2026-06-23T00:00:00Z",
+  "current_period_end": "2026-12-23T00:00:00Z",
+  "cancel_at_period_end": true,
+  "created_at": "2026-06-23T10:15:30Z",
+  "updated_at": "2026-06-23T10:15:30Z"
+}
+```
+
+<Warning>
+Each gift code can only be redeemed once. Attempting to redeem an already-used or
+expired code returns a `422` validation error.
+</Warning>

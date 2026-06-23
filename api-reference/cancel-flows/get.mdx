@@ -1,0 +1,71 @@
+---
+title: "Get Cancel Flow"
+openapi: "GET /v1/cancel-flows/{id}"
+description: "Retrieve a single cancel flow with its configured steps."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the cancel flow (e.g. `cflow_01h8x3kv7m2p`). |
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.dev/v1/cancel-flows/cflow_01h8x3kv7m2p" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c"
+```
+
+## Response
+
+```json
+{
+  "id": "cflow_01h8x3kv7m2p",
+  "object": "cancel_flow",
+  "name": "Default Cancellation Flow",
+  "description": "Standard 3-step cancel flow with discount offer",
+  "is_active": true,
+  "is_default": true,
+  "cooldown_days": 30,
+  "steps": [
+    {
+      "id": "cstep_01h8x3mw9n4q",
+      "type": "survey",
+      "title": "We're sorry to see you go",
+      "description": "Help us understand why you are cancelling so we can improve.",
+      "required": true,
+      "order": 0,
+      "offer": null
+    },
+    {
+      "id": "cstep_01h8x3pw2r6s",
+      "type": "offer",
+      "title": "How about a discount?",
+      "description": "We would love to keep you. Here is a special offer.",
+      "required": false,
+      "order": 1,
+      "offer": {
+        "type": "discount_percent",
+        "value": 20,
+        "duration_days": 90
+      }
+    },
+    {
+      "id": "cstep_01h8x3rz5t8u",
+      "type": "confirmation",
+      "title": "Confirm cancellation",
+      "description": "Your subscription will remain active until the end of the current billing period.",
+      "required": true,
+      "order": 2,
+      "offer": null
+    }
+  ],
+  "created_at": "2026-03-10T14:22:00Z",
+  "updated_at": "2026-05-18T09:15:30Z"
+}
+```
+
+<Tip>
+Use the [Cancel Flow Stats](/api-reference/cancel-flows/stats) endpoint to see how this flow is performing in terms of retention and completion rates.
+</Tip>

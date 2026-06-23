@@ -1,0 +1,50 @@
+---
+title: "OAuth Callback"
+openapi: "GET /v1/accounting/callback/{provider}"
+description: "OAuth callback endpoint invoked by accounting providers after user authorization."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `provider` | string | Yes | The accounting provider. One of `quickbooks` or `xero`. |
+
+## Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `code` | string | Yes | The authorization code returned by the OAuth provider. |
+| `state` | string | Yes | The opaque state value passed during the initial connect request. |
+| `realmId` | string | No | The QuickBooks company identifier. Only present for QuickBooks OAuth flows. |
+
+<Note>
+This endpoint is called automatically by the OAuth provider after the user authorizes the connection. You should not call this endpoint directly. Use the [Initiate Accounting OAuth](/api-reference/accounting/connect) endpoint to start the flow.
+</Note>
+
+## Example Request
+
+```bash
+curl -X GET "https://api.recurso.dev/v1/accounting/callback/quickbooks?code=AB11695830758pVh1DQhWb&state=usr_session_abc123&realmId=4620816365185389250" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c"
+```
+
+## Response
+
+On success, the user is redirected to the `redirect_uri` specified in the original connect request with a `success=true` query parameter.
+
+```json
+{
+  "status": "connected",
+  "connection_id": "aconn_3pRs6tUv9wXy",
+  "provider": "quickbooks",
+  "realm_id": "4620816365185389250",
+  "redirect_url": "https://app.example.com/settings/integrations/callback?success=true"
+}
+```
+
+## Notes
+
+- Recurso handles the token exchange automatically using the authorization code.
+- If the `state` parameter does not match the original request, the callback returns a `403` error.
+- On failure, the user is redirected with `success=false` and an `error` query parameter describing the issue.

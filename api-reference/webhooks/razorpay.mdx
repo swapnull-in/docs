@@ -1,0 +1,55 @@
+---
+title: "Razorpay Webhook"
+openapi: "POST /webhooks/razorpay"
+description: "Receive and process webhook events from Razorpay."
+---
+
+This endpoint receives webhook events from Razorpay when payment-related events
+occur, such as successful payments, failed payments, and refunds.
+
+<Note>
+This endpoint verifies the webhook signature using your Razorpay webhook secret.
+Configure this URL in your Razorpay Dashboard under **Settings > Webhooks** with
+the URL `https://api.recurso.dev/webhooks/razorpay`.
+</Note>
+
+## Example Request
+
+Razorpay sends a POST request with event data:
+
+```bash
+curl -X POST https://api.recurso.dev/webhooks/razorpay \
+  -H "Content-Type: application/json" \
+  -H "X-Razorpay-Signature: sha256_hmac_signature_here" \
+  -d '{
+    "entity": "event",
+    "event": "payment.captured",
+    "payload": {
+      "payment": {
+        "entity": {
+          "id": "pay_RzpABC123",
+          "amount": 249900,
+          "currency": "INR",
+          "status": "captured",
+          "order_id": "order_RzpDEF456"
+        }
+      }
+    }
+  }'
+```
+
+## Response
+
+Returns `200 OK` on successful processing.
+
+```json
+{
+  "status": "ok"
+}
+```
+
+<Warning>
+If signature verification fails, the endpoint returns `400 Bad Request` and the
+event is not processed. Ensure your Razorpay webhook secret in Recurso matches
+the one configured in the Razorpay Dashboard.
+</Warning>

@@ -1,0 +1,46 @@
+---
+title: "Delete Cancel Flow Step"
+openapi: "DELETE /v1/cancel-flows/steps/{id}"
+description: "Remove a step from a cancel flow."
+---
+
+## Path Parameters
+
+| Parameter | Type   | Required | Description                                       |
+|-----------|--------|----------|---------------------------------------------------|
+| `id`      | string | Yes      | The cancel flow step ID (`cstep_` prefix).        |
+
+## Example Request
+
+```bash
+curl -X DELETE "https://api.recurso.dev/v1/cancel-flows/steps/cstep_01h8x4qw3s7v" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+Returns a confirmation message on success.
+
+```json
+{
+  "message": "Step deleted successfully"
+}
+```
+
+### Error Response
+
+Returns a `404` if the step ID does not exist.
+
+```json
+{
+  "error": {
+    "code": "step_not_found",
+    "message": "No cancel flow step found with ID cstep_01h8x4qw3s7v"
+  }
+}
+```
+
+<Warning>
+Deleting a step from a published cancel flow takes effect immediately. Any in-progress sessions that have not yet reached this step will skip it automatically.
+</Warning>

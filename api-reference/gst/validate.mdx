@@ -1,0 +1,55 @@
+---
+title: "Validate GSTIN"
+openapi: "POST /v1/settings/gst/validate"
+description: "Validate a GSTIN number and retrieve associated business details."
+---
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `gstin` | string | Yes | The 15-character GST Identification Number to validate. |
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/settings/gst/validate \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gstin": "29ABCDE1234F1Z5"
+  }'
+```
+
+## Response
+
+```json
+{
+  "valid": true,
+  "gstin": "29ABCDE1234F1Z5",
+  "legal_name": "Recurso Technologies Pvt Ltd",
+  "trade_name": "Recurso",
+  "state_code": "29",
+  "status": "Active"
+}
+```
+
+## Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `valid` | boolean | Whether the GSTIN is a valid, registered number. |
+| `gstin` | string | The GSTIN that was validated. |
+| `legal_name` | string | The registered legal name of the business. |
+| `trade_name` | string | The trade or brand name associated with the GSTIN. |
+| `state_code` | string | The two-digit state code derived from the GSTIN. |
+| `status` | string | Registration status. One of `Active`, `Inactive`, `Cancelled`, or `Suspended`. |
+
+## Notes
+
+- If the GSTIN format is invalid, the response returns `valid: false` with a `400` status code.
+- This endpoint queries the GST Network (GSTN) portal in real-time. Responses may take 2-3 seconds during peak hours.
+
+<Tip>
+Use this endpoint to validate customer GSTINs before saving them to avoid incorrect tax calculations on invoices.
+</Tip>

@@ -1,0 +1,40 @@
+---
+title: "Show Checkout Page"
+openapi: "GET /checkout/{id}"
+description: "Display the hosted checkout page for an invoice"
+---
+
+<Note>
+This is a public endpoint designed to be shared with customers. No authentication is required.
+</Note>
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The invoice ID |
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/checkout/inv_001
+```
+
+## Response
+
+Returns an HTML checkout page that displays the invoice details and available payment methods. This page is intended to be opened in a browser by the customer.
+
+```
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+
+<!DOCTYPE html>
+<html>
+  <!-- Recurso hosted checkout page -->
+  ...
+</html>
+```
+
+<Tip>
+Include the checkout URL in emails or redirect customers to it from your application. The URL format is `https://api.recurso.dev/checkout/{invoice_id}`.
+</Tip>

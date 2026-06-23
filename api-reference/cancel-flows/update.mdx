@@ -1,0 +1,66 @@
+---
+title: "Update Cancel Flow"
+openapi: "PUT /v1/cancel-flows/{id}"
+description: "Update the configuration of an existing cancel flow."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the cancel flow to update (e.g. `cflow_01h8x3kv7m2p`). |
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | No | Display name for the cancel flow (max 255 characters). |
+| `is_active` | boolean | No | Whether the flow is active and can be triggered. |
+| `is_default` | boolean | No | Whether this is the default cancel flow for subscriptions without a specific flow assigned. |
+| `cooldown_days` | integer | No | Minimum number of days before a customer can be shown this flow again. |
+
+## Example Request
+
+```bash
+curl -X PUT "https://api.recurso.dev/v1/cancel-flows/cflow_01h8x3kv7m2p" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Pro Plan Retention Flow",
+    "is_active": true,
+    "is_default": false,
+    "cooldown_days": 14
+  }'
+```
+
+## Response
+
+Returns the updated cancel flow object.
+
+```json
+{
+  "id": "cflow_01h8x3kv7m2p",
+  "object": "cancel_flow",
+  "name": "Pro Plan Retention Flow",
+  "description": "Standard 3-step cancel flow with discount offer",
+  "is_active": true,
+  "is_default": false,
+  "cooldown_days": 14,
+  "steps": [
+    { "id": "cstep_01h8x3mw9n4q", "type": "survey", "title": "We're sorry to see you go", "order": 0 },
+    { "id": "cstep_01h8x3pw2r6s", "type": "offer", "title": "How about a discount?", "order": 1 },
+    { "id": "cstep_01h8x3rz5t8u", "type": "confirmation", "title": "Confirm cancellation", "order": 2 }
+  ],
+  "created_at": "2026-03-10T14:22:00Z",
+  "updated_at": "2026-06-23T17:45:00Z"
+}
+```
+
+## Notes
+
+- Only fields included in the request body are updated. Omitted fields remain unchanged.
+- Setting `is_default` to `true` automatically unsets any other flow that was previously the default.
+
+<Warning>
+Updating an active flow that is currently being served to customers will take effect immediately. Changes apply to new cancellation sessions only; in-progress sessions continue using the previous configuration.
+</Warning>

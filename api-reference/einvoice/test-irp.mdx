@@ -1,0 +1,47 @@
+---
+title: "Test IRP Connection"
+openapi: "POST /v1/settings/irp/test"
+description: "Test connectivity to the Invoice Registration Portal using your saved credentials."
+---
+
+Sends a test authentication request to the IRP using the credentials stored in your current configuration. No request body is required.
+
+## Example Request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/settings/irp/test \
+  -H "Authorization: Bearer rsk_live_7f3a9b2c1d4e8f0a" \
+  -H "Content-Type: application/json"
+```
+
+## Response (Success)
+
+```json
+{
+  "success": true,
+  "message": "Successfully authenticated with the IRP. Credentials are valid.",
+  "environment": "production",
+  "response_time_ms": 342,
+  "tested_at": "2026-06-23T16:45:00Z"
+}
+```
+
+## Response (Failure)
+
+```json
+{
+  "success": false,
+  "message": "Authentication failed. The client_id or client_secret is invalid.",
+  "environment": "production",
+  "response_time_ms": 1205,
+  "tested_at": "2026-06-23T16:45:00Z"
+}
+```
+
+<Tip>
+Always test your IRP connection after updating credentials and before enabling auto-submission in production. This avoids failed e-invoice submissions on live invoices.
+</Tip>
+
+<Warning>
+This endpoint requires an existing IRP configuration. If no configuration has been saved, the request returns a `404 Not Found` error. Use the [Update IRP Configuration](/api-reference/einvoice/irp-config) endpoint to set up credentials first.
+</Warning>

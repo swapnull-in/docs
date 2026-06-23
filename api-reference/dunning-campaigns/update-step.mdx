@@ -1,0 +1,56 @@
+---
+title: "Update Campaign Step"
+openapi: "PUT /v1/dunning-campaigns/steps/{id}"
+description: "Update an existing step in a dunning campaign."
+---
+
+## Path Parameters
+
+| Parameter | Type   | Required | Description                                       |
+|-----------|--------|----------|---------------------------------------------------|
+| `id`      | string | Yes      | The dunning step ID (`dstep_` prefix).            |
+
+## Body Parameters
+
+| Parameter     | Type    | Required | Description                                                                    |
+|---------------|---------|----------|--------------------------------------------------------------------------------|
+| `day_offset`  | integer | No       | Number of days after the initial payment failure to execute this step.          |
+| `channel`     | string  | No       | Delivery channel. One of `email`, `sms`, or `payment_wall`.                    |
+| `template_id` | string  | No       | ID of a pre-configured message template.                                       |
+| `subject`     | string  | No       | Subject line for the message.                                                  |
+| `body`        | string  | No       | Message body content. Supports Liquid template variables.                      |
+
+## Example Request
+
+```bash
+curl -X PUT "https://api.recurso.dev/v1/dunning-campaigns/steps/dstep_5rMt8wVn3aZs" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "day_offset": 2,
+    "subject": "Urgent: Your payment needs attention",
+    "body": "Hi {{ customer.first_name }}, your payment of {{ amount_due }} for {{ subscription.plan_name }} could not be processed. Please update your payment method at {{ update_payment_url }} to avoid service interruption."
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "dstep_5rMt8wVn3aZs",
+  "object": "dunning_step",
+  "campaign_id": "dc_8mKp3vRn2wXq",
+  "day_offset": 2,
+  "channel": "email",
+  "template_id": null,
+  "subject": "Urgent: Your payment needs attention",
+  "body": "Hi {{ customer.first_name }}, your payment of {{ amount_due }} for {{ subscription.plan_name }} could not be processed. Please update your payment method at {{ update_payment_url }} to avoid service interruption.",
+  "is_active": true,
+  "created_at": "2026-06-23T10:35:00Z",
+  "updated_at": "2026-06-23T16:10:00Z"
+}
+```
+
+<Tip>
+You only need to include the fields you want to update. Omitted fields retain their current values.
+</Tip>

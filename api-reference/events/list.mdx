@@ -1,0 +1,66 @@
+---
+title: "List Events"
+openapi: "GET /v1/events"
+description: "Retrieve a paginated list of webhook events"
+---
+
+## Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `type` | string | Filter by event type (e.g. `invoice.paid`) |
+| `limit` | integer | Max results (default: 10, max: 100) |
+| `offset` | integer | Pagination offset |
+
+## Example Request
+
+```bash
+curl "https://api.recurso.dev/v1/events?type=invoice.paid&limit=5" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "evt_a1b2c3d4",
+      "object": "event",
+      "type": "invoice.paid",
+      "object_type": "invoice",
+      "object_id": "inv_001",
+      "data": {
+        "id": "inv_001",
+        "customer_id": "cust_abc123",
+        "amount": 5899,
+        "currency": "INR",
+        "status": "paid"
+      },
+      "created_at": "2024-01-15T10:30:00Z"
+    },
+    {
+      "id": "evt_e5f6g7h8",
+      "object": "event",
+      "type": "invoice.paid",
+      "object_type": "invoice",
+      "object_id": "inv_002",
+      "data": {
+        "id": "inv_002",
+        "customer_id": "cust_def456",
+        "amount": 11999,
+        "currency": "INR",
+        "status": "paid"
+      },
+      "created_at": "2024-01-14T08:15:00Z"
+    }
+  ],
+  "has_more": true,
+  "total_count": 42
+}
+```
+
+<Tip>
+Use the `type` filter to efficiently retrieve events relevant to your integration, such as `payment.failed` for retry logic or `subscription.canceled` for churn tracking.
+</Tip>

@@ -1,0 +1,60 @@
+---
+title: "Update Cancel Flow Step"
+openapi: "PUT /v1/cancel-flows/steps/{id}"
+description: "Update the configuration of an existing cancel flow step."
+---
+
+## Path Parameters
+
+| Parameter | Type   | Required | Description                                       |
+|-----------|--------|----------|---------------------------------------------------|
+| `id`      | string | Yes      | The cancel flow step ID (`cstep_` prefix).        |
+
+## Body Parameters
+
+| Parameter    | Type    | Required | Description                                                             |
+|--------------|---------|----------|-------------------------------------------------------------------------|
+| `step_order` | integer | No       | Updated position of this step in the flow (0-indexed).                  |
+| `step_type`  | string  | No       | Step type. One of `survey`, `offer`, or `confirmation`.                 |
+| `config`     | object  | No       | JSON configuration for the step (e.g. survey options, offer details).   |
+
+## Example Request
+
+```bash
+curl -X PUT "https://api.recurso.dev/v1/cancel-flows/steps/cstep_01h8x4qw3s7v" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "step_order": 2,
+    "config": {
+      "title": "We would love to keep you",
+      "offer_type": "discount_percent",
+      "offer_value": 30,
+      "duration_days": 60
+    }
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "cstep_01h8x4qw3s7v",
+  "object": "cancel_flow_step",
+  "flow_id": "cflow_01h8x3kv7m2p",
+  "step_order": 2,
+  "step_type": "offer",
+  "config": {
+    "title": "We would love to keep you",
+    "offer_type": "discount_percent",
+    "offer_value": 30,
+    "duration_days": 60
+  },
+  "created_at": "2026-06-23T11:20:00Z",
+  "updated_at": "2026-06-23T14:05:00Z"
+}
+```
+
+<Tip>
+You only need to include the fields you want to update. Omitted fields retain their current values.
+</Tip>

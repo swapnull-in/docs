@@ -121,12 +121,16 @@
             ]
           },
           {
+            "group": "Authentication",
+            "pages": [
+              "api-reference/auth/register"
+            ]
+          },
+          {
             "group": "Plans",
             "pages": [
               "api-reference/plans/create",
-              "api-reference/plans/list",
-              "api-reference/plans/get",
-              "api-reference/plans/update"
+              "api-reference/plans/list"
             ]
           },
           {
@@ -134,7 +138,6 @@
             "pages": [
               "api-reference/customers/create",
               "api-reference/customers/list",
-              "api-reference/customers/get",
               "api-reference/customers/update-payment-method"
             ]
           },
@@ -143,7 +146,6 @@
             "pages": [
               "api-reference/subscriptions/create",
               "api-reference/subscriptions/list",
-              "api-reference/subscriptions/get",
               "api-reference/subscriptions/update",
               "api-reference/subscriptions/cancel",
               "api-reference/subscriptions/pause",
@@ -154,10 +156,26 @@
             "group": "Invoices",
             "pages": [
               "api-reference/invoices/list",
-              "api-reference/invoices/get",
               "api-reference/invoices/pdf",
+              "api-reference/invoices/preview",
               "api-reference/invoices/einvoice-status",
               "api-reference/invoices/payment-wall"
+            ]
+          },
+          {
+            "group": "Checkout",
+            "pages": [
+              "api-reference/checkout/show",
+              "api-reference/checkout/pay",
+              "api-reference/checkout/success"
+            ]
+          },
+          {
+            "group": "Payments",
+            "pages": [
+              "api-reference/payments/create-order",
+              "api-reference/payments/record-offline",
+              "api-reference/payments/list-offline"
             ]
           },
           {
@@ -190,6 +208,7 @@
               "api-reference/quotes/delete",
               "api-reference/quotes/send",
               "api-reference/quotes/accept",
+              "api-reference/quotes/decline",
               "api-reference/quotes/convert"
             ]
           },
@@ -223,7 +242,8 @@
               "api-reference/analytics/usage",
               "api-reference/analytics/ask",
               "api-reference/analytics/dunning-overview",
-              "api-reference/analytics/dunning-weights"
+              "api-reference/analytics/dunning-weights",
+              "api-reference/analytics/dunning-history"
             ]
           },
           {
@@ -231,22 +251,26 @@
             "pages": [
               "api-reference/consent/record",
               "api-reference/consent/revoke",
-              "api-reference/consent/customer-consents"
+              "api-reference/consent/customer-consents",
+              "api-reference/consent/subscription-consent"
             ]
           },
           {
             "group": "GST",
             "pages": [
               "api-reference/gst/get-config",
-              "api-reference/gst/update-config"
+              "api-reference/gst/update-config",
+              "api-reference/gst/validate"
             ]
           },
           {
             "group": "E-Invoice",
             "pages": [
+              "api-reference/einvoice/get-irp-config",
+              "api-reference/einvoice/irp-config",
+              "api-reference/einvoice/test-irp",
               "api-reference/einvoice/retry",
-              "api-reference/einvoice/cancel",
-              "api-reference/einvoice/irp-config"
+              "api-reference/einvoice/cancel"
             ]
           },
           {
@@ -254,14 +278,16 @@
             "pages": [
               "api-reference/referrals/create",
               "api-reference/referrals/list",
-              "api-reference/referrals/generate-code"
+              "api-reference/referrals/generate-code",
+              "api-reference/referrals/qualify"
             ]
           },
           {
             "group": "Gifts",
             "pages": [
               "api-reference/gifts/purchase",
-              "api-reference/gifts/redeem"
+              "api-reference/gifts/redeem",
+              "api-reference/gifts/list"
             ]
           },
           {
@@ -269,6 +295,7 @@
             "pages": [
               "api-reference/mandates/create",
               "api-reference/mandates/list",
+              "api-reference/mandates/get",
               "api-reference/mandates/revoke"
             ]
           },
@@ -276,8 +303,7 @@
             "group": "Virtual Accounts",
             "pages": [
               "api-reference/virtual-accounts/create",
-              "api-reference/virtual-accounts/list",
-              "api-reference/payments/record-offline"
+              "api-reference/virtual-accounts/list"
             ]
           },
           {
@@ -286,6 +312,7 @@
               "api-reference/organizations/create",
               "api-reference/organizations/get",
               "api-reference/organizations/add-tenant",
+              "api-reference/organizations/list-tenants",
               "api-reference/organizations/consolidated-mrr"
             ]
           },
@@ -294,7 +321,8 @@
             "pages": [
               "api-reference/churn/customer-score",
               "api-reference/churn/high-risk",
-              "api-reference/churn/alerts"
+              "api-reference/churn/alerts",
+              "api-reference/churn/acknowledge-alert"
             ]
           },
           {
@@ -302,7 +330,13 @@
             "pages": [
               "api-reference/cancel-flows/create",
               "api-reference/cancel-flows/list",
+              "api-reference/cancel-flows/get",
+              "api-reference/cancel-flows/update",
+              "api-reference/cancel-flows/create-step",
+              "api-reference/cancel-flows/update-step",
+              "api-reference/cancel-flows/delete-step",
               "api-reference/cancel-flows/start-session",
+              "api-reference/cancel-flows/get-session",
               "api-reference/cancel-flows/submit-step",
               "api-reference/cancel-flows/stats"
             ]
@@ -313,7 +347,10 @@
               "api-reference/dunning-campaigns/create",
               "api-reference/dunning-campaigns/list",
               "api-reference/dunning-campaigns/get",
-              "api-reference/dunning-campaigns/create-step"
+              "api-reference/dunning-campaigns/update",
+              "api-reference/dunning-campaigns/create-step",
+              "api-reference/dunning-campaigns/update-step",
+              "api-reference/dunning-campaigns/delete-step"
             ]
           },
           {
@@ -321,7 +358,10 @@
             "pages": [
               "api-reference/accounting/connections",
               "api-reference/accounting/connect",
-              "api-reference/accounting/sync"
+              "api-reference/accounting/callback",
+              "api-reference/accounting/disconnect",
+              "api-reference/accounting/sync",
+              "api-reference/accounting/sync-status"
             ]
           },
           {
@@ -342,7 +382,31 @@
             "group": "Webhooks",
             "pages": [
               "api-reference/webhooks/create",
-              "api-reference/webhooks/events"
+              "api-reference/webhooks/list",
+              "api-reference/webhooks/delete",
+              "api-reference/webhooks/events",
+              "api-reference/webhooks/razorpay",
+              "api-reference/webhooks/stripe"
+            ]
+          },
+          {
+            "group": "Events",
+            "pages": [
+              "api-reference/events/list",
+              "api-reference/events/types"
+            ]
+          },
+          {
+            "group": "Portal API",
+            "pages": [
+              "api-reference/portal/auth-request",
+              "api-reference/portal/auth-verify",
+              "api-reference/portal/profile",
+              "api-reference/portal/invoices",
+              "api-reference/portal/redeem",
+              "api-reference/portal/logout",
+              "api-reference/portal/dashboard",
+              "api-reference/portal/data"
             ]
           }
         ]

@@ -1,0 +1,48 @@
+---
+title: "Preview Invoice"
+openapi: "GET /v1/invoices/{id}/preview"
+description: "Preview an invoice as rendered HTML."
+---
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The invoice ID (e.g. `inv_001`). |
+
+<Note>
+This is a public endpoint and does not require authentication. Invoice preview URLs can be shared directly with customers.
+</Note>
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/v1/invoices/inv_001/preview
+```
+
+## Response
+
+Returns the rendered invoice as HTML with content type `text/html`.
+
+```
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+
+<!DOCTYPE html>
+<html>
+  <head><title>Invoice REC/2024/0001</title></head>
+  <body>
+    <!-- Rendered invoice markup -->
+  </body>
+</html>
+```
+
+## Notes
+
+- The response is raw HTML, not JSON. Set your client to accept `text/html`.
+- The rendered HTML includes all invoice line items, tax breakdowns, and your organization's branding.
+- Draft invoices can also be previewed, making this useful for verifying layout before finalizing.
+
+<Tip>
+Embed the preview URL in customer-facing emails or portals so customers can view their invoices without logging in.
+</Tip>

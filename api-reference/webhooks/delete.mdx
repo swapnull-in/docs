@@ -1,0 +1,46 @@
+---
+title: "Delete Webhook"
+openapi: "DELETE /v1/webhooks/{id}"
+description: "Remove a webhook endpoint and stop delivering events to it."
+---
+
+## Path Parameters
+
+| Parameter | Type   | Required | Description                                       |
+|-----------|--------|----------|---------------------------------------------------|
+| `id`      | string | Yes      | The webhook endpoint ID (`wh_` prefix).           |
+
+## Example Request
+
+```bash
+curl -X DELETE "https://api.recurso.dev/v1/webhooks/wh_3nRv7tXq9mKs" \
+  -H "Authorization: Bearer rsk_live_9f8a7b6c5d4e3f2a1b0c" \
+  -H "Content-Type: application/json"
+```
+
+## Response
+
+Returns a confirmation message on success.
+
+```json
+{
+  "message": "Webhook endpoint deleted"
+}
+```
+
+### Error Response
+
+Returns a `404` if the webhook ID does not exist.
+
+```json
+{
+  "error": {
+    "code": "webhook_not_found",
+    "message": "No webhook endpoint found with ID wh_3nRv7tXq9mKs"
+  }
+}
+```
+
+<Warning>
+Deleting a webhook endpoint is permanent. Any events queued for delivery to this endpoint will be discarded. If you want to temporarily stop receiving events, consider setting the endpoint status to `inactive` instead.
+</Warning>
