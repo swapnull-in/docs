@@ -236,6 +236,12 @@
             ]
           },
           {
+            "group": "Revenue Recognition",
+            "pages": [
+              "api-reference/revrec/report"
+            ]
+          },
+          {
             "group": "Analytics",
             "pages": [
               "api-reference/analytics/mrr",
@@ -309,10 +315,14 @@
           {
             "group": "Organizations",
             "pages": [
+              "api-reference/organizations/list",
               "api-reference/organizations/create",
               "api-reference/organizations/get",
+              "api-reference/organizations/update",
+              "api-reference/organizations/delete",
               "api-reference/organizations/add-tenant",
               "api-reference/organizations/list-tenants",
+              "api-reference/organizations/remove-tenant",
               "api-reference/organizations/consolidated-mrr"
             ]
           },

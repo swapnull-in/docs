@@ -1,0 +1,34 @@
+---
+title: "Remove Tenant from Organization"
+openapi: "DELETE /v1/organizations/{id}/tenants/{tenant_id}"
+description: "Remove a tenant from an organization, dissolving the association."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the organization (e.g. `org_4f3e2d1c0b9a8765`). |
+| `tenant_id` | string | Yes | The unique identifier of the tenant to remove (e.g. `tenant_a1b2c3d4`). |
+
+## Example Request
+
+```bash
+curl -X DELETE https://api.recurso.dev/v1/organizations/org_4f3e2d1c0b9a8765/tenants/tenant_a1b2c3d4 \
+  -H "Authorization: Bearer rsk_live_xxx"
+```
+
+## Response
+
+Returns a confirmation that the tenant has been removed from the organization.
+
+```json
+{
+  "status": "removed"
+}
+```
+
+<Tip>
+The tenant is not deleted — it continues to exist independently and can be added to a
+different organization using the [Add Tenant](/api-reference/organizations/add-tenant) endpoint.
+</Tip>

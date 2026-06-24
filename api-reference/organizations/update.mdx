@@ -1,0 +1,54 @@
+---
+title: "Update Organization"
+openapi: "PUT /v1/organizations/{id}"
+description: "Update an existing organization's name or owner email."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the organization (e.g. `org_4f3e2d1c0b9a8765`). |
+
+## Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | No | Updated display name for the organization. |
+| `owner_email` | string (email) | No | Updated email address of the organization owner. |
+
+At least one field must be provided. Fields not included in the request body remain unchanged.
+
+## Example Request
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/organizations/org_4f3e2d1c0b9a8765 \
+  -H "Authorization: Bearer rsk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme Holdings International",
+    "owner_email": "cfo@acmeholdings.com"
+  }'
+```
+
+## Response
+
+Returns the updated organization object.
+
+```json
+{
+  "data": {
+    "id": "org_4f3e2d1c0b9a8765",
+    "object": "organization",
+    "name": "Acme Holdings International",
+    "owner_email": "cfo@acmeholdings.com",
+    "created_at": "2026-06-23T10:15:30Z",
+    "updated_at": "2026-06-24T16:45:00Z"
+  }
+}
+```
+
+<Tip>
+Use [Get Organization](/api-reference/organizations/get) to verify the updated details after
+making changes.
+</Tip>

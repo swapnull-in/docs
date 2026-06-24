@@ -1,0 +1,46 @@
+---
+title: "Get Revenue Recognition Report"
+openapi: "GET /v1/finance/revrec/report"
+description: "Retrieve the revenue recognition report for a specific month and year."
+---
+
+## Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `month` | integer | Yes | The month of the report (1–12). |
+| `year` | integer | Yes | The year of the report (e.g. `2026`). Must be 2000 or later. |
+
+## Example Request
+
+```bash
+curl "https://api.recurso.dev/v1/finance/revrec/report?month=6&year=2026" \
+  -H "Authorization: Bearer rsk_live_xxx"
+```
+
+## Response
+
+Returns the revenue recognition summary for the requested period. All monetary values are in the smallest currency unit (e.g. cents for USD).
+
+```json
+{
+  "data": {
+    "recognized_amount": 4500000,
+    "deferred_amount": 1200000,
+    "month": 6,
+    "year": 2026
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `recognized_amount` | integer | Total revenue recognized in the period (in cents). |
+| `deferred_amount` | integer | Total deferred revenue still pending recognition (in cents). |
+| `month` | integer | The requested month. |
+| `year` | integer | The requested year. |
+
+<Tip>
+For a conceptual overview of how Recurso handles revenue recognition schedules and
+monthly allocation, see the [Revenue Recognition](/advanced/revenue-recognition) guide.
+</Tip>

@@ -1,0 +1,34 @@
+---
+title: "Delete Organization"
+openapi: "DELETE /v1/organizations/{id}"
+description: "Permanently delete an organization."
+---
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The unique identifier of the organization (e.g. `org_4f3e2d1c0b9a8765`). |
+
+## Example Request
+
+```bash
+curl -X DELETE https://api.recurso.dev/v1/organizations/org_4f3e2d1c0b9a8765 \
+  -H "Authorization: Bearer rsk_live_xxx"
+```
+
+## Response
+
+Returns a confirmation that the organization has been deleted.
+
+```json
+{
+  "status": "deleted"
+}
+```
+
+<Warning>
+Deleting an organization is permanent. All tenant associations will be removed. The tenants
+themselves are not deleted — they continue to exist independently. Remove tenants from the
+organization first if you need to reassign them.
+</Warning>
