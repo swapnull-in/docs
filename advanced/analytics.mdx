@@ -245,6 +245,107 @@ Here are some questions the AI query engine handles well:
 The AI query engine operates in read-only mode. It cannot modify data. Responses are generated based on your tenant's data only -- queries are fully isolated.
 </Warning>
 
+## Dunning Analytics
+
+Track the performance of your payment recovery efforts with dedicated dunning analytics endpoints.
+
+### Dunning Overview
+
+Get a high-level summary of dunning activity across your tenant:
+
+<CodeGroup>
+```typescript TypeScript
+const overview = await recurso.analytics.getDunningOverview({
+  start_date: '2026-06-01',
+  end_date: '2026-06-30'
+});
+
+// Response
+{
+  data: {
+    total_invoices_in_dunning: 47,
+    total_amount_at_risk: 2350000,
+    recovered_amount: 1890000,
+    recovery_rate: 0.804,  // 80.4%
+    currency: 'INR'
+  }
+}
+```
+
+```bash cURL
+curl -G https://api.recurso.dev/v1/analytics/dunning/overview \
+  -H "Authorization: Bearer $API_KEY" \
+  -d start_date=2026-06-01 \
+  -d end_date=2026-06-30
+```
+</CodeGroup>
+
+### Dunning Weights
+
+Understand which retry strategies are most effective. Weights indicate how much each retry attempt contributes to overall recovery:
+
+<CodeGroup>
+```typescript TypeScript
+const weights = await recurso.analytics.getDunningWeights();
+
+// Response
+{
+  data: {
+    weights: [
+      { retry_number: 1, recovery_rate: 0.45, avg_days_after_failure: 1 },
+      { retry_number: 2, recovery_rate: 0.25, avg_days_after_failure: 3 },
+      { retry_number: 3, recovery_rate: 0.10, avg_days_after_failure: 7 }
+    ]
+  }
+}
+```
+
+```bash cURL
+curl https://api.recurso.dev/v1/analytics/dunning/weights \
+  -H "Authorization: Bearer $API_KEY"
+```
+</CodeGroup>
+
+### Dunning History
+
+View the timeline of dunning events for a specific period:
+
+<CodeGroup>
+```typescript TypeScript
+const history = await recurso.analytics.getDunningHistory({
+  start_date: '2026-06-01',
+  end_date: '2026-06-30',
+  limit: 50
+});
+
+// Response
+{
+  data: [
+    {
+      invoice_id: 'inv_042',
+      customer_id: 'cust_abc',
+      amount: 5899,
+      retry_count: 2,
+      status: 'recovered',
+      first_failed_at: '2026-06-10T00:00:00Z',
+      recovered_at: '2026-06-13T14:30:00Z'
+    }
+    // ...
+  ]
+}
+```
+
+```bash cURL
+curl -G https://api.recurso.dev/v1/analytics/dunning/history \
+  -H "Authorization: Bearer $API_KEY" \
+  -d start_date=2026-06-01 \
+  -d end_date=2026-06-30 \
+  -d limit=50
+```
+</CodeGroup>
+
+See the [Smart Retry guide](/advanced/smart-retry) for configuring retry strategies and the [Dunning Campaigns guide](/advanced/dunning-campaigns) for email sequences.
+
 ## Dashboard Integration
 
 Pull analytics data into your own dashboards using the API endpoints above.
