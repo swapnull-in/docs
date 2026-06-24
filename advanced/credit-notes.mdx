@@ -17,13 +17,13 @@ Credit notes represent refunds or credits issued to customers. They can be:
 const creditNote = await recurso.creditNotes.create({
   customer_id: 'cust_abc',
   invoice_id: 'inv_001',  // Optional: link to original invoice
-  
+
   line_items: [{
     description: 'Refund for service downtime',
     quantity: 1,
     unit_amount: 2500
   }],
-  
+
   reason: 'service_issue',
   memo: 'Compensation for 2 hours of downtime on Jan 15'
 });
@@ -52,6 +52,25 @@ await recurso.creditNotes.applyToInvoice({
 });
 ```
 
+### Apply to Future Invoices
+
+When a credit note has remaining balance, it can be applied to the customer's next invoice automatically:
+
+```typescript
+const creditNote = await recurso.creditNotes.create({
+  customer_id: 'cust_abc',
+  line_items: [{
+    description: 'Goodwill credit',
+    quantity: 1,
+    unit_amount: 5000
+  }],
+  reason: 'service_issue',
+  auto_apply: true  // Automatically apply to next invoice
+});
+```
+
+With `auto_apply: true`, Recurso deducts the credit note balance from the customer's next invoice. If the credit exceeds the invoice total, the remaining balance carries forward.
+
 ## Issue Refund
 
 Process an actual refund to the payment method:
@@ -75,12 +94,96 @@ const refund = await recurso.creditNotes.refund('cn_xyz', {
 
 ## List Credit Notes
 
-```typescript
+Retrieve credit notes with filters:
+
+<CodeGroup>
+```typescript TypeScript
 const creditNotes = await recurso.creditNotes.list({
   customer_id: 'cust_abc',
-  status: 'issued'
+  status: 'issued',
+  limit: 20,
+  offset: 0
 });
+
+// Response
+{
+  data: [
+    {
+      id: 'cn_001',
+      customer_id: 'cust_abc',
+      invoice_id: 'inv_001',
+      status: 'issued',
+      total: 2500,
+      remaining_balance: 2500,
+      reason: 'service_issue',
+      created_at: '2026-06-15T10:00:00Z'
+    }
+  ],
+  has_more: false
+}
 ```
+
+```bash cURL
+curl -G https://api.recurso.dev/v1/credit-notes \
+  -H "Authorization: Bearer $API_KEY" \
+  -d customer_id=cust_abc \
+  -d status=issued \
+  -d limit=20
+```
+</CodeGroup>
+
+### Filter Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `customer_id` | `string` | Filter by customer |
+| `invoice_id` | `string` | Filter by original invoice |
+| `status` | `string` | Filter by status (`draft`, `issued`, `applied`, `refunded`, `voided`) |
+| `limit` | `integer` | Results per page (default 20) |
+| `offset` | `integer` | Number of results to skip |
+
+## Credit Note Balance Tracking
+
+Each credit note tracks how much has been used and how much remains:
+
+```typescript
+const cn = await recurso.creditNotes.get('cn_xyz');
+
+// Returns
+{
+  id: 'cn_xyz',
+  total: 5000,
+  amount_applied: 2500,     // Applied to invoices
+  amount_refunded: 0,        // Refunded to payment method
+  remaining_balance: 2500,   // Available for future use
+  applications: [
+    {
+      invoice_id: 'inv_002',
+      amount: 2500,
+      applied_at: '2026-06-20T10:00:00Z'
+    }
+  ]
+}
+```
+
+## Void a Credit Note
+
+Cancel a credit note that was issued in error. Only credit notes with no applications or refunds can be voided:
+
+<CodeGroup>
+```typescript TypeScript
+await recurso.creditNotes.void('cn_xyz');
+```
+
+```bash cURL
+curl -X POST https://api.recurso.dev/v1/credit-notes/cn_xyz/void \
+  -H "Authorization: Bearer $API_KEY"
+```
+</CodeGroup>
+
+<Warning>
+Voiding a credit note is irreversible. If the credit note has already been partially applied or refunded, it cannot be voided — create a new invoice to offset the credit instead.
+</Warning>
 
 ## Get Credit Note PDF
 
@@ -109,3 +212,4 @@ const balance = await recurso.customers.balance('cust_abc');
 | `credit_note.created` | Credit note issued |
 | `credit_note.applied` | Applied to invoice |
 | `credit_note.refunded` | Refund processed |
+| `credit_note.voided` | Credit note cancelled |

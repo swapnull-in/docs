@@ -18,7 +18,9 @@
             "pages": [
               "index",
               "quickstart",
-              "concepts"
+              "concepts",
+              "end-to-end",
+              "going-to-production"
             ]
           },
           {

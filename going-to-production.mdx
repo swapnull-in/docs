@@ -1,0 +1,210 @@
+---
+title: "Going to Production"
+description: "Prepare your Recurso integration for live traffic"
+---
+
+## Overview
+
+This checklist covers everything you need to do before accepting real payments. Work through each section in order — skipping a step may cause issues with live transactions.
+
+## 1. Switch to Live API Keys
+
+During development you use test-mode keys (prefixed `rzp_test_` / `sk_test_`). For production, generate and configure live keys.
+
+```bash .env
+# Replace test keys with live keys
+RAZORPAY_KEY_ID=rzp_live_xxxxxxxxxxxx
+RAZORPAY_KEY_SECRET=your_live_secret
+
+STRIPE_SECRET_KEY=sk_live_xxxxxxxxxxxx
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxx
+```
+
+Generate a production Recurso API key from **Settings > API Keys** and store it securely (e.g., in a secrets manager, not in source code).
+
+<Warning>
+Never commit live API keys to version control. Use environment variables or a secrets manager like AWS Secrets Manager, HashiCorp Vault, or Doppler.
+</Warning>
+
+## 2. Configure Payment Gateways
+
+### Razorpay (India)
+
+1. Log in to [Razorpay Dashboard](https://dashboard.razorpay.com) and switch to **Live Mode**
+2. Complete KYC verification (required for live payouts)
+3. Copy the live Key ID and Key Secret to your environment
+4. Enable auto-capture in Razorpay settings so payments are captured immediately
+
+### Stripe (Global)
+
+1. Activate your [Stripe account](https://dashboard.stripe.com/account) (requires business verification)
+2. Copy the live secret key and webhook signing secret
+3. Create a webhook endpoint in Stripe pointing to your Recurso instance: `https://your-domain.com/v1/webhooks/stripe`
+
+See the [Payment Gateways guide](/advanced/payment-gateways) for detailed configuration.
+
+## 3. Set Up Webhook Endpoints
+
+Configure production webhook URLs in Recurso to receive billing events.
+
+```bash
+curl -X POST https://api.recurso.dev/v1/webhooks \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-domain.com/webhooks/recurso",
+    "events": [
+      "subscription.activated",
+      "subscription.cancelled",
+      "payment.succeeded",
+      "payment.failed",
+      "invoice.paid",
+      "invoice.payment_failed"
+    ],
+    "secret": "whsec_your_webhook_secret"
+  }'
+```
+
+Verify your endpoint:
+- Returns `200` status within 5 seconds
+- Validates the `recurso-signature` header (see [Webhooks guide](/advanced/webhooks))
+- Handles duplicate deliveries idempotently
+
+<Tip>
+Register for all event types you plan to handle. You can update the event list later without creating a new endpoint.
+</Tip>
+
+## 4. Enable E-Invoicing (India)
+
+If you are registered under India's GST e-invoicing mandate (turnover above the threshold), configure your IRP credentials.
+
+```bash
+curl -X POST https://api.recurso.dev/v1/einvoice/irp-config \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gstin": "29ABCDE1234F1Z5",
+    "irp_username": "your_irp_user",
+    "irp_password": "your_irp_password",
+    "auto_generate": true
+  }'
+```
+
+Test the connection before going live:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/einvoice/test-irp \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+See the [E-Invoicing guide](/compliance/e-invoicing) for details.
+
+## 5. Configure DNS and HTTPS
+
+Ensure your Recurso instance is accessible over HTTPS with a valid TLS certificate.
+
+| Requirement | Details |
+|-------------|---------|
+| Domain | Point your DNS (e.g., `billing.yourapp.com`) to your server |
+| TLS certificate | Use Let's Encrypt, AWS ACM, or Cloudflare for automatic certificates |
+| HTTPS only | Redirect all HTTP traffic to HTTPS |
+| Firewall | Allow inbound traffic on ports 443 (HTTPS) and block direct access to port 8080 |
+
+### Reverse Proxy Example (nginx)
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name billing.yourapp.com;
+
+    ssl_certificate /etc/letsencrypt/live/billing.yourapp.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/billing.yourapp.com/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+## 6. Environment Variables for Production
+
+Review all environment variables before launch.
+
+```bash .env
+# Core
+DATABASE_URL=postgres://user:pass@prod-db:5432/recurso
+PORT=8080
+API_KEY_SECRET=<strong-random-secret>
+
+# Payment Gateways (LIVE keys)
+RAZORPAY_KEY_ID=rzp_live_xxxxxxxxxxxx
+RAZORPAY_KEY_SECRET=<live-secret>
+STRIPE_SECRET_KEY=sk_live_xxxxxxxxxxxx
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxx
+
+# Email (production SMTP)
+SMTP_HOST=smtp.your-email-provider.com
+SMTP_PORT=587
+SMTP_USER=billing@yourapp.com
+SMTP_PASSWORD=<smtp-password>
+
+# Webhook
+WEBHOOK_SECRET=whsec_your_webhook_secret
+```
+
+## 7. Monitoring and Alerting Checklist
+
+Set up monitoring to catch issues before your customers do.
+
+<Steps>
+  <Step title="Health check endpoint">
+    Monitor `GET /health` on your Recurso instance. Alert if it returns non-200 for more than 2 minutes.
+  </Step>
+  <Step title="Webhook delivery failures">
+    Track webhook response codes. Alert on repeated 4xx/5xx responses — failed webhooks mean your app is not processing billing events.
+  </Step>
+  <Step title="Payment failure rate">
+    Monitor the ratio of `payment.failed` to `payment.succeeded` webhooks. A sudden spike may indicate a gateway issue or expired credentials.
+  </Step>
+  <Step title="Database backups">
+    Verify that automated database backups are running. Billing data is critical — test restoring from a backup at least once.
+  </Step>
+  <Step title="Log aggregation">
+    Ship Recurso logs to a centralized service (Datadog, Grafana, CloudWatch) for debugging production issues.
+  </Step>
+</Steps>
+
+## Pre-Launch Checklist
+
+Use this checklist to verify everything is ready:
+
+| Item | Status |
+|------|--------|
+| Live payment gateway keys configured | |
+| Webhook endpoint reachable over HTTPS | |
+| Webhook signature verification working | |
+| E-invoicing IRP configured (if India) | |
+| DNS pointing to production server | |
+| TLS certificate valid and auto-renewing | |
+| Environment variables set (no test keys) | |
+| Database backups enabled | |
+| Health check monitoring active | |
+| At least one test transaction completed end-to-end | |
+
+<Warning>
+Run at least one complete end-to-end transaction (plan > customer > subscription > payment) with live keys before opening to real customers. Use a small amount (e.g., 1 INR plan) and refund after testing.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Developer Settings" icon="gear" href="/advanced/developer-settings">
+    Configure API keys, rate limits, and tenant settings
+  </Card>
+  <Card title="Idempotency" icon="fingerprint" href="/advanced/idempotency">
+    Ensure your integration handles retries safely
+  </Card>
+</CardGroup>

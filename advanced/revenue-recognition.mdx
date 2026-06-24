@@ -135,6 +135,57 @@ stateDiagram-v2
     Revenue: Account 4000
 ```
 
+## Revenue Recognition Report
+
+The `GET /v1/finance/revrec/report` endpoint provides a consolidated revenue recognition report for a given period. It returns both recognized and deferred amounts, broken down by subscription.
+
+<CodeGroup>
+```typescript TypeScript
+const report = await recurso.finance.revrecReport({
+  start_date: '2026-01-01',
+  end_date: '2026-06-30'
+});
+
+// Response
+{
+  data: {
+    start_date: '2026-01-01',
+    end_date: '2026-06-30',
+    total_recognized_amount: 28500000,  // Revenue earned in this period
+    total_deferred_amount: 14200000,    // Revenue still deferred at period end
+    currency: 'INR',
+    subscriptions: [
+      {
+        subscription_id: 'sub_xyz',
+        customer_id: 'cust_abc',
+        recognized_amount: 2499500,   // Amount recognized during period
+        deferred_amount: 2499500,     // Amount still deferred at period end
+        schedule_start: '2026-01-01',
+        schedule_end: '2026-12-31'
+      }
+      // ... one entry per subscription with activity in the period
+    ]
+  }
+}
+```
+
+```bash cURL
+curl -G https://api.recurso.dev/v1/finance/revrec/report \
+  -H "Authorization: Bearer $API_KEY" \
+  -d start_date=2026-01-01 \
+  -d end_date=2026-06-30
+```
+</CodeGroup>
+
+### Report Fields
+
+| Field | Description |
+|-------|-------------|
+| `recognized_amount` | Revenue that has been earned and moved from Deferred Revenue (2100) to Revenue (4000) during the period |
+| `deferred_amount` | Revenue collected but not yet earned — still sitting in Deferred Revenue (2100) at the end of the period |
+| `total_recognized_amount` | Sum of `recognized_amount` across all subscriptions |
+| `total_deferred_amount` | Sum of `deferred_amount` across all subscriptions |
+
 ## Querying Revenue Data
 
 Use the ledger API to retrieve recognition entries for reporting.
@@ -281,7 +332,7 @@ Track how deferred revenue unwinds over time by querying account `2100` balance 
     Verify that Deferred Revenue + Recognized Revenue equals total cash collected for each cohort of subscriptions.
   </Card>
   <Card title="Automate Reporting" icon="chart-line">
-    Use the ledger API to build automated revenue reports rather than manual spreadsheets.
+    Use the ledger API and revrec report endpoint to build automated revenue reports rather than manual spreadsheets.
   </Card>
   <Card title="Plan for Audits" icon="magnifying-glass">
     Keep ledger entries immutable and use reference IDs to trace every recognition entry back to its source invoice and subscription.

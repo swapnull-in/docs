@@ -86,6 +86,38 @@ curl -X POST https://api.recurso.dev/v1/organizations \
 | `name` | `string` | Yes | Display name for the organization |
 | `owner_email` | `string` | Yes | Email address of the primary admin |
 
+## List Organizations
+
+Retrieve all organizations accessible with your API key:
+
+<CodeGroup>
+```typescript TypeScript
+const orgs = await recurso.organizations.list({
+  limit: 20,
+  offset: 0
+});
+
+// Response
+{
+  data: [
+    {
+      id: 'org_acme01',
+      name: 'Acme Holdings',
+      owner_email: 'admin@acmeholdings.com',
+      created_at: '2026-06-23T10:00:00Z'
+    }
+  ],
+  has_more: false
+}
+```
+
+```bash cURL
+curl -G https://api.recurso.dev/v1/organizations \
+  -H "Authorization: Bearer $API_KEY" \
+  -d limit=20
+```
+</CodeGroup>
+
 ## Get an Organization
 
 <CodeGroup>
@@ -109,6 +141,58 @@ curl https://api.recurso.dev/v1/organizations/org_acme01 \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
+
+## Update an Organization
+
+Update the name or owner email of an existing organization:
+
+<CodeGroup>
+```typescript TypeScript
+const updated = await recurso.organizations.update('org_acme01', {
+  name: 'Acme Holdings International',
+  owner_email: 'cfo@acmeholdings.com'
+});
+
+// Response
+{
+  data: {
+    id: 'org_acme01',
+    name: 'Acme Holdings International',
+    owner_email: 'cfo@acmeholdings.com',
+    updated_at: '2026-06-24T09:00:00Z'
+  }
+}
+```
+
+```bash cURL
+curl -X PUT https://api.recurso.dev/v1/organizations/org_acme01 \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme Holdings International",
+    "owner_email": "cfo@acmeholdings.com"
+  }'
+```
+</CodeGroup>
+
+## Delete an Organization
+
+Remove an organization. This does not delete the tenants — they become standalone entities.
+
+<CodeGroup>
+```typescript TypeScript
+await recurso.organizations.delete('org_acme01');
+```
+
+```bash cURL
+curl -X DELETE https://api.recurso.dev/v1/organizations/org_acme01 \
+  -H "Authorization: Bearer $API_KEY"
+```
+</CodeGroup>
+
+<Warning>
+Deleting an organization removes all tenant associations and consolidated reporting. The tenants themselves and their data are not affected — they continue operating independently.
+</Warning>
 
 ## Managing Tenants
 
@@ -191,6 +275,28 @@ curl https://api.recurso.dev/v1/organizations/org_acme01/tenants \
 ```
 </CodeGroup>
 
+### Remove a Tenant from an Organization
+
+Detach a tenant from an organization without deleting the tenant or its data:
+
+<CodeGroup>
+```typescript TypeScript
+await recurso.organizations.removeTenant('org_acme01', 'tenant_brandz');
+
+// Response
+{
+  status: 'removed'
+}
+```
+
+```bash cURL
+curl -X DELETE https://api.recurso.dev/v1/organizations/org_acme01/tenants/tenant_brandz \
+  -H "Authorization: Bearer $API_KEY"
+```
+</CodeGroup>
+
+After removal, the tenant continues operating independently but no longer appears in consolidated reports. You can re-add it later.
+
 ## Consolidated MRR
 
 The consolidated MRR endpoint aggregates MRR metrics across all tenants in an organization, giving you a single view of your total recurring revenue.
@@ -271,9 +377,13 @@ Organization-level API keys should only be used for analytics and reporting. Use
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `POST` | `/v1/organizations` | Create a new organization |
+| `GET` | `/v1/organizations` | List all organizations |
 | `GET` | `/v1/organizations/:id` | Get organization details |
+| `PUT` | `/v1/organizations/:id` | Update an organization |
+| `DELETE` | `/v1/organizations/:id` | Delete an organization |
 | `POST` | `/v1/organizations/:id/tenants` | Add a tenant to the organization |
 | `GET` | `/v1/organizations/:id/tenants` | List all tenants in the organization |
+| `DELETE` | `/v1/organizations/:id/tenants/:tenant_id` | Remove a tenant from the organization |
 | `GET` | `/v1/organizations/:id/analytics/mrr` | Get consolidated MRR across all tenants |
 
 ## Webhook Events
@@ -281,6 +391,8 @@ Organization-level API keys should only be used for analytics and reporting. Use
 | Event | Description |
 |-------|-------------|
 | `organization.created` | New organization created |
+| `organization.updated` | Organization details updated |
+| `organization.deleted` | Organization deleted |
 | `organization.tenant_added` | Tenant added to an organization |
 | `organization.tenant_removed` | Tenant removed from an organization |
 
