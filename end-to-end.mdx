@@ -36,7 +36,7 @@ sequenceDiagram
 Define what you are selling and how much it costs.
 
 ```bash
-curl -X POST https://api.recurso.dev/v1/plans \
+curl -X POST https://billing.example.com/v1/plans \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -79,7 +79,7 @@ For pricing model options (flat rate, per-seat, tiered, usage-based), see the [P
 Add the person or company who will be billed.
 
 ```bash
-curl -X POST https://api.recurso.dev/v1/customers \
+curl -X POST https://billing.example.com/v1/customers \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -119,7 +119,7 @@ For B2B customers in India, include the `gstin` field to get GST-compliant invoi
 Connect the customer to the plan. This starts the billing relationship.
 
 ```bash
-curl -X POST https://api.recurso.dev/v1/subscriptions \
+curl -X POST https://billing.example.com/v1/subscriptions \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -138,7 +138,7 @@ curl -X POST https://api.recurso.dev/v1/subscriptions \
     "customer_id": "cust_acme01",
     "plan_id": "plan_pro01",
     "status": "created",
-    "checkout_url": "https://api.recurso.dev/checkout/sub_xyz789"
+    "checkout_url": "https://billing.example.com/checkout/sub_xyz789"
   }
 }
 ```
@@ -207,7 +207,7 @@ At the end of each billing period, Recurso automatically generates the next invo
 You can fetch any invoice at any time:
 
 ```bash
-curl https://api.recurso.dev/v1/invoices?customer_id=cust_acme01 \
+curl https://billing.example.com/v1/invoices?customer_id=cust_acme01 \
   -H "Authorization: Bearer $API_KEY"
 ```
 

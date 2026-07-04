@@ -69,7 +69,7 @@ const org = await recurso.organizations.create({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/organizations \
+curl -X POST https://billing.example.com/v1/organizations \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -112,7 +112,7 @@ const orgs = await recurso.organizations.list({
 ```
 
 ```bash cURL
-curl -G https://api.recurso.dev/v1/organizations \
+curl -G https://billing.example.com/v1/organizations \
   -H "Authorization: Bearer $API_KEY" \
   -d limit=20
 ```
@@ -137,7 +137,7 @@ const org = await recurso.organizations.get('org_acme01');
 ```
 
 ```bash cURL
-curl https://api.recurso.dev/v1/organizations/org_acme01 \
+curl https://billing.example.com/v1/organizations/org_acme01 \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -165,7 +165,7 @@ const updated = await recurso.organizations.update('org_acme01', {
 ```
 
 ```bash cURL
-curl -X PUT https://api.recurso.dev/v1/organizations/org_acme01 \
+curl -X PUT https://billing.example.com/v1/organizations/org_acme01 \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -185,7 +185,7 @@ await recurso.organizations.delete('org_acme01');
 ```
 
 ```bash cURL
-curl -X DELETE https://api.recurso.dev/v1/organizations/org_acme01 \
+curl -X DELETE https://billing.example.com/v1/organizations/org_acme01 \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -213,7 +213,7 @@ const result = await recurso.organizations.addTenant('org_acme01', {
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/organizations/org_acme01/tenants \
+curl -X POST https://billing.example.com/v1/organizations/org_acme01/tenants \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -270,7 +270,7 @@ const tenants = await recurso.organizations.listTenants('org_acme01');
 ```
 
 ```bash cURL
-curl https://api.recurso.dev/v1/organizations/org_acme01/tenants \
+curl https://billing.example.com/v1/organizations/org_acme01/tenants \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -290,7 +290,7 @@ await recurso.organizations.removeTenant('org_acme01', 'tenant_brandz');
 ```
 
 ```bash cURL
-curl -X DELETE https://api.recurso.dev/v1/organizations/org_acme01/tenants/tenant_brandz \
+curl -X DELETE https://billing.example.com/v1/organizations/org_acme01/tenants/tenant_brandz \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -329,7 +329,7 @@ const metrics = await recurso.organizations.getConsolidatedMRR('org_acme01');
 ```
 
 ```bash cURL
-curl https://api.recurso.dev/v1/organizations/org_acme01/analytics/mrr \
+curl https://billing.example.com/v1/organizations/org_acme01/analytics/mrr \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>

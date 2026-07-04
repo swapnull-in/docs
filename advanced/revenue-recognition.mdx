@@ -170,7 +170,7 @@ const report = await recurso.finance.revrecReport({
 ```
 
 ```bash cURL
-curl -G https://api.recurso.dev/v1/finance/revrec/report \
+curl -G https://billing.example.com/v1/finance/revrec/report \
   -H "Authorization: Bearer $API_KEY" \
   -d start_date=2026-01-01 \
   -d end_date=2026-06-30
@@ -202,7 +202,7 @@ console.log(`Deferred Revenue: ${deferred.currency} ${deferred.balance / 100}`);
 ```
 
 ```bash cURL
-curl https://api.recurso.dev/v1/ledger/accounts \
+curl https://billing.example.com/v1/ledger/accounts \
   -H "Authorization: Bearer $API_KEY"
 
 # Filter for account code 2100 in the response
@@ -229,7 +229,7 @@ entries.data.forEach(entry => {
 ```
 
 ```bash cURL
-curl "https://api.recurso.dev/v1/ledger/entries?account_id=lacc_rev4000&start_date=2025-06-01&end_date=2025-06-30" \
+curl "https://billing.example.com/v1/ledger/entries?account_id=lacc_rev4000&start_date=2025-06-01&end_date=2025-06-30" \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>

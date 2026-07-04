@@ -10,7 +10,7 @@ occur, such as successful payments, failed payments, and refunds.
 <Note>
 This endpoint verifies the webhook signature using your Razorpay webhook secret.
 Configure this URL in your Razorpay Dashboard under **Settings > Webhooks** with
-the URL `https://api.recurso.dev/webhooks/razorpay`.
+the URL `https://billing.example.com/webhooks/razorpay`.
 </Note>
 
 ## Example Request
@@ -18,7 +18,7 @@ the URL `https://api.recurso.dev/webhooks/razorpay`.
 Razorpay sends a POST request with event data:
 
 ```bash
-curl -X POST https://api.recurso.dev/webhooks/razorpay \
+curl -X POST https://billing.example.com/webhooks/razorpay \
   -H "Content-Type: application/json" \
   -H "X-Razorpay-Signature: sha256_hmac_signature_here" \
   -d '{

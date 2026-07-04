@@ -70,7 +70,7 @@ const flow = await recurso.cancelFlows.create({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/cancel-flows \
+curl -X POST https://billing.example.com/v1/cancel-flows \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -150,7 +150,7 @@ const session = await recurso.cancelFlows.sessions.start({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/cancel-flows/sessions/start \
+curl -X POST https://billing.example.com/v1/cancel-flows/sessions/start \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -188,7 +188,7 @@ await recurso.cancelFlows.sessions.submitStep('cfs_session_001', {
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/cancel-flows/sessions/cfs_session_001/submit \
+curl -X POST https://billing.example.com/v1/cancel-flows/sessions/cfs_session_001/submit \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -216,7 +216,7 @@ const session = await recurso.cancelFlows.sessions.get('cfs_session_001');
 ```
 
 ```bash cURL
-curl -X GET https://api.recurso.dev/v1/cancel-flows/sessions/cfs_session_001 \
+curl -X GET https://billing.example.com/v1/cancel-flows/sessions/cfs_session_001 \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -271,7 +271,7 @@ const stats = await recurso.cancelFlows.stats();
 ```
 
 ```bash cURL
-curl -X GET https://api.recurso.dev/v1/cancel-flows/stats \
+curl -X GET https://billing.example.com/v1/cancel-flows/stats \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>

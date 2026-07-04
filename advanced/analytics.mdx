@@ -71,7 +71,7 @@ const mrr = await recurso.analytics.getMRR({
 ```
 
 ```bash cURL
-curl -G https://api.recurso.dev/v1/analytics/mrr \
+curl -G https://billing.example.com/v1/analytics/mrr \
   -H "Authorization: Bearer $API_KEY" \
   -d start_date=2026-01-01 \
   -d end_date=2026-06-30
@@ -142,7 +142,7 @@ const usage = await recurso.analytics.getUsageStats({
 ```
 
 ```bash cURL
-curl -G https://api.recurso.dev/v1/analytics/usage \
+curl -G https://billing.example.com/v1/analytics/usage \
   -H "Authorization: Bearer $API_KEY" \
   -d start_date=2026-06-01 \
   -d end_date=2026-06-23 \
@@ -187,7 +187,7 @@ const result = await recurso.analytics.ask({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/analytics/ask \
+curl -X POST https://billing.example.com/v1/analytics/ask \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -273,7 +273,7 @@ const overview = await recurso.analytics.getDunningOverview({
 ```
 
 ```bash cURL
-curl -G https://api.recurso.dev/v1/analytics/dunning/overview \
+curl -G https://billing.example.com/v1/analytics/dunning/overview \
   -H "Authorization: Bearer $API_KEY" \
   -d start_date=2026-06-01 \
   -d end_date=2026-06-30
@@ -301,7 +301,7 @@ const weights = await recurso.analytics.getDunningWeights();
 ```
 
 ```bash cURL
-curl https://api.recurso.dev/v1/analytics/dunning/weights \
+curl https://billing.example.com/v1/analytics/dunning/weights \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -336,7 +336,7 @@ const history = await recurso.analytics.getDunningHistory({
 ```
 
 ```bash cURL
-curl -G https://api.recurso.dev/v1/analytics/dunning/history \
+curl -G https://billing.example.com/v1/analytics/dunning/history \
   -H "Authorization: Bearer $API_KEY" \
   -d start_date=2026-06-01 \
   -d end_date=2026-06-30 \

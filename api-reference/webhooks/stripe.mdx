@@ -10,7 +10,7 @@ occur, such as successful charges, failed payments, and subscription updates.
 <Note>
 This endpoint verifies the webhook signature using your Stripe webhook secret.
 Configure this URL in your Stripe Dashboard under **Developers > Webhooks** with
-the URL `https://api.recurso.dev/webhooks/stripe`.
+the URL `https://billing.example.com/webhooks/stripe`.
 </Note>
 
 ## Example Request
@@ -18,7 +18,7 @@ the URL `https://api.recurso.dev/webhooks/stripe`.
 Stripe sends a POST request with event data:
 
 ```bash
-curl -X POST https://api.recurso.dev/webhooks/stripe \
+curl -X POST https://billing.example.com/webhooks/stripe \
   -H "Content-Type: application/json" \
   -H "Stripe-Signature: t=1687000000,v1=stripe_hmac_signature_here" \
   -d '{

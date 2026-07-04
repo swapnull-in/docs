@@ -35,7 +35,7 @@ const customer = await recurso.customers.create({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/customers \
+curl -X POST https://billing.example.com/v1/customers \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -110,7 +110,7 @@ const customers = await recurso.customers.list({
 ```
 
 ```bash cURL
-curl -G https://api.recurso.dev/v1/customers \
+curl -G https://billing.example.com/v1/customers \
   -H "Authorization: Bearer $API_KEY" \
   -d email=billing@acme.com \
   -d country=IN \
@@ -178,7 +178,7 @@ await recurso.customers.updatePaymentMethod('cust_abc123', {
 ```
 
 ```bash cURL
-curl -X PUT https://api.recurso.dev/v1/customers/cust_abc123/payment-method \
+curl -X PUT https://billing.example.com/v1/customers/cust_abc123/payment-method \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

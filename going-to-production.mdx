@@ -7,6 +7,10 @@ description: "Prepare your Recurso integration for live traffic"
 
 This checklist covers everything you need to do before accepting real payments. Work through each section in order — skipping a step may cause issues with live transactions.
 
+<Info>
+Prefer managed infrastructure? **Recurso Cloud** handles hosting, scaling, backups, and SSL so you can skip most of this checklist. [Compare plans](/pricing)
+</Info>
+
 ## 1. Switch to Live API Keys
 
 During development you use test-mode keys (prefixed `rzp_test_` / `sk_test_`). For production, generate and configure live keys.
@@ -47,8 +51,12 @@ See the [Payment Gateways guide](/advanced/payment-gateways) for detailed config
 
 Configure production webhook URLs in Recurso to receive billing events.
 
+<Note>
+The examples below use `https://billing.example.com` as a placeholder for your Recurso instance. Substitute the domain where your deployment is hosted.
+</Note>
+
 ```bash
-curl -X POST https://api.recurso.dev/v1/webhooks \
+curl -X POST https://billing.example.com/v1/webhooks \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -79,7 +87,7 @@ Register for all event types you plan to handle. You can update the event list l
 If you are registered under India's GST e-invoicing mandate (turnover above the threshold), configure your IRP credentials.
 
 ```bash
-curl -X POST https://api.recurso.dev/v1/einvoice/irp-config \
+curl -X POST https://billing.example.com/v1/einvoice/irp-config \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -93,7 +101,7 @@ curl -X POST https://api.recurso.dev/v1/einvoice/irp-config \
 Test the connection before going live:
 
 ```bash
-curl -X POST https://api.recurso.dev/v1/einvoice/test-irp \
+curl -X POST https://billing.example.com/v1/einvoice/test-irp \
   -H "Authorization: Bearer $API_KEY"
 ```
 
@@ -200,11 +208,14 @@ Run at least one complete end-to-end transaction (plan > customer > subscription
 
 ## Next Steps
 
-<CardGroup cols={2}>
+<CardGroup cols={3}>
   <Card title="Developer Settings" icon="gear" href="/advanced/developer-settings">
     Configure API keys, rate limits, and tenant settings
   </Card>
   <Card title="Idempotency" icon="fingerprint" href="/advanced/idempotency">
     Ensure your integration handles retries safely
+  </Card>
+  <Card title="Recurso Cloud" icon="cloud" href="/pricing">
+    Skip infrastructure management with managed hosting
   </Card>
 </CardGroup>

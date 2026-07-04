@@ -124,7 +124,7 @@ const creditNotes = await recurso.creditNotes.list({
 ```
 
 ```bash cURL
-curl -G https://api.recurso.dev/v1/credit-notes \
+curl -G https://billing.example.com/v1/credit-notes \
   -H "Authorization: Bearer $API_KEY" \
   -d customer_id=cust_abc \
   -d status=issued \
@@ -176,7 +176,7 @@ await recurso.creditNotes.void('cn_xyz');
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/credit-notes/cn_xyz/void \
+curl -X POST https://billing.example.com/v1/credit-notes/cn_xyz/void \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>

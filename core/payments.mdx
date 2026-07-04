@@ -107,7 +107,7 @@ const order = await recurso.payments.createOrder({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/payments/order \
+curl -X POST https://billing.example.com/v1/payments/order \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -167,7 +167,7 @@ await recurso.payments.recordOffline({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/payments/offline \
+curl -X POST https://billing.example.com/v1/payments/offline \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -217,7 +217,7 @@ const payments = await recurso.payments.listOffline({
 ```
 
 ```bash cURL
-curl -G https://api.recurso.dev/v1/payments/offline \
+curl -G https://billing.example.com/v1/payments/offline \
   -H "Authorization: Bearer $API_KEY" \
   -d invoice_id=inv_001
 ```

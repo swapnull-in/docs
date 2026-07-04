@@ -68,7 +68,7 @@ const key = await recurso.apiKeys.create({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/api-keys \
+curl -X POST https://billing.example.com/v1/api-keys \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -123,7 +123,7 @@ await recurso.apiKeys.revoke("key_Mn4xR7kp");
 ```
 
 ```bash cURL
-curl -X DELETE https://api.recurso.dev/v1/api-keys/key_Mn4xR7kp \
+curl -X DELETE https://billing.example.com/v1/api-keys/key_Mn4xR7kp \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -157,7 +157,7 @@ const keys = await recurso.apiKeys.list({
 ```
 
 ```bash cURL
-curl -X GET "https://api.recurso.dev/v1/api-keys?environment=live" \
+curl -X GET "https://billing.example.com/v1/api-keys?environment=live" \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -228,7 +228,7 @@ await recurso.settings.update({
 ```
 
 ```bash cURL
-curl -X PUT https://api.recurso.dev/v1/settings \
+curl -X PUT https://billing.example.com/v1/settings \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -276,7 +276,7 @@ const endpoint = await recurso.webhooks.create({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/webhooks \
+curl -X POST https://billing.example.com/v1/webhooks \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

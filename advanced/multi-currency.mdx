@@ -40,7 +40,7 @@ const tenant = await recurso.tenants.update({
 ```
 
 ```bash cURL
-curl -X PATCH https://api.recurso.dev/v1/tenant \
+curl -X PATCH https://billing.example.com/v1/tenant \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -73,7 +73,7 @@ const plan = await recurso.plans.create({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/plans \
+curl -X POST https://billing.example.com/v1/plans \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -119,7 +119,7 @@ const subscription = await recurso.subscriptions.create({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/subscriptions \
+curl -X POST https://billing.example.com/v1/subscriptions \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -183,7 +183,7 @@ await recurso.tenants.update({
 ```
 
 ```bash cURL
-curl -X PATCH https://api.recurso.dev/v1/tenant \
+curl -X PATCH https://billing.example.com/v1/tenant \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -236,7 +236,7 @@ console.log(`Total Revenue: ${revenueAccount.currency} ${revenueAccount.balance 
 ```
 
 ```bash cURL
-curl https://api.recurso.dev/v1/ledger/accounts \
+curl https://billing.example.com/v1/ledger/accounts \
   -H "Authorization: Bearer $API_KEY"
 
 # The revenue account (code 4000) balance reflects
