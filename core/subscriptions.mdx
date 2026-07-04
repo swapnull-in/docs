@@ -31,7 +31,7 @@ if (subscription.status === 'created') {
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/subscriptions \
+curl -X POST https://billing.example.com/v1/subscriptions \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -40,6 +40,21 @@ curl -X POST https://api.recurso.dev/v1/subscriptions \
   }'
 ```
 </CodeGroup>
+
+### Apply a Coupon at Creation
+
+Apply a discount coupon when creating a subscription:
+
+```typescript
+const subscription = await recurso.subscriptions.create({
+  customer_id: 'cust_abc123',
+  plan_id: 'plan_pro',
+  payment_gateway: 'razorpay',
+  coupon_id: 'coupon_launch20'  // 20% off first 3 months
+});
+```
+
+The coupon discount is applied to invoices for the duration specified in the coupon configuration. See the [Coupons guide](/advanced/coupons) for creating and managing coupons.
 
 ## Subscription Lifecycle
 
@@ -53,6 +68,7 @@ stateDiagram-v2
     PastDue --> Active: Payment Recovered
     PastDue --> Canceled: Max Retries
     Active --> Canceled: Customer Cancels
+    Canceled --> Active: Reactivate
 ```
 
 | Status | Description |
@@ -121,6 +137,19 @@ await recurso.subscriptions.update('sub_xyz', {
 // - 'always_invoice': Invoice immediately
 ```
 
+### How Proration Works
+
+When a customer upgrades mid-cycle with `create_prorations`:
+
+1. Recurso calculates a credit for the unused portion of the current plan
+2. Recurso calculates the charge for the new plan for the remaining period
+3. The net difference appears as a line item on the next invoice
+
+**Example**: Customer upgrades from ₹4,999/mo to ₹9,999/mo on day 15 of a 30-day cycle:
+- Credit for old plan: ₹4,999 × (15/30) = ₹2,499.50
+- Charge for new plan: ₹9,999 × (15/30) = ₹4,999.50
+- Net charge on next invoice: ₹2,500.00
+
 ## Cancel Subscription
 
 ### At Period End (Recommended)
@@ -147,6 +176,30 @@ await recurso.subscriptions.cancel('sub_xyz', {
 // Optionally prorate and refund
 ```
 
+For advanced cancellation flows with retention offers, see the [Cancel Flows guide](/advanced/cancel-flows).
+
+## Reactivate a Cancelled Subscription
+
+If a subscription was cancelled with `cancel_at_period_end: true` and the period has not yet ended, you can reactivate it:
+
+<CodeGroup>
+```typescript TypeScript
+await recurso.subscriptions.reactivate('sub_xyz');
+
+// subscription.cancel_at_period_end = false
+// Billing resumes as normal at next renewal
+```
+
+```bash cURL
+curl -X POST https://billing.example.com/v1/subscriptions/sub_xyz/reactivate \
+  -H "Authorization: Bearer $API_KEY"
+```
+</CodeGroup>
+
+<Warning>
+Reactivation is only possible while the subscription is still active (before `current_period_end`). Once the status changes to `canceled`, you must create a new subscription.
+</Warning>
+
 ## Pause Subscription
 
 Temporarily pause billing:
@@ -162,7 +215,15 @@ await recurso.subscriptions.pause('sub_xyz', {
 
 ## Billing Anchor
 
-Control when subscriptions bill:
+Control when subscriptions bill. The billing anchor determines which day of the month the subscription renews.
+
+### Acquisition Date (Default)
+
+By default, the billing anchor is the day the subscription was created. A subscription created on the 15th renews on the 15th of each month.
+
+### Fixed Date (First of Month)
+
+For enterprise customers who need invoices on a consistent date:
 
 ```typescript
 const subscription = await recurso.subscriptions.create({
@@ -172,9 +233,70 @@ const subscription = await recurso.subscriptions.create({
 });
 ```
 
+When the billing anchor differs from the subscription start date, the first period is prorated. For example, a subscription starting on January 15 with `billing_anchor: 1` generates a prorated invoice for January 15-31, then full invoices from February 1 onward.
+
 <Tip>
 Use `billing_anchor` for enterprise customers who need invoices on specific dates.
 </Tip>
+
+## Payment Terms
+
+Configure when invoices are due relative to when they are generated:
+
+```typescript
+const subscription = await recurso.subscriptions.create({
+  customer_id: 'cust_abc123',
+  plan_id: 'plan_enterprise',
+  payment_terms: 'net30'  // Due 30 days after invoice date
+});
+```
+
+| Term | Due Date |
+|------|----------|
+| `net0` | Due immediately (same day as invoice) |
+| `net15` | Due 15 days after invoice date |
+| `net30` | Due 30 days after invoice date |
+| `net60` | Due 60 days after invoice date |
+
+<Info>
+Payment terms are commonly used for enterprise and B2B subscriptions where customers need time to process payments through their accounts payable workflow.
+</Info>
+
+## UPI Mandates
+
+For Indian customers paying via UPI, you can set up a UPI mandate for automatic recurring payments:
+
+```typescript
+const subscription = await recurso.subscriptions.create({
+  customer_id: 'cust_abc123',
+  plan_id: 'plan_pro',
+  payment_gateway: 'razorpay',
+  mandate: {
+    type: 'upi',
+    max_amount: 9999  // Maximum amount per debit
+  }
+});
+```
+
+The customer authorizes the mandate once, and subsequent payments are charged automatically. See the [UPI Mandates guide](/compliance/upi-mandates) for setup details.
+
+## Consent Tracking
+
+Track customer consent for billing-related communications:
+
+```typescript
+const subscription = await recurso.subscriptions.create({
+  customer_id: 'cust_abc123',
+  plan_id: 'plan_pro',
+  consent: {
+    billing_emails: true,
+    marketing_emails: false,
+    auto_renewal: true
+  }
+});
+```
+
+See the [Consent Tracking guide](/compliance/consent-tracking) for compliance requirements.
 
 ## Get Subscription
 

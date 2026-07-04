@@ -76,6 +76,25 @@ Via customer portal or API:
 await recurso.quotes.accept('quote_xyz');
 ```
 
+## Decline Quote
+
+When a customer declines, the quote is marked as declined and cannot be modified or re-sent:
+
+<CodeGroup>
+```typescript TypeScript
+await recurso.quotes.decline('quote_xyz');
+```
+
+```bash cURL
+curl -X POST https://billing.example.com/v1/quotes/quote_xyz/decline \
+  -H "Authorization: Bearer $API_KEY"
+```
+</CodeGroup>
+
+<Tip>
+If a customer declines, create a new quote with revised terms rather than trying to re-use the declined one.
+</Tip>
+
 ## Convert to Invoice
 
 After acceptance, convert to an invoice:
@@ -119,12 +138,75 @@ const pdf = await recurso.quotes.pdf('quote_xyz');
 
 ## Update a Quote
 
-Only draft quotes can be updated:
+Only draft quotes can be updated. Once a quote has been sent, create a new one instead.
+
+<CodeGroup>
+```typescript TypeScript
+await recurso.quotes.update('quote_xyz', {
+  line_items: [
+    {
+      description: 'Enterprise Plan - Annual',
+      quantity: 1,
+      unit_amount: 89999  // Revised price
+    }
+  ],
+  expires_at: '2024-03-01',  // Extend expiration
+  notes: 'Updated pricing per discussion on Feb 1.'
+});
+```
+
+```bash cURL
+curl -X PUT https://billing.example.com/v1/quotes/quote_xyz \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "line_items": [
+      {
+        "description": "Enterprise Plan - Annual",
+        "quantity": 1,
+        "unit_amount": 89999
+      }
+    ],
+    "expires_at": "2024-03-01"
+  }'
+```
+</CodeGroup>
+
+## Delete a Draft Quote
+
+Remove a draft quote that is no longer needed:
+
+<CodeGroup>
+```typescript TypeScript
+await recurso.quotes.delete('quote_xyz');
+```
+
+```bash cURL
+curl -X DELETE https://billing.example.com/v1/quotes/quote_xyz \
+  -H "Authorization: Bearer $API_KEY"
+```
+</CodeGroup>
+
+<Warning>
+Only draft quotes can be deleted. Sent, accepted, or declined quotes are retained for audit purposes.
+</Warning>
+
+## Quote Expiration
+
+When a quote passes its `expires_at` date:
+- The status automatically changes to `expired`
+- The customer can no longer accept it via the portal or API
+- A `quote.expired` webhook is fired
+
+To handle expiration proactively, set up a webhook listener:
 
 ```typescript
-await recurso.quotes.update('quote_xyz', {
-  line_items: [...]  // Replace line items
-});
+// In your webhook handler
+case 'quote.expired':
+  const quoteId = req.body.data.id;
+  // Notify sales team to follow up
+  // Optionally create a new quote with updated terms
+  break;
 ```
 
 ## List Quotes
@@ -136,6 +218,15 @@ const quotes = await recurso.quotes.list({
   limit: 20
 });
 ```
+
+### Filter Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `customer_id` | `string` | Filter by customer |
+| `status` | `string` | Filter by status (`draft`, `sent`, `accepted`, `declined`, `expired`) |
+| `limit` | `integer` | Results per page (default 20) |
+| `offset` | `integer` | Number of results to skip |
 
 ## Webhooks
 

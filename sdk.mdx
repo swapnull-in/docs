@@ -1,0 +1,133 @@
+---
+title: "Node.js SDK"
+description: "Typed Node.js client covering the core Recurso API"
+---
+
+The official Node.js SDK (`recurso-node`) wraps the REST API with a typed,
+resource-oriented client: 15 resources and 56 methods covering plans,
+customers, the full subscription lifecycle, invoices, usage events, quotes,
+webhooks, and more.
+
+<Info>
+The SDK lives in the main repository under
+[`sdk/node`](https://github.com/swapnull-in/recur-so/tree/main/sdk/node). It is
+not yet published to npm — install it from the repo for now.
+</Info>
+
+## Installation
+
+```bash
+# From a checkout of the recurso repository
+cd sdk/node
+npm install && npm run build
+npm link          # or: npm pack and install the tarball in your project
+```
+
+## Setup
+
+```typescript
+import { Recurso } from 'recurso-node';
+
+const recurso = new Recurso(
+  'rsk_live_your_api_key',
+  'http://localhost:8080'   // your API base URL
+);
+```
+
+## Quick example
+
+```typescript
+// Create a plan
+const plan = await recurso.plans.create({
+  name: 'Pro Plan',
+  code: 'PRO-USD',
+  amount: 2900,            // minor units (cents/paise)
+  currency: 'USD',
+  interval_unit: 'month',
+});
+
+// Create a customer
+const customer = await recurso.customers.create({
+  name: 'Jane User',
+  email: 'jane@example.com',
+  country: 'US',
+});
+
+// Subscribe them
+const subscription = await recurso.subscriptions.create({
+  customer_id: customer.id,
+  plan_id: plan.id,
+});
+```
+
+## Resources
+
+Every list method accepts optional server-side filter params
+(`page`, `limit`, `q`, `status`).
+
+| Resource | Methods |
+| --- | --- |
+| `account` | `get`, `update` |
+| `customers` | `create`, `list`, `updatePaymentMethod`, `churn`, `consents` |
+| `plans` | `create`, `list` |
+| `subscriptions` | `create`, `list`, `update`, `cancel`, `pause`, `resume`, `reactivate`, `advance`, `charges`, `addCharge` |
+| `invoices` | `list`, `pdfUrl`, `eInvoiceStatus`, `retryEInvoice`, `cancelEInvoice` |
+| `coupons` | `create`, `list` |
+| `usage` | `record` |
+| `creditNotes` | `create`, `list` |
+| `quotes` | `create`, `list`, `get`, `update`, `send`, `accept`, `decline`, `convert`, `delete` |
+| `webhooks` | `create`, `list`, `delete` |
+| `events` | `list`, `types` |
+| `mandates` | `create`, `list`, `get`, `revoke` |
+| `gifts` | `purchase`, `redeem`, `list` |
+| `referrals` | `create`, `list`, `generateCode`, `qualify` |
+| `ledger` | `accounts`, `entries` |
+
+## Common flows
+
+### Subscription lifecycle
+
+```typescript
+// Cancel at period end
+await recurso.subscriptions.cancel(sub.id, { cancel_at_period_end: true });
+
+// Pause and resume
+await recurso.subscriptions.pause(sub.id);
+await recurso.subscriptions.resume(sub.id);
+
+// Bill 3 future periods immediately (advance invoicing)
+await recurso.subscriptions.advance(sub.id, { periods: 3 });
+```
+
+### Usage-based billing
+
+```typescript
+await recurso.usage.record({
+  subscription_id: sub.id,
+  customer_id: customer.id,
+  dimension: 'api_calls',
+  quantity: 1500,
+});
+```
+
+### Webhook endpoints
+
+```typescript
+await recurso.webhooks.create({
+  url: 'https://example.com/hooks/recurso',
+  event_types: ['invoice.paid', 'subscription.canceled'],
+});
+```
+
+### Invoice PDFs
+
+```typescript
+const invoices = await recurso.invoices.list({ status: 'paid' });
+const url = recurso.invoices.pdfUrl(invoices.data[0].id);
+```
+
+## Other languages
+
+Only Node.js has an official SDK today. For other languages, call the
+[REST API](/api-reference/introduction) directly — every endpoint is
+documented with `curl` examples.

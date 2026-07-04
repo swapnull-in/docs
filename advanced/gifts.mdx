@@ -68,7 +68,7 @@ console.log(gift.status); // "purchased"
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/gifts/purchase \
+curl -X POST https://billing.example.com/v1/gifts/purchase \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -110,7 +110,7 @@ console.log(subscription.plan.name); // "Pro Plan"
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/gifts/redeem \
+curl -X POST https://billing.example.com/v1/gifts/redeem \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -183,7 +183,7 @@ const gifts = await recurso.gifts.list({
 ```
 
 ```bash cURL
-curl -G https://api.recurso.dev/v1/gifts \
+curl -G https://billing.example.com/v1/gifts \
   -H "Authorization: Bearer $API_KEY" \
   -d page=1 \
   -d per_page=20

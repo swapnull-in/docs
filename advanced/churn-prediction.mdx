@@ -70,7 +70,7 @@ const churn = await recurso.customers.churn('cust_abc123');
 ```
 
 ```bash cURL
-curl -X GET https://api.recurso.dev/v1/customers/cust_abc123/churn \
+curl -X GET https://billing.example.com/v1/customers/cust_abc123/churn \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -120,7 +120,7 @@ const highRisk = await recurso.churn.highRisk({ threshold: 0.7 });
 ```
 
 ```bash cURL
-curl -X GET "https://api.recurso.dev/v1/churn/high-risk?threshold=0.7" \
+curl -X GET "https://billing.example.com/v1/churn/high-risk?threshold=0.7" \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -158,7 +158,7 @@ const alerts = await recurso.churn.alerts();
 ```
 
 ```bash cURL
-curl -X GET https://api.recurso.dev/v1/churn/alerts \
+curl -X GET https://billing.example.com/v1/churn/alerts \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -173,7 +173,7 @@ await recurso.churn.alerts.acknowledge('alert_001');
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/churn/alerts/alert_001/acknowledge \
+curl -X POST https://billing.example.com/v1/churn/alerts/alert_001/acknowledge \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>

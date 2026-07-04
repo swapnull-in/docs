@@ -53,7 +53,7 @@ await recurso.settings.irp.update({
 ```
 
 ```bash cURL
-curl -X PUT https://api.recurso.dev/v1/settings/irp \
+curl -X PUT https://billing.example.com/v1/settings/irp \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -105,7 +105,7 @@ const config = await recurso.settings.irp.get();
 ```
 
 ```bash cURL
-curl https://api.recurso.dev/v1/settings/irp \
+curl https://billing.example.com/v1/settings/irp \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -123,7 +123,7 @@ const result = await recurso.settings.irp.test();
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/settings/irp/test \
+curl -X POST https://billing.example.com/v1/settings/irp/test \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -167,7 +167,7 @@ const status = await recurso.invoices.einvoice.getStatus('inv_001');
 ```
 
 ```bash cURL
-curl https://api.recurso.dev/v1/invoices/inv_001/einvoice \
+curl https://billing.example.com/v1/invoices/inv_001/einvoice \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -194,7 +194,7 @@ console.log(result.message); // "E-invoice resubmitted successfully"
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/invoices/inv_001/einvoice/retry \
+curl -X POST https://billing.example.com/v1/invoices/inv_001/einvoice/retry \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -216,7 +216,7 @@ await recurso.invoices.einvoice.cancel('inv_001', {
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/invoices/inv_001/einvoice/cancel \
+curl -X POST https://billing.example.com/v1/invoices/inv_001/einvoice/cancel \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

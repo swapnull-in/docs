@@ -20,7 +20,7 @@ sequenceDiagram
     participant App as Your App
     participant R as Recurso
     participant C as Customer
-    
+
     App->>R: Report usage events
     Note over R: Aggregates usage
     R->>R: End of billing period
@@ -50,7 +50,17 @@ const plan = await recurso.plans.create({
 
 ## Report Usage
 
-Report usage events throughout the billing period:
+Report usage events throughout the billing period. The `POST /v1/usage/events` endpoint accepts the following fields:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `subscription_id` | `string` | Yes | The subscription to report usage for |
+| `customer_id` | `string` | No | Customer ID (inferred from subscription if omitted) |
+| `dimension` | `string` | No | Usage dimension/meter name (for multi-meter plans) |
+| `quantity` | `number` | Yes | Amount of usage to record |
+| `action` | `string` | No | `increment` (default) or `set` for gauge metrics |
+| `timestamp` | `string` | No | ISO 8601 timestamp (defaults to now) |
+| `idempotency_key` | `string` | No | Prevent duplicate events |
 
 <CodeGroup>
 ```typescript TypeScript
@@ -64,10 +74,13 @@ await recurso.usage.record({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/usage \
+curl -X POST https://billing.example.com/v1/usage/events \
   -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
   -d '{
     "subscription_id": "sub_xyz",
+    "customer_id": "cust_abc123",
+    "dimension": "api_calls",
     "quantity": 100,
     "action": "increment"
   }'
@@ -127,6 +140,42 @@ tiers: [
 ]
 ```
 
+## Hybrid Billing
+
+Combine a flat base fee with metered usage charges. This is the most common model for SaaS products that want predictable revenue with a usage component.
+
+```typescript
+const plan = await recurso.plans.create({
+  name: 'Pro + Usage',
+  interval: 'month',
+  prices: [
+    { amount: 4999, currency: 'INR' }  // Base fee: ₹49.99/mo
+  ],
+  usage_prices: [{
+    unit_label: 'API call',
+    currency: 'INR',
+    tiers_mode: 'graduated',
+    tiers: [
+      { up_to: 10000, unit_amount: 0 },      // 10k calls included
+      { up_to: 100000, unit_amount: 0.05 },   // Overage: ₹0.05/call
+      { up_to: 'inf', unit_amount: 0.01 }
+    ]
+  }]
+});
+```
+
+At invoice time, the customer sees two line items:
+
+| Line Item | Amount |
+|-----------|--------|
+| Pro Plan - Base Fee | ₹4,999.00 |
+| API Calls - 45,000 calls (10,000 included, 35,000 overage) | ₹1,750.00 |
+| **Total** | **₹6,749.00** |
+
+<Tip>
+Hybrid billing works well for plans where you want a minimum commitment (the base fee) while still charging for heavy usage. Customers who stay under the included usage only pay the flat fee.
+</Tip>
+
 ## Get Current Usage
 
 ```typescript
@@ -142,29 +191,11 @@ const usage = await recurso.usage.summary('sub_xyz');
 }
 ```
 
-## Hybrid Billing
-
-Combine base fee with usage:
-
-```typescript
-const plan = await recurso.plans.create({
-  name: 'Pro + Usage',
-  interval: 'month',
-  prices: [
-    { amount: 4999, currency: 'INR' }  // Base fee
-  ],
-  usage_prices: [{
-    unit_label: 'API call',
-    tiers: [...]
-  }]
-});
-```
-
 ## Best Practices
 
 <CardGroup cols={2}>
   <Card title="Use Idempotency" icon="fingerprint">
-    Always include idempotency keys to prevent duplicate charges
+    Always include idempotency keys to prevent duplicate charges. See the [Idempotency guide](/advanced/idempotency).
   </Card>
   <Card title="Report Often" icon="clock">
     Report usage frequently (hourly) rather than in one batch

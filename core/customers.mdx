@@ -35,7 +35,7 @@ const customer = await recurso.customers.create({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/customers \
+curl -X POST https://billing.example.com/v1/customers \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -65,7 +65,7 @@ const b2bCustomer = await recurso.customers.create({
 ```
 
 <Info>
-When GSTIN is provided, invoices automatically show the customer's business name and tax registration number.
+When GSTIN is provided, invoices automatically show the customer's business name and tax registration number. See the [GST Invoicing guide](/compliance/gst-invoicing) for tax calculation details.
 </Info>
 
 ## Update a Customer
@@ -95,15 +95,37 @@ const customer = await recurso.customers.get('cust_abc123');
 }
 ```
 
-## List Customers
+## List and Search Customers
 
-```typescript
+Retrieve customers with filters for email, country, or pagination:
+
+<CodeGroup>
+```typescript TypeScript
 const customers = await recurso.customers.list({
-  email: 'billing@acme.com',  // Filter by email
+  email: 'billing@acme.com',  // Exact match
+  country: 'IN',              // Filter by country code
   limit: 20,
   offset: 0
 });
 ```
+
+```bash cURL
+curl -G https://billing.example.com/v1/customers \
+  -H "Authorization: Bearer $API_KEY" \
+  -d email=billing@acme.com \
+  -d country=IN \
+  -d limit=20
+```
+</CodeGroup>
+
+### Filter Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `email` | `string` | Filter by exact email address |
+| `country` | `string` | Filter by ISO 3166-1 alpha-2 country code |
+| `limit` | `integer` | Results per page (default 20, max 100) |
+| `offset` | `integer` | Number of results to skip |
 
 ## Customer Portal
 
@@ -127,6 +149,8 @@ The portal allows customers to:
 - Cancel subscriptions
 - Download invoices as PDF
 
+See the [Customer Portal guide](/portal/overview) for full setup instructions.
+
 ## Payment Methods
 
 Associate payment methods with customers:
@@ -140,15 +164,70 @@ await recurso.customers.attachPaymentMethod('cust_abc123', {
 });
 ```
 
+### Update Payment Method
+
+To update a customer's payment method (e.g., when a card expires), use the update payment method endpoint:
+
+<CodeGroup>
+```typescript TypeScript
+await recurso.customers.updatePaymentMethod('cust_abc123', {
+  gateway: 'razorpay',
+  gateway_token: 'token_new_card',
+  set_default: true
+});
+```
+
+```bash cURL
+curl -X PUT https://billing.example.com/v1/customers/cust_abc123/payment-method \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gateway": "razorpay",
+    "gateway_token": "token_new_card",
+    "set_default": true
+  }'
+```
+</CodeGroup>
+
+<Tip>
+When a payment fails due to an expired card, send the customer to the [Customer Portal](/portal/overview) to update their payment method, or use [Magic Links](/portal/magic-links) to send them a direct update link.
+</Tip>
+
+## Churn Prediction
+
+Recurso tracks customer engagement signals and assigns a churn risk score. Use this to proactively intervene with at-risk customers:
+
+```typescript
+const score = await recurso.churn.getCustomerScore('cust_abc123');
+
+// Returns
+{
+  customer_id: 'cust_abc123',
+  risk_score: 0.73,  // 0-1, higher = more likely to churn
+  risk_level: 'high',
+  factors: [
+    'Payment failed 2 times in last 30 days',
+    'No login activity for 14 days'
+  ]
+}
+```
+
+See the [Churn Prediction guide](/advanced/churn-prediction) for setting up alerts and automated interventions.
+
 ## Delete a Customer
 
 <Warning>
-Deleting a customer cancels all active subscriptions and is irreversible.
+Deleting a customer cancels all active subscriptions and is irreversible. Consider archiving instead if you may need the data later.
 </Warning>
 
 ```typescript
 await recurso.customers.delete('cust_abc123');
 ```
+
+Before deleting, check for:
+- Active subscriptions (will be cancelled immediately)
+- Open invoices (will be voided)
+- Outstanding credit balance (will be forfeited)
 
 ## Metadata
 

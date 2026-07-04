@@ -18,7 +18,11 @@
             "pages": [
               "index",
               "quickstart",
-              "concepts"
+              "sdk",
+              "concepts",
+              "end-to-end",
+              "going-to-production",
+              "pricing"
             ]
           },
           {
@@ -426,7 +430,7 @@
       "anchors": [
         {
           "anchor": "GitHub",
-          "href": "https://github.com/recur-so/recurso",
+          "href": "https://github.com/swapnull-in/recur-so",
           "icon": "github"
         }
       ]
@@ -438,6 +442,10 @@
   },
   "navbar": {
     "links": [
+      {
+        "label": "Pricing",
+        "href": "/pricing"
+      },
       {
         "label": "Support",
         "href": "mailto:support@recurso.dev"
@@ -460,11 +468,11 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/recur-so/recurso"
+      "github": "https://github.com/swapnull-in/recur-so"
     }
   },
   "api": {
-    "baseUrl": "https://api.recurso.dev",
+    "baseUrl": "https://billing.example.com",
     "auth": {
       "method": "key",
       "name": "Authorization"

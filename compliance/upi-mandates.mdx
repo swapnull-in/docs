@@ -81,7 +81,7 @@ console.log(mandate.status); // "created"
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/mandates \
+curl -X POST https://billing.example.com/v1/mandates \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -160,7 +160,7 @@ console.log(mandate.pre_debit_notified); // true
 ```
 
 ```bash cURL
-curl https://api.recurso.dev/v1/mandates/mdt_m3k7p9 \
+curl https://billing.example.com/v1/mandates/mdt_m3k7p9 \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -184,7 +184,7 @@ const mandates = await recurso.mandates.list();
 ```
 
 ```bash cURL
-curl https://api.recurso.dev/v1/mandates \
+curl https://billing.example.com/v1/mandates \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -217,7 +217,7 @@ console.log(revoked.revoked_at); // "2026-06-23T16:00:00Z"
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/mandates/mdt_m3k7p9/revoke \
+curl -X POST https://billing.example.com/v1/mandates/mdt_m3k7p9/revoke \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>

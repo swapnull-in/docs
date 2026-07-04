@@ -158,7 +158,7 @@ const accounts = await recurso.ledger.accounts.list();
 ```
 
 ```bash cURL
-curl https://api.recurso.dev/v1/ledger/accounts \
+curl https://billing.example.com/v1/ledger/accounts \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -199,7 +199,7 @@ const entries = await recurso.ledger.entries.list({
 ```
 
 ```bash cURL
-curl "https://api.recurso.dev/v1/ledger/entries?account_id=lacc_abc123&start_date=2025-01-01&end_date=2025-01-31" \
+curl "https://billing.example.com/v1/ledger/entries?account_id=lacc_abc123&start_date=2025-01-01&end_date=2025-01-31" \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>

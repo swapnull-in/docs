@@ -6,21 +6,19 @@ description: "Getting started with the Recurso REST API"
 ## Base URL
 
 ```
-https://api.recurso.dev/v1
+https://billing.example.com/v1
 ```
 
-For self-hosted deployments:
-
-```
-https://your-recurso-instance.com/api/v1
-```
+<Note>
+`billing.example.com` is a placeholder — substitute the domain where your Recurso instance is deployed. All API examples in this reference use the same placeholder.
+</Note>
 
 ## Authentication
 
 Authenticate using API keys in the `Authorization` header:
 
 ```bash
-curl https://api.recurso.dev/v1/customers \
+curl https://billing.example.com/v1/customers \
   -H "Authorization: Bearer rsk_live_xxx"
 ```
 
@@ -42,7 +40,7 @@ Test keys only work with test data and test payment methods.
 All requests use JSON:
 
 ```bash
-curl -X POST https://api.recurso.dev/v1/customers \
+curl -X POST https://billing.example.com/v1/customers \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -124,11 +122,17 @@ Errors include helpful details:
 
 ## Rate Limits
 
-| Plan | Requests/min |
-|------|--------------|
-| Free | 60 |
-| Pro | 600 |
-| Enterprise | Custom |
+Rate limits depend on your [Recurso plan](/pricing):
+
+| Plan | Requests/min | Description |
+|------|--------------|-------------|
+| [Open Source](/pricing) | Unlimited (self-configured) | Self-hosted, configure your own limits |
+| [Cloud](/pricing) | 600 | Managed hosting at $299/mo |
+| [Enterprise](/pricing) | Custom | Dedicated infrastructure with custom limits |
+
+<Tip>
+Self-hosted users can configure their own rate limits with no restrictions. See the [Developer Settings guide](/advanced/developer-settings) for configuration options.
+</Tip>
 
 Rate limit info in response headers:
 
@@ -143,7 +147,7 @@ X-RateLimit-Reset: 1705312800
 For POST requests, use idempotency keys to prevent duplicate operations:
 
 ```bash
-curl -X POST https://api.recurso.dev/v1/subscriptions \
+curl -X POST https://billing.example.com/v1/subscriptions \
   -H "Authorization: Bearer $API_KEY" \
   -H "Idempotency-Key: unique-request-id-123" \
   -d '{ ... }'

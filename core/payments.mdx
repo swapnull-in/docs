@@ -26,7 +26,7 @@ sequenceDiagram
     participant A as Your App
     participant R as Recurso
     participant G as Payment Gateway
-    
+
     A->>R: Create Subscription
     R->>G: Create Gateway Subscription
     R-->>A: checkout_url
@@ -49,6 +49,8 @@ RAZORPAY_KEY_SECRET=xxx
 STRIPE_SECRET_KEY=sk_live_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 ```
+
+See the [Payment Gateways guide](/advanced/payment-gateways) for detailed setup instructions.
 
 ## Collect Payment
 
@@ -80,6 +82,45 @@ const invoice = await recurso.invoices.create({
 await recurso.invoices.pay(invoice.id);
 ```
 
+## Create Payment Order
+
+For direct payment collection outside of subscriptions, create a payment order through the gateway:
+
+<CodeGroup>
+```typescript TypeScript
+const order = await recurso.payments.createOrder({
+  invoice_id: 'inv_001',
+  gateway: 'razorpay',
+  amount: 5899,
+  currency: 'INR'
+});
+
+// Response
+{
+  order_id: 'order_xyz',
+  gateway: 'razorpay',
+  gateway_order_id: 'order_AbCdEf123456',
+  amount: 5899,
+  currency: 'INR',
+  status: 'created'
+}
+```
+
+```bash cURL
+curl -X POST https://billing.example.com/v1/payments/order \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "invoice_id": "inv_001",
+    "gateway": "razorpay",
+    "amount": 5899,
+    "currency": "INR"
+  }'
+```
+</CodeGroup>
+
+Use the `gateway_order_id` to initialize the payment on the client side (e.g., Razorpay checkout or Stripe payment intent).
+
 ## Payment Methods
 
 Save payment methods for future charges:
@@ -94,6 +135,110 @@ await recurso.customers.attachPaymentMethod('cust_abc123', {
 
 // Future invoices charge the default method automatically
 ```
+
+### Update Payment Method
+
+When a customer's card expires or they want to switch payment methods:
+
+```typescript
+await recurso.customers.updatePaymentMethod('cust_abc123', {
+  gateway: 'razorpay',
+  gateway_token: 'token_new_card',
+  set_default: true
+});
+```
+
+See the [Customers guide](/core/customers#update-payment-method) for the full update flow.
+
+## Record Offline Payment
+
+Record payments received outside of Recurso (bank transfers, cash, cheques):
+
+<CodeGroup>
+```typescript TypeScript
+await recurso.payments.recordOffline({
+  invoice_id: 'inv_001',
+  amount: 5899,
+  payment_method: 'bank_transfer',
+  reference: 'NEFT-REF-123456',
+  received_at: '2026-06-20T10:30:00Z',
+  notes: 'NEFT transfer from HDFC account'
+});
+```
+
+```bash cURL
+curl -X POST https://billing.example.com/v1/payments/offline \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "invoice_id": "inv_001",
+    "amount": 5899,
+    "payment_method": "bank_transfer",
+    "reference": "NEFT-REF-123456",
+    "received_at": "2026-06-20T10:30:00Z"
+  }'
+```
+</CodeGroup>
+
+### Offline Payment Methods
+
+| Method | Value |
+|--------|-------|
+| Bank transfer (NEFT/RTGS/IMPS) | `bank_transfer` |
+| Cash | `cash` |
+| Cheque | `cheque` |
+| Wire transfer | `wire` |
+| Other | `other` |
+
+## List Offline Payments
+
+Retrieve all offline payments recorded for an invoice or customer:
+
+<CodeGroup>
+```typescript TypeScript
+const payments = await recurso.payments.listOffline({
+  invoice_id: 'inv_001',
+  limit: 20
+});
+
+// Response
+{
+  data: [
+    {
+      id: 'opay_001',
+      invoice_id: 'inv_001',
+      amount: 5899,
+      payment_method: 'bank_transfer',
+      reference: 'NEFT-REF-123456',
+      received_at: '2026-06-20T10:30:00Z'
+    }
+  ]
+}
+```
+
+```bash cURL
+curl -G https://billing.example.com/v1/payments/offline \
+  -H "Authorization: Bearer $API_KEY" \
+  -d invoice_id=inv_001
+```
+</CodeGroup>
+
+## Virtual Accounts for Bank Transfers
+
+For customers who prefer to pay via bank transfer, create a virtual account that auto-reconciles incoming payments:
+
+```typescript
+const va = await recurso.virtualAccounts.create({
+  customer_id: 'cust_abc123',
+  description: 'Payment for Acme Corp'
+});
+
+// Share these bank details with the customer
+console.log(va.account_number);  // Virtual account number
+console.log(va.ifsc);            // IFSC code
+```
+
+When the customer transfers to this account, Recurso automatically matches the payment to the correct invoice. See the [Virtual Accounts guide](/advanced/virtual-accounts) for setup.
 
 ## Retrying Failed Payments
 
@@ -114,18 +259,7 @@ When payments fail, Recurso automatically:
 }
 ```
 
-## Manual Payment
-
-Record offline payments:
-
-```typescript
-await recurso.payments.record({
-  invoice_id: 'inv_001',
-  amount: 5899,
-  payment_method: 'bank_transfer',
-  reference: 'REF123456'
-});
-```
+For intelligent retry timing based on payment success patterns, see the [Smart Retry guide](/advanced/smart-retry). For configuring email sequences during payment recovery, see the [Dunning Campaigns guide](/advanced/dunning-campaigns).
 
 ## Refunds
 

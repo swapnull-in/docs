@@ -54,7 +54,7 @@ const virtualAccount = await recurso.virtualAccounts.create({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/virtual-accounts \
+curl -X POST https://billing.example.com/v1/virtual-accounts \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -118,7 +118,7 @@ const accounts = await recurso.virtualAccounts.list({
 ```
 
 ```bash cURL
-curl -X GET "https://api.recurso.dev/v1/virtual-accounts?customer_id=cust_8Tj3mKvR&status=active" \
+curl -X GET "https://billing.example.com/v1/virtual-accounts?customer_id=cust_8Tj3mKvR&status=active" \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -191,7 +191,7 @@ const payment = await recurso.payments.recordOffline({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/payments/offline \
+curl -X POST https://billing.example.com/v1/payments/offline \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -261,7 +261,7 @@ const payments = await recurso.payments.listOffline({
 ```
 
 ```bash cURL
-curl -X GET "https://api.recurso.dev/v1/payments/offline?customer_id=cust_8Tj3mKvR" \
+curl -X GET "https://billing.example.com/v1/payments/offline?customer_id=cust_8Tj3mKvR" \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>

@@ -56,7 +56,7 @@ const subscription = await recurso.subscriptions.create(
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/subscriptions \
+curl -X POST https://billing.example.com/v1/subscriptions \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: idem_f47ac10b-58cc-4372-a567-0e02b2c3d479" \
@@ -230,7 +230,7 @@ MAX_RETRIES=5
 RETRY_DELAY=1
 
 for attempt in $(seq 1 $MAX_RETRIES); do
-  response=$(curl -s -w "\n%{http_code}" -X POST https://api.recurso.dev/v1/subscriptions \
+  response=$(curl -s -w "\n%{http_code}" -X POST https://billing.example.com/v1/subscriptions \
     -H "Authorization: Bearer $API_KEY" \
     -H "Content-Type: application/json" \
     -H "Idempotency-Key: idem_f47ac10b-58cc-4372-a567-0e02b2c3d479" \

@@ -7,7 +7,7 @@ description: "Open-source billing infrastructure for SaaS and subscription busin
 
 Recurso is an **open-source billing engine** designed for SaaS companies, subscription businesses, and developers who need complete control over their billing infrastructure.
 
-<CardGroup cols={2}>
+<CardGroup cols={3}>
   <Card title="Quick Start" icon="rocket" href="/quickstart">
     Get up and running in under 5 minutes
   </Card>
@@ -19,6 +19,9 @@ Recurso is an **open-source billing engine** designed for SaaS companies, subscr
   </Card>
   <Card title="Self-Host" icon="server" href="/quickstart#self-hosting">
     Deploy on your own infrastructure
+  </Card>
+  <Card title="Recurso Cloud" icon="cloud" href="/pricing">
+    Managed hosting, scaling, and backups — $299/mo + usage
   </Card>
 </CardGroup>
 
@@ -54,7 +57,7 @@ Recurso is an **open-source billing engine** designed for SaaS companies, subscr
 | **GST Support** | ✅ Native | 🟡 Limited | ✅ Yes |
 | **Razorpay** | ✅ Yes | ❌ No | ✅ Yes |
 | **Usage Billing** | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Pricing** | Free | 0.5% + fees | $249+/mo |
+| **Pricing** | Free / [$299+/mo Cloud](/pricing) | 0.5% + fees | $249+/mo |
 
 ## Architecture
 
@@ -77,8 +80,8 @@ graph LR
 <Steps>
   <Step title="Clone and run">
     ```bash
-    git clone https://github.com/recur-so/recurso.git
-    cd recurso
+    git clone https://github.com/swapnull-in/recur-so.git
+    cd recur-so
     docker compose up
     ```
   </Step>
@@ -100,6 +103,11 @@ graph LR
   </Step>
 </Steps>
 
-<Card title="Ready to build?" icon="arrow-right" href="/quickstart">
-  Follow our quickstart guide to set up Recurso in your project
-</Card>
+<CardGroup cols={2}>
+  <Card title="Self-Host Recurso" icon="server" href="/quickstart">
+    Follow our quickstart guide to deploy on your own infrastructure
+  </Card>
+  <Card title="Try Recurso Cloud" icon="cloud" href="/pricing">
+    Managed hosting with auto-scaling and backups — $299/mo + usage
+  </Card>
+</CardGroup>

@@ -34,7 +34,7 @@ const plan = await recurso.plans.create({
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/plans \
+curl -X POST https://billing.example.com/v1/plans \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -104,10 +104,14 @@ Volume discounts based on quantity:
 ```
 
 <Note>
-**Tiered vs Volume**: 
+**Tiered vs Volume**:
 - `graduated` applies each tier to its own range
 - `volume` applies the final tier rate to all units
 </Note>
+
+### Usage-Based Pricing
+
+For metered plans, define tiers with `billing_scheme: 'metered'`. Usage is reported via the Usage API and invoiced at the end of each billing period. See the [Usage-Based Billing guide](/advanced/usage-billing) for setup and reporting.
 
 ## Plan Intervals
 
@@ -144,10 +148,14 @@ Trial subscribers don't pay until the trial ends. No payment method required dur
 
 ## List Plans
 
-```typescript
+Retrieve plans with optional filters and pagination:
+
+<CodeGroup>
+```typescript TypeScript
 const plans = await recurso.plans.list({
   active: true,
-  limit: 10
+  limit: 10,
+  offset: 0
 });
 
 // Returns
@@ -160,12 +168,91 @@ const plans = await recurso.plans.list({
 }
 ```
 
-## Archive a Plan
+```bash cURL
+curl -G https://billing.example.com/v1/plans \
+  -H "Authorization: Bearer $API_KEY" \
+  -d active=true \
+  -d limit=10
+```
+</CodeGroup>
 
-Archived plans can't be used for new subscriptions but existing subscriptions continue:
+### Filter Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `active` | `boolean` | Filter by active/archived status |
+| `interval` | `string` | Filter by billing interval (`month`, `year`, etc.) |
+| `limit` | `integer` | Number of results per page (default 20, max 100) |
+| `offset` | `integer` | Number of results to skip for pagination |
+
+## Multi-Currency Pricing
+
+Add prices in multiple currencies so Recurso auto-selects the correct price based on the customer's currency or location:
 
 ```typescript
+const plan = await recurso.plans.create({
+  name: 'Global Pro',
+  interval: 'month',
+  prices: [
+    { amount: 4999, currency: 'INR' },
+    { amount: 999, currency: 'USD' },
+    { amount: 899, currency: 'EUR' },
+    { amount: 799, currency: 'GBP' }
+  ]
+});
+```
+
+When a subscription is created, Recurso matches the plan price to the customer's currency. If no matching currency is found, the subscription creation returns an error.
+
+See the [Multi-Currency guide](/advanced/multi-currency) for exchange rate handling and reporting.
+
+## Archive a Plan
+
+Archived plans can't be used for new subscriptions but existing subscriptions continue unaffected:
+
+<CodeGroup>
+```typescript TypeScript
 await recurso.plans.archive('plan_old');
+```
+
+```bash cURL
+curl -X POST https://billing.example.com/v1/plans/plan_old/archive \
+  -H "Authorization: Bearer $API_KEY"
+```
+</CodeGroup>
+
+<Warning>
+Archiving is not reversible. If you need the same plan again, create a new one. Existing subscribers on the archived plan continue billing normally — only new sign-ups are blocked.
+</Warning>
+
+## Plan Versioning Strategy
+
+When you need to change pricing, you have two options:
+
+| Approach | When to Use |
+|----------|-------------|
+| **Create a new plan** | You want existing subscribers to keep their current rate. New customers get the new price. |
+| **Update the existing plan** | You want the price change to apply to all subscribers at their next renewal. |
+
+The recommended approach is to **create a new plan** for each pricing change. This gives you a clear audit trail and avoids unexpected charge changes for existing customers.
+
+```typescript
+// v1 — original pricing
+const v1 = await recurso.plans.create({
+  name: 'Pro Plan',
+  interval: 'month',
+  prices: [{ amount: 4999, currency: 'INR' }]
+});
+
+// v2 — price increase, archive v1
+await recurso.plans.archive(v1.id);
+const v2 = await recurso.plans.create({
+  name: 'Pro Plan',
+  interval: 'month',
+  prices: [{ amount: 5999, currency: 'INR' }]
+});
+// Existing v1 subscribers keep paying ₹49.99
+// New subscribers sign up at ₹59.99
 ```
 
 ## Best Practices

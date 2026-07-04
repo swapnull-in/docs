@@ -3,6 +3,10 @@ title: "Quick Start"
 description: "Get Recurso up and running in under 5 minutes"
 ---
 
+<Info>
+**Using Recurso Cloud?** You can skip the installation steps below. Cloud users receive API credentials after joining the waitlist — [learn more](/pricing).
+</Info>
+
 ## Installation
 
 Choose your preferred setup method:
@@ -11,8 +15,8 @@ Choose your preferred setup method:
   <Tab title="Docker (Recommended)">
     ```bash
     # Clone the repository
-    git clone https://github.com/recur-so/recurso.git
-    cd recurso
+    git clone https://github.com/swapnull-in/recur-so.git
+    cd recur-so
 
     # Start with Docker Compose
     docker-compose up -d
@@ -23,8 +27,8 @@ Choose your preferred setup method:
   <Tab title="From Source">
     ```bash
     # Clone the repository
-    git clone https://github.com/recur-so/recurso.git
-    cd recurso
+    git clone https://github.com/swapnull-in/recur-so.git
+    cd recur-so
 
     # Install dependencies
     go mod download
@@ -38,6 +42,22 @@ Choose your preferred setup method:
     # Start the server
     make run
     ```
+  </Tab>
+  <Tab title="Cloud (Early Access)">
+    Recurso Cloud is managed hosting — no installation required.
+
+    1. **Join the waitlist** — email [cloud@recurso.dev](mailto:cloud@recurso.dev) to request access
+    2. **Receive your API credentials** — we'll provision your instance and send you an API key
+    3. **Test the connection:**
+
+    ```bash
+    curl https://your-instance.recurso.cloud/v1/customers \
+      -H "Authorization: Bearer rsk_live_your_cloud_key"
+    ```
+
+    The rest of this quickstart (creating plans, customers, and subscriptions) works identically on Cloud. Replace `http://localhost:8080` with your Cloud instance URL.
+
+    [Compare plans](/pricing)
   </Tab>
 </Tabs>
 
@@ -67,10 +87,18 @@ SMTP_PASSWORD=xxx
 
 ## Create an API Key
 
-1. Open the dashboard at `http://localhost:8080`
-2. Navigate to **Settings → API Keys**
-3. Click **Create API Key**
-4. Copy and store securely
+1. Start the dashboard — a React app in the `frontend/` directory of the repository:
+
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+2. Open the dashboard at `http://localhost:5173` (the Vite dev server proxies API calls to the API at `http://localhost:8080`)
+3. Navigate to **Settings → API Keys**
+4. Click **Create API Key**
+5. Copy and store securely
 
 Test the connection:
 
@@ -163,7 +191,7 @@ curl http://localhost:8080/v1/customers \
 
 ## Self-Hosting
 
-For production deployments, see the [self-hosting guide on GitHub](https://github.com/recur-so/recurso).
+For production deployments, see the [self-hosting guide on GitHub](https://github.com/swapnull-in/recur-so).
 
 ## Next Steps
 
