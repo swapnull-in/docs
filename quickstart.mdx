@@ -107,6 +107,25 @@ curl http://localhost:8080/v1/customers \
   -H "Authorization: Bearer your-api-key"
 ```
 
+## Optional: Load Demo Data
+
+Want a populated dashboard before creating anything yourself? Seed the dev
+database with a sample tenant — plans, customers, subscriptions, invoices,
+events, and a webhook endpoint:
+
+```bash
+make seed
+```
+
+<Warning>
+`make seed` wipes all existing data in the target database before loading
+the demo dataset. Only use it on a fresh local install.
+</Warning>
+
+Then log in to the dashboard with the demo API key `sk_test_12345` and
+explore. When you're done exploring, run `make seed` again for a clean slate
+or register your own tenant.
+
 ## Create Your First Plan
 
 <Steps>
