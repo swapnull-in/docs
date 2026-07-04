@@ -18,9 +18,11 @@
             "pages": [
               "index",
               "quickstart",
+              "sdk",
               "concepts",
               "end-to-end",
-              "going-to-production"
+              "going-to-production",
+              "pricing"
             ]
           },
           {
@@ -440,6 +442,10 @@
   },
   "navbar": {
     "links": [
+      {
+        "label": "Pricing",
+        "href": "/pricing"
+      },
       {
         "label": "Support",
         "href": "mailto:support@recurso.dev"
