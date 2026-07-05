@@ -185,6 +185,34 @@ Set up monitoring to catch issues before your customers do.
   </Step>
 </Steps>
 
+## 8. Migrate Existing Subscribers (optional)
+
+Moving from Stripe Billing, Chargebee, or spreadsheets? The `cmd/import`
+tool in the main repository loads plans, customers, and subscriptions
+directly into the database — **without generating invoices or calling
+payment gateways**, so migrated customers are never double-billed
+mid-cycle. Each imported subscription keeps its original billing period;
+Recurso issues the next invoice at its `current_period_end`.
+
+```bash
+# Dry-run first: validates the file, writes nothing
+DATABASE_URL=postgres://... go run ./cmd/import \
+  -tenant <your-tenant-uuid> -input data.json -dry-run
+
+# Then import for real
+DATABASE_URL=postgres://... go run ./cmd/import \
+  -tenant <your-tenant-uuid> -input data.json
+```
+
+<Info>
+The import is idempotent — plans match by `code`, customers by `email`,
+subscriptions by `external_id` (the ID from your old system). Re-running
+skips anything that already exists, so partial failures are safe to retry.
+</Info>
+
+Input is JSON (see `cmd/import/example.json` in the repo) or CSVs via
+`-plans-csv`, `-customers-csv`, and `-subscriptions-csv`.
+
 ## Pre-Launch Checklist
 
 Use this checklist to verify everything is ready:
