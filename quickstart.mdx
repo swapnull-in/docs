@@ -9,6 +9,10 @@ description: "Get Recurso up and running in under 5 minutes"
 
 ## Installation
 
+<Tip>
+**Fastest path:** clone the repository and run `make demo`. It builds and starts the full stack (API, dashboard, PostgreSQL, TigerBeetle, Mailhog), waits for the API to become healthy, and loads demo data. Then open the dashboard at `http://localhost:5173` and log in with API key `sk_test_12345`.
+</Tip>
+
 Choose your preferred setup method:
 
 <Tabs>
@@ -125,6 +129,9 @@ the demo dataset. Only use it on a fresh local install.
 Then log in to the dashboard with the demo API key `sk_test_12345` and
 explore. When you're done exploring, run `make seed` again for a clean slate
 or register your own tenant.
+
+In dev, any emails the system sends (invoices, dunning notices, and so on)
+are captured by Mailhog — view them at `http://localhost:8025`.
 
 ## Create Your First Plan
 
