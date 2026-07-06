@@ -7,7 +7,7 @@ description: "Enable customers to cancel subscriptions through guided retention 
 
 Portal cancel self-service lets your customers initiate subscription cancellations directly from the customer portal, without contacting support. Behind the scenes, Recurso presents a multi-step retention flow — survey, offer, confirmation — designed to reduce involuntary churn while respecting the customer's intent.
 
-This feature integrates directly with the [Cancel Flows API](/core/cancel-flows) to render your configured surveys, retention offers, and confirmation steps inside the portal experience.
+This feature integrates directly with the [Cancel Flows API](/advanced/cancel-flows) to render your configured surveys, retention offers, and confirmation steps inside the portal experience.
 
 ```mermaid
 flowchart LR
@@ -301,7 +301,7 @@ The following events are fired during the portal cancel flow:
 
 ## Integration with Cancel Flows API
 
-The portal cancel experience is driven entirely by your Cancel Flows configuration. Any changes you make via the [Cancel Flows API](/core/cancel-flows) are immediately reflected in the portal.
+The portal cancel experience is driven entirely by your Cancel Flows configuration. Any changes you make via the [Cancel Flows API](/advanced/cancel-flows) are immediately reflected in the portal.
 
 ```mermaid
 flowchart TD
