@@ -4,9 +4,10 @@ description: "Typed Node.js client covering the core Recurso API"
 ---
 
 The official Node.js SDK (`recurso-node`) wraps the REST API with a typed,
-resource-oriented client: 16 resources and 60 methods covering plans,
+resource-oriented client: 17 resources and 64 methods covering plans,
 customers, the full subscription lifecycle, invoices, usage events, quotes,
-entitlements, webhooks, and more.
+entitlements, webhooks (including delivery tracking and redelivery),
+analytics, and more.
 
 <Info>
 The SDK lives in the main repository under
@@ -76,12 +77,13 @@ Every list method accepts optional server-side filter params
 | `usage` | `record` |
 | `creditNotes` | `create`, `list` |
 | `quotes` | `create`, `list`, `get`, `update`, `send`, `accept`, `decline`, `convert`, `delete` |
-| `webhooks` | `create`, `list`, `delete` |
-| `events` | `list`, `types` |
+| `webhooks` | `create`, `list`, `delete`, `deliveries` |
+| `events` | `list`, `types`, `deliveries`, `redeliver` |
 | `mandates` | `create`, `list`, `get`, `revoke` |
 | `gifts` | `purchase`, `redeem`, `list` |
 | `referrals` | `create`, `list`, `generateCode`, `qualify` |
 | `entitlements` | `setForPlan`, `getForPlan`, `forCustomer`, `check` |
+| `analytics` | `mrr` |
 | `ledger` | `accounts`, `entries` |
 
 ## Common flows
@@ -137,6 +139,33 @@ await recurso.webhooks.create({
   url: 'https://example.com/hooks/recurso',
   event_types: ['invoice.paid', 'subscription.canceled'],
 });
+```
+
+### Delivery tracking and redelivery
+
+```typescript
+// Recent failed deliveries to one endpoint
+const failing = await recurso.webhooks.deliveries(endpoint.id, {
+  status: 'failed',   // pending | succeeded | failed
+  limit: 20,
+});
+
+// All delivery attempts of one event, across endpoints
+const attempts = await recurso.events.deliveries(event.id);
+
+// Re-queue a failed event (202: { event_id, deliveries_queued })
+await recurso.events.redeliver(event.id);
+```
+
+See the [Webhooks guide](/advanced/webhooks#delivery-tracking--redelivery)
+for status derivation and retry semantics.
+
+### FX-normalized MRR
+
+```typescript
+const metrics = await recurso.analytics.mrr();
+// { mrr, normalized_mrr, reporting_currency, breakdown: [...],
+//   fx: { rates, source: 'live' | 'static-fallback', as_of } }
 ```
 
 ### Invoice PDFs
