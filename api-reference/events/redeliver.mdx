@@ -1,0 +1,39 @@
+---
+title: "Redeliver Event"
+openapi: "POST /v1/events/{id}/redeliver"
+description: "Re-enqueue delivery of an event to all subscribed endpoints"
+---
+
+Re-enqueues delivery of the event to every **active** endpoint currently subscribed to its type. Existing delivery records are reset to `pending` for a fresh attempt cycle — repeated calls do not create duplicates — and endpoints without a record get a new one. The delivery worker picks the work up on its next poll.
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string (uuid) | The event ID |
+
+## Example Request
+
+```bash
+curl -X POST "https://billing.example.com/v1/events/evt_a1b2c3d4/redeliver" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+Returns `202 Accepted` — redelivery is queued, not performed inline:
+
+```json
+{
+  "data": {
+    "event_id": "evt_a1b2c3d4",
+    "deliveries_queued": 2
+  }
+}
+```
+
+`deliveries_queued` is `0` when no active endpoint subscribes to the event's type (inactive endpoints are skipped).
+
+<Tip>
+Redelivery resets the attempt counter, so a previously failed delivery gets a full fresh retry cycle. Make sure your receiver is idempotent — it may see the same event ID again.
+</Tip>

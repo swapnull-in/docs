@@ -416,6 +416,7 @@
               "api-reference/webhooks/create",
               "api-reference/webhooks/list",
               "api-reference/webhooks/delete",
+              "api-reference/webhooks/deliveries",
               "api-reference/webhooks/events",
               "api-reference/webhooks/razorpay",
               "api-reference/webhooks/stripe"
@@ -425,7 +426,9 @@
             "group": "Events",
             "pages": [
               "api-reference/events/list",
-              "api-reference/events/types"
+              "api-reference/events/types",
+              "api-reference/events/deliveries",
+              "api-reference/events/redeliver"
             ]
           },
           {
