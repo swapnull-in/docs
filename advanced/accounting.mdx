@@ -192,7 +192,7 @@ Disconnecting does not delete previously synced data from the accounting provide
 
 ## Trigger a Sync
 
-Manually trigger a sync to push all pending billing data to your connected accounting platforms.
+Manually trigger a sync to push billing data to your connected accounting platforms.
 
 <CodeGroup>
 ```typescript TypeScript
@@ -209,8 +209,59 @@ curl -X POST https://billing.example.com/v1/accounting/sync \
 </CodeGroup>
 
 <Info>
-Recurso also runs automatic syncs on a schedule. Manual sync is useful when you need data pushed immediately after a large batch of invoices or payments.
+Recurso also runs automatic syncs on a daily schedule. The two differ in
+scope: the daily sync is **incremental** (unchanged entities are skipped —
+see below), while the manual endpoint **forces a full re-push** of every
+mapped entity. Use manual sync when you need data pushed immediately, or to
+repair provider-side records that were edited or deleted outside Recurso.
 </Info>
+
+## Incremental Sync (Dirty Tracking)
+
+The scheduled daily sync does not re-push every mapped entity. An entity is
+skipped as unchanged when both of these hold:
+
+1. it already has an ID mapping on the connection (it has synced
+   successfully before), and
+2. its source `updated_at` is **not newer** than the mapping's last
+   successful push.
+
+Anything that fails those checks is (re-)pushed. In practice a re-push is
+triggered by whatever bumps the entity's `updated_at` — editing a customer's
+billing details, an invoice changing status, a plan rename, and so on.
+
+When it cannot be sure, the sync **fails open** and pushes anyway: entities
+with no mapping yet, rows predating change tracking (zero `updated_at`), or
+a failed mapping lookup are all treated as dirty. Skipping never risks a
+stale ledger; the worst case is a redundant push.
+
+Each connection's sync log records how much work was actually done:
+
+```text
+synced=3 skipped_unchanged=241 force=false
+```
+
+<Note>
+The manual [`POST /v1/accounting/sync`](/api-reference/accounting/sync)
+endpoint sets `force=true` and bypasses the dirty check entirely — every
+mapped entity is re-pushed.
+</Note>
+
+## Xero Item Linkage
+
+Plans sync to Xero as **Items**, and invoice lines reference them by item
+`Code` (Xero links lines to items by code, not by ID):
+
+- the Item is created with a `Code` derived from the **plan's code** (e.g.
+  `PRO-USD`), not an internal ID
+- invoice lines for that plan carry the same value as `ItemCode`, so revenue
+  rolls up under the item in Xero reports
+- Xero caps item codes at **30 characters**; Recurso applies the same
+  truncation on both sides so the item's `Code` and the line's `ItemCode`
+  always match
+
+Invoice lines for plans that have not synced as items yet are sent bare,
+with just a description and the default sales account code.
 
 ## Check Sync Status
 
@@ -277,6 +328,7 @@ Recurso pushes the following billing objects to your accounting platform:
 | Payment | Payment | Payment |
 | Credit Note | Credit Memo | Credit Note |
 | Customer (`cust_`) | Customer | Contact |
+| Plan | Item (lines reference it by `ItemRef`) | Item (lines reference it by `Code` — see [Xero Item Linkage](#xero-item-linkage)) |
 
 ## Webhook Events
 
