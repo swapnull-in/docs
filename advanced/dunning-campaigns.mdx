@@ -251,6 +251,53 @@ Every step execution is logged with its status for monitoring and debugging.
 | `executed_at` | string | When the step was executed |
 | `error` | string | Error message if status is `failed` |
 
+## Recovered Revenue
+
+Recurso attributes revenue back to the recovery machinery: whenever an
+invoice is paid **after at least one failed payment attempt** (or while an
+active dunning action or campaign was driving it), a recovery record is
+written with the amount, the number of attempts it took, the strategy that
+was in effect, and how many days the invoice took to recover.
+
+- **Qualification** — paid on the first try counts as nothing recovered;
+  at least one failed attempt or an active dunning action/campaign must
+  precede the payment
+- **Strategy attribution** — the tenant-wide retry strategy
+  (`DUNNING_STRATEGY`, defaulting to the smart retry engine), or
+  `campaign` when a dunning campaign execution was driving the invoice
+- **Idempotent** — one record per invoice, however many success paths fire
+
+Query totals and a last-12-months series:
+
+```bash
+curl https://billing.example.com/v1/analytics/dunning/recovered \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+```json
+{
+  "recovered_amount_total": { "INR": 1249750, "USD": 89900 },
+  "recovered_count": 42,
+  "avg_attempts": 2.4,
+  "avg_days_to_recover": 3.7,
+  "monthly": [
+    { "month": "2026-06", "currency": "INR", "amount": 249950, "count": 8 },
+    { "month": "2026-06", "currency": "USD", "amount": 19900, "count": 2 }
+  ]
+}
+```
+
+Amounts are in minor units, keyed by currency (never summed across
+currencies). The dunning dashboard renders the same data as a recovered
+revenue panel. See the
+[API reference](/api-reference/analytics/dunning-recovered) for details.
+
+<Tip>
+Recovered revenue is the number that justifies your dunning configuration:
+it is literally the money that would have churned without retries and
+campaigns.
+</Tip>
+
 ## Webhooks
 
 | Event | Description |

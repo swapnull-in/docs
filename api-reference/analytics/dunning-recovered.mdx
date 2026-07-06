@@ -1,0 +1,63 @@
+---
+title: "Get Recovered Revenue"
+openapi: "GET /v1/analytics/dunning/recovered"
+description: "Totals and a last-12-months series of revenue recovered by the dunning and retry engine."
+---
+
+Returns recovery attribution for the authenticated tenant: every invoice
+that was paid **after at least one failed payment attempt** (or under an
+active dunning action or campaign) is counted as recovered revenue.
+
+## Example Request
+
+```bash
+curl https://billing.example.com/v1/analytics/dunning/recovered \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "recovered_amount_total": {
+    "INR": 1249750,
+    "USD": 89900
+  },
+  "recovered_count": 42,
+  "avg_attempts": 2.4,
+  "avg_days_to_recover": 3.7,
+  "monthly": [
+    { "month": "2026-05", "currency": "INR", "amount": 349900, "count": 11 },
+    { "month": "2026-06", "currency": "INR", "amount": 249950, "count": 8 },
+    { "month": "2026-06", "currency": "USD", "amount": 19900, "count": 2 }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `recovered_amount_total` | object | Total recovered, in **minor units**, keyed by currency — amounts are never summed across currencies |
+| `recovered_count` | integer | Number of recovered invoices |
+| `avg_attempts` | number | Average failed attempts before recovery |
+| `avg_days_to_recover` | number | Average days from invoice creation to payment |
+| `monthly` | array | Last-12-months series, one entry per month × currency |
+| `monthly[].month` | string | `YYYY-MM` |
+| `monthly[].amount` | integer | Recovered amount for the bucket, minor units |
+| `monthly[].count` | integer | Recovered invoices in the bucket |
+
+## Notes
+
+- An invoice paid on the first attempt is **not** recovered revenue — the
+  qualification is at least one failed attempt or an active dunning
+  action/campaign at payment time.
+- Each recovery record also stores the strategy that was in effect (the
+  tenant's `DUNNING_STRATEGY`, or `campaign` when a dunning campaign
+  execution drove the invoice); recording is idempotent per invoice.
+- The dunning dashboard renders this endpoint as its recovered revenue
+  panel.
+
+<Tip>
+Pair this with the [dunning overview](/api-reference/analytics/dunning-overview)
+to see both the activity (retries attempted) and the outcome (revenue
+actually recovered).
+</Tip>

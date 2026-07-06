@@ -263,7 +263,8 @@
               "api-reference/analytics/ask",
               "api-reference/analytics/dunning-overview",
               "api-reference/analytics/dunning-weights",
-              "api-reference/analytics/dunning-history"
+              "api-reference/analytics/dunning-history",
+              "api-reference/analytics/dunning-recovered"
             ]
           },
           {
