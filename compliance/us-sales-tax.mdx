@@ -1,0 +1,112 @@
+---
+title: "US Sales Tax"
+description: "Live jurisdiction-level US sales tax via TaxJar — or an honest 0% stub without it"
+---
+
+## Overview
+
+US sales tax is jurisdiction-level: the rate depends on the buyer's state,
+county, city, and special districts. Accurate rates therefore come from an
+external provider — Recurso integrates with **TaxJar**.
+
+The US engine applies when the **seller** is US-based (`COMPANY_COUNTRY=US`)
+and the customer's billing country is `US` (or unset). Buyers outside the US
+are invoiced with no US sales tax (`tax_type: "export"`).
+
+<Info>
+Without TaxJar configured, Recurso does **not** guess: US invoices carry 0%
+tax, explicitly marked `sales_tax_stub`. There are no silently wrong rates.
+</Info>
+
+## TaxJar Setup
+
+Set the API key and (optionally) the API base URL:
+
+```bash .env
+# Seller jurisdiction used by the tax engine
+COMPANY_COUNTRY=US
+COMPANY_STATE=CA
+
+# TaxJar — real US sales-tax rates. Leave unset to keep the 0% stub.
+TAXJAR_API_KEY=your_taxjar_api_token
+# Sandbox for testing; the default is https://api.taxjar.com
+# TAXJAR_API_URL=https://api.sandbox.taxjar.com
+```
+
+On startup the API logs which mode it is in:
+
+```text
+US sales tax: TaxJar provider enabled
+# or
+US sales tax: 0% stub (TAXJAR_API_KEY not set)
+```
+
+At invoice time the engine sends the seller's state and the buyer's billing
+`state` + `zip` to TaxJar's tax-for-order endpoint and applies the combined
+jurisdiction rate. Make sure your US customers have billing addresses with
+at least `state` and `zip` populated.
+
+### Rate caching
+
+Lookups are cached in-memory for **24 hours per buyer `(state, zip)`** pair.
+Sales-tax rates change rarely, so this keeps TaxJar API spend proportional
+to the number of distinct buyer locations — not the number of invoices. The
+cache lives for the process lifetime; a restart clears it.
+
+### Error handling
+
+- TaxJar calls time out after 10 seconds and are retried **once**, and only
+  on 5xx/network failures — auth errors (bad API key) and request-shape
+  errors are never retried.
+- A provider failure **never blocks invoice generation** (see the matrix
+  below).
+
+## Behavior Matrix
+
+Every US invoice records how its tax was computed in `tax_type`:
+
+| `tax_type` | When | Rate applied | What it means |
+|------------|------|--------------|----------------|
+| `sales_tax` | TaxJar configured, lookup succeeded | Live jurisdiction rate | The note names the provider and jurisdiction (e.g. `US sales tax via taxjar (CA)`). If TaxJar reports you have no nexus in the buyer's state, tax is 0 and the note flags it honestly: `no nexus in buyer state per provider — nothing to collect`. |
+| `sales_tax_error` | TaxJar configured, lookup **failed** after the retry | 0% | The invoice ships anyway — a tax lookup outage must never block billing. The note says `invoiced at 0% (needs review)` and a warning is logged. **Treat these invoices as an audit queue**: find them, recompute, and issue corrections. |
+| `sales_tax_stub` | `TAXJAR_API_KEY` not set | 0% | The historical placeholder behavior, honestly labeled. Fine for development; not for production US billing. |
+| `export` | Buyer's billing country is outside the US | — | No US sales tax on the sale. |
+
+<Warning>
+`sales_tax_error` is deliberate honesty rather than a failure mode to hide:
+Recurso chooses "invoice now at 0%, flag for review" over "block the
+billing run". Monitor for it (the API logs a warning per occurrence) and
+review flagged invoices promptly.
+</Warning>
+
+## Nexus Caveat
+
+Recurso does **not** model nexus-state configuration yet — there is no
+per-state "we are registered to collect here" setting in Recurso itself.
+Nexus is determined by your **TaxJar account configuration**: TaxJar
+returns zero tax for states where you have no nexus, and Recurso records
+that honestly in the invoice note.
+
+Keep your nexus states up to date in TaxJar. Native nexus configuration is
+on the [roadmap](https://github.com/swapnull-in/recur-so/blob/main/ROADMAP.md).
+
+## Testing
+
+Point `TAXJAR_API_URL` at TaxJar's sandbox to test the full path without
+live rates:
+
+```bash .env
+TAXJAR_API_KEY=your_sandbox_token
+TAXJAR_API_URL=https://api.sandbox.taxjar.com
+```
+
+Then create a US customer with a full billing address and generate an
+invoice — the invoice's `tax_type` should be `sales_tax`.
+
+## Other Jurisdictions
+
+| Seller country | Engine | Docs |
+|----------------|--------|------|
+| India | GST (CGST/SGST/IGST) | [GST Invoicing](/compliance/gst-invoicing) |
+| EU / UK | VAT (reverse charge, exports) | — |
+| US | Sales tax (this page) | — |

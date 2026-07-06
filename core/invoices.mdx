@@ -250,6 +250,14 @@ When a subscription uses a non-default currency, invoices are generated in the c
 
 Exchange rates are locked at the time the invoice is generated. See the [Multi-Currency guide](/advanced/multi-currency) for exchange rate handling.
 
+<Note>
+Tax on an invoice depends on the seller's jurisdiction: India uses GST
+(see [GST Invoicing](/compliance/gst-invoicing)); US sellers get live
+jurisdiction-level sales tax via TaxJar — or an honest 0% marked
+`sales_tax_stub` when TaxJar is not configured (see
+[US Sales Tax](/compliance/us-sales-tax)).
+</Note>
+
 ## Advance Invoicing
 
 Generate invoices for future billing periods ahead of schedule. This is useful for customers who want to prepay:

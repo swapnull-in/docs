@@ -162,6 +162,14 @@ SMTP_PASSWORD=<smtp-password>
 # Webhook
 WEBHOOK_SECRET=whsec_your_webhook_secret
 
+# US sales tax (US sellers): live jurisdiction rates via TaxJar.
+# Unset = US invoices ship at 0% marked sales_tax_stub.
+# See /compliance/us-sales-tax for the full behavior matrix.
+COMPANY_COUNTRY=US
+COMPANY_STATE=CA
+TAXJAR_API_KEY=<taxjar-api-token>
+# TAXJAR_API_URL=https://api.sandbox.taxjar.com   # sandbox only; default is production
+
 # Analytics: reporting currency for FX-normalized MRR (default USD).
 # A tenant's BaseCurrency, when set, wins over this value.
 REPORTING_CURRENCY=USD
@@ -288,6 +296,7 @@ Use this checklist to verify everything is ready:
 | Webhook endpoint reachable over HTTPS | |
 | Webhook signature verification working | |
 | E-invoicing IRP configured (if India) | |
+| TaxJar configured (if US seller — else US invoices are 0%/`sales_tax_stub`) | |
 | DNS pointing to production server | |
 | TLS certificate valid and auto-renewing | |
 | Environment variables set (no test keys) | |
