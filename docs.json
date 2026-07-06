@@ -472,10 +472,16 @@
     }
   },
   "api": {
-    "baseUrl": "https://billing.example.com",
-    "auth": {
-      "method": "key",
-      "name": "Authorization"
+    "openapi": "api-reference/openapi.yaml",
+    "playground": {
+      "display": "interactive"
+    },
+    "mdx": {
+      "server": "https://billing.example.com",
+      "auth": {
+        "method": "key",
+        "name": "Authorization"
+      }
     }
   }
 }
