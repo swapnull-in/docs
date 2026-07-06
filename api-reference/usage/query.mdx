@@ -1,0 +1,68 @@
+---
+title: "Query Usage"
+openapi: "GET /v1/usage"
+description: "Time-windowed usage buckets for a subscription or customer"
+---
+
+Aggregates usage events into time buckets (`date_trunc` by day or month) over
+an arbitrary window. Use it to power usage charts and consumption dashboards.
+
+At least one of `subscription_id` or `customer_id` is required. Both may be
+combined to scope a customer's usage to a single subscription.
+
+## Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `subscription_id` | string (UUID) | One of these two | Scope to one subscription |
+| `customer_id` | string (UUID) | One of these two | Scope to all of a customer's subscriptions |
+| `dimension` | string | No | Filter to a single dimension (e.g. `api_calls`) |
+| `from` | string (RFC 3339) | No | Window start, inclusive. Default: `to` minus 30 days |
+| `to` | string (RFC 3339) | No | Window end, exclusive. Default: now |
+| `granularity` | string | No | `day` (default) or `month` |
+
+## Example Request
+
+```bash
+curl "https://billing.example.com/v1/usage?subscription_id=9a1f...&dimension=api_calls&from=2026-06-01T00:00:00Z&to=2026-07-01T00:00:00Z&granularity=day" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+Buckets are returned in ascending `period` order, alongside the resolved
+window (useful when you relied on the defaults). Buckets with no usage are
+omitted rather than zero-filled.
+
+```json
+{
+  "data": [
+    { "period": "2026-06-01T00:00:00Z", "dimension": "api_calls", "quantity": 1204 },
+    { "period": "2026-06-02T00:00:00Z", "dimension": "api_calls", "quantity": 987 },
+    { "period": "2026-06-03T00:00:00Z", "dimension": "api_calls", "quantity": 1530 }
+  ],
+  "from": "2026-06-01T00:00:00Z",
+  "to": "2026-07-01T00:00:00Z",
+  "granularity": "day"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `data[].period` | string | Bucket start (the `date_trunc` of the event timestamps) |
+| `data[].dimension` | string | Usage dimension the bucket aggregates |
+| `data[].quantity` | integer | Total quantity recorded in the bucket |
+| `from` / `to` | string | The resolved query window |
+| `granularity` | string | The resolved bucketing granularity |
+
+## Errors
+
+| Status | When |
+|--------|------|
+| `400` | Neither `subscription_id` nor `customer_id` given, malformed IDs or timestamps, `from` not before `to`, unknown `granularity` |
+| `401` | Missing or invalid API key |
+
+<Note>
+Usage is tenant-scoped through the subscription: you can only ever see
+buckets for subscriptions that belong to the authenticated tenant.
+</Note>

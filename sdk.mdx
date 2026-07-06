@@ -4,10 +4,10 @@ description: "Typed Node.js client covering the core Recurso API"
 ---
 
 The official Node.js SDK (`recurso-node`) wraps the REST API with a typed,
-resource-oriented client: 17 resources and 64 methods covering plans,
-customers, the full subscription lifecycle, invoices, usage events, quotes,
-entitlements, webhooks (including delivery tracking and redelivery),
-analytics, and more.
+resource-oriented client: 17 resources and 67 methods covering plans,
+customers, the full subscription lifecycle, invoices, the usage platform
+(recording, windowed queries, and per-period reports), quotes, entitlements,
+webhooks (including delivery tracking and redelivery), analytics, and more.
 
 <Info>
 The SDK lives in the main repository under
@@ -71,10 +71,10 @@ Every list method accepts optional server-side filter params
 | `account` | `get`, `update` |
 | `customers` | `create`, `list`, `updatePaymentMethod`, `churn`, `consents` |
 | `plans` | `create`, `list` |
-| `subscriptions` | `create`, `list`, `update`, `cancel`, `pause`, `resume`, `reactivate`, `advance`, `charges`, `addCharge` |
+| `subscriptions` | `create`, `list`, `update`, `cancel`, `pause`, `resume`, `reactivate`, `advance`, `charges`, `addCharge`, `usage` |
 | `invoices` | `list`, `pdfUrl`, `eInvoiceStatus`, `retryEInvoice`, `cancelEInvoice` |
 | `coupons` | `create`, `list` |
-| `usage` | `record` |
+| `usage` | `record`, `query`, `dimensions` |
 | `creditNotes` | `create`, `list` |
 | `quotes` | `create`, `list`, `get`, `update`, `send`, `accept`, `decline`, `convert`, `delete` |
 | `webhooks` | `create`, `list`, `delete`, `deliveries` |
@@ -105,13 +105,36 @@ await recurso.subscriptions.advance(sub.id, { periods: 3 });
 ### Usage-based billing
 
 ```typescript
+// Record a metered event (the subscription must belong to your tenant,
+// and customer_id must match the subscription's customer)
 await recurso.usage.record({
   subscription_id: sub.id,
   customer_id: customer.id,
   dimension: 'api_calls',
   quantity: 1500,
 });
+
+// Time-windowed buckets for charts (defaults: last 30 days, day buckets)
+const chart = await recurso.usage.query({
+  subscription_id: sub.id,
+  dimension: 'api_calls',
+  granularity: 'day',        // 'day' | 'month'
+});
+// { data: [{ period, dimension, quantity }, ...], from, to, granularity }
+
+// The tenant's dimension catalog with first/last seen and event counts
+const catalog = await recurso.usage.dimensions();
+
+// Current-period + lifetime usage per dimension, with the customer's
+// entitlement limit/remaining joined in where a feature_key matches the
+// dimension name — the "4,231 of 10,000 API calls" view
+const usage = await recurso.subscriptions.usage(sub.id);
+// { dimensions: [{ dimension, period_quantity, lifetime_quantity,
+//                  limit_value, remaining }], ... }
 ```
+
+See the [Usage-Based Billing guide](/advanced/usage-billing) for the
+metering-plus-entitlements headroom pattern.
 
 ### Entitlements and feature gating
 

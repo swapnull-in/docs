@@ -1,0 +1,78 @@
+---
+title: "Get Subscription Usage"
+openapi: "GET /v1/subscriptions/{id}/usage"
+description: "Current-period and lifetime usage per dimension, with entitlement headroom"
+---
+
+Per-dimension usage inside the subscription's current billing period, plus
+lifetime totals — the "you've used 4,231 of 10,000 API calls" view.
+
+When the subscription's customer holds an entitlement **limit** whose
+`feature_key` equals the dimension name, the effective `limit_value` and the
+`remaining` headroom are joined into the row. Dimensions without a matching
+entitlement limit report `null` for both.
+
+## Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string (UUID) | Yes | Subscription ID (must belong to your tenant) |
+
+## Example Request
+
+```bash
+curl https://billing.example.com/v1/subscriptions/9a1f0f9e-.../usage \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "subscription_id": "9a1f0f9e-52f1-4c11-a1b0-1f6d3f1c2a7e",
+  "customer_id": "d5b7c1de-8a34-4a37-8f0e-b1a9f3f6f001",
+  "current_period_start": "2026-07-01T00:00:00Z",
+  "current_period_end": "2026-08-01T00:00:00Z",
+  "dimensions": [
+    {
+      "dimension": "api_calls",
+      "period_quantity": 4231,
+      "lifetime_quantity": 61540,
+      "limit_value": 10000,
+      "remaining": 5769
+    },
+    {
+      "dimension": "storage_gb",
+      "period_quantity": 42,
+      "lifetime_quantity": 42,
+      "limit_value": null,
+      "remaining": null
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `subscription_id` / `customer_id` | string | Identifiers echoed back |
+| `current_period_start` / `current_period_end` | string | The billing period `period_quantity` is measured over |
+| `dimensions[].dimension` | string | Usage dimension name |
+| `dimensions[].period_quantity` | integer | Total recorded inside the current billing period |
+| `dimensions[].lifetime_quantity` | integer | Total ever recorded for the subscription |
+| `dimensions[].limit_value` | integer or null | Effective entitlement limit for a `feature_key` equal to the dimension name; `null` when none exists |
+| `dimensions[].remaining` | integer or null | `limit_value - period_quantity`; **negative when over the limit**; `null` when `limit_value` is `null` |
+
+## Errors
+
+| Status | When |
+|--------|------|
+| `400` | Malformed subscription ID |
+| `401` | Missing or invalid API key |
+| `404` | Subscription does not exist or belongs to another tenant |
+
+<Note>
+`remaining` compares the entitlement limit against the **current billing
+period's** quantity, not lifetime usage. See the
+[Usage-Based Billing guide](/advanced/usage-billing#show-customers-their-usage)
+for the full metering-plus-entitlements pattern.
+</Note>

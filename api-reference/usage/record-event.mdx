@@ -1,18 +1,35 @@
 ---
 title: "Record Usage Event"
 openapi: "POST /v1/usage/events"
-description: "Record a metered usage event for a customer"
+description: "Record a metered usage event against a subscription dimension"
 ---
+
+Reports metered usage against a subscription dimension (e.g. `api_calls`).
+Events are aggregated at the end of each billing period and billed on the
+next invoice for metered plans.
 
 ## Request Body
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `customer_id` | string | Yes | Customer ID |
-| `meter_id` | string | Yes | Usage meter ID |
-| `value` | number | Yes | Usage quantity to record |
-| `timestamp` | string | No | Event time (ISO 8601). Defaults to now. |
-| `properties` | object | No | Additional event metadata |
+| `subscription_id` | string (UUID) | Yes | The subscription the usage belongs to |
+| `customer_id` | string (UUID) | Yes | Must match the subscription's customer |
+| `dimension` | string | Yes | Usage dimension/meter name (e.g. `api_calls`) |
+| `quantity` | integer | Yes | Amount of usage to record |
+
+The event timestamp is set server-side at ingestion time.
+
+### Ownership enforcement
+
+The subscription is verified before the event is accepted:
+
+- the subscription must belong to the **authenticated tenant** — otherwise
+  `404` (also returned for subscriptions of other tenants, to avoid
+  existence leaks)
+- `customer_id` must match the **subscription's customer** — otherwise `400`
+
+This prevents usage from being recorded (accidentally or maliciously)
+against another tenant's or another customer's subscription.
 
 ## Example Request
 
@@ -21,14 +38,10 @@ curl -X POST https://billing.example.com/v1/usage/events \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "customer_id": "cust_abc123",
-    "meter_id": "meter_api_calls",
-    "value": 150,
-    "timestamp": "2024-03-15T14:30:00Z",
-    "properties": {
-      "endpoint": "/v1/analyze",
-      "region": "ap-south-1"
-    }
+    "subscription_id": "9a1f0f9e-52f1-4c11-a1b0-1f6d3f1c2a7e",
+    "customer_id": "d5b7c1de-8a34-4a37-8f0e-b1a9f3f6f001",
+    "dimension": "api_calls",
+    "quantity": 150
   }'
 ```
 
@@ -36,21 +49,23 @@ curl -X POST https://billing.example.com/v1/usage/events \
 
 ```json
 {
-  "id": "evt_u9k3m7x2",
-  "object": "usage_event",
-  "customer_id": "cust_abc123",
-  "meter_id": "meter_api_calls",
-  "value": 150,
-  "timestamp": "2024-03-15T14:30:00Z",
-  "properties": {
-    "endpoint": "/v1/analyze",
-    "region": "ap-south-1"
-  },
-  "subscription_id": "sub_xyz789",
-  "created_at": "2024-03-15T14:30:01Z"
+  "status": "recorded",
+  "event_id": "7c1de5b7-1f6d-4a37-8f0e-b1a9f3f6f002"
 }
 ```
 
+## Errors
+
+| Status | When |
+|--------|------|
+| `400` | Missing/malformed fields, or `customer_id` does not match the subscription's customer |
+| `401` | Missing or invalid API key |
+| `404` | Subscription not found (or belongs to another tenant) |
+
 <Note>
-Usage events are aggregated at the end of each billing period and included in the next invoice. You can backfill events by providing a past `timestamp`, as long as it falls within the current billing period.
+To read usage back, see [Query Usage](/api-reference/usage/query) for
+windowed buckets, [Get Subscription Usage](/api-reference/subscriptions/usage)
+for current-period totals with entitlement headroom, and
+[List Usage Dimensions](/api-reference/usage/dimensions) for the dimension
+catalog.
 </Note>

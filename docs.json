@@ -164,7 +164,8 @@
               "api-reference/subscriptions/update",
               "api-reference/subscriptions/cancel",
               "api-reference/subscriptions/pause",
-              "api-reference/subscriptions/resume"
+              "api-reference/subscriptions/resume",
+              "api-reference/subscriptions/usage"
             ]
           },
           {
@@ -196,7 +197,9 @@
           {
             "group": "Usage",
             "pages": [
-              "api-reference/usage/record-event"
+              "api-reference/usage/record-event",
+              "api-reference/usage/query",
+              "api-reference/usage/dimensions"
             ]
           },
           {

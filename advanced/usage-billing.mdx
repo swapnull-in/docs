@@ -50,26 +50,22 @@ const plan = await recurso.plans.create({
 
 ## Report Usage
 
-Report usage events throughout the billing period. The `POST /v1/usage/events` endpoint accepts the following fields:
+Report usage events throughout the billing period. The `POST /v1/usage/events` endpoint accepts the following fields (all required):
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `subscription_id` | `string` | Yes | The subscription to report usage for |
-| `customer_id` | `string` | No | Customer ID (inferred from subscription if omitted) |
-| `dimension` | `string` | No | Usage dimension/meter name (for multi-meter plans) |
-| `quantity` | `number` | Yes | Amount of usage to record |
-| `action` | `string` | No | `increment` (default) or `set` for gauge metrics |
-| `timestamp` | `string` | No | ISO 8601 timestamp (defaults to now) |
-| `idempotency_key` | `string` | No | Prevent duplicate events |
+| Field | Type | Description |
+|-------|------|-------------|
+| `subscription_id` | `string` | The subscription to report usage for |
+| `customer_id` | `string` | The subscription's customer |
+| `dimension` | `string` | Usage dimension/meter name, e.g. `api_calls` |
+| `quantity` | `number` | Amount of usage to record |
 
 <CodeGroup>
 ```typescript TypeScript
 await recurso.usage.record({
   subscription_id: 'sub_xyz',
+  customer_id: 'cust_abc123',
+  dimension: 'api_calls',
   quantity: 100,
-  timestamp: new Date(),
-  action: 'increment',  // or 'set' for gauge metrics
-  idempotency_key: 'request_abc123'  // Prevent duplicates
 });
 ```
 
@@ -81,23 +77,17 @@ curl -X POST https://billing.example.com/v1/usage/events \
     "subscription_id": "sub_xyz",
     "customer_id": "cust_abc123",
     "dimension": "api_calls",
-    "quantity": 100,
-    "action": "increment"
+    "quantity": 100
   }'
 ```
 </CodeGroup>
 
-### Batch Reporting
-
-For high-volume usage, batch multiple events:
-
-```typescript
-await recurso.usage.recordBatch([
-  { subscription_id: 'sub_xyz', quantity: 50, timestamp: t1 },
-  { subscription_id: 'sub_xyz', quantity: 75, timestamp: t2 },
-  { subscription_id: 'sub_xyz', quantity: 120, timestamp: t3 }
-]);
-```
+<Warning>
+Recording is ownership-checked: the subscription must belong to your tenant
+(`404` otherwise) and `customer_id` must match the subscription's customer
+(`400` otherwise). See the
+[Record Usage Event reference](/api-reference/usage/record-event).
+</Warning>
 
 ## Pricing Models
 
@@ -176,20 +166,102 @@ At invoice time, the customer sees two line items:
 Hybrid billing works well for plans where you want a minimum commitment (the base fee) while still charging for heavy usage. Customers who stay under the included usage only pay the flat fee.
 </Tip>
 
-## Get Current Usage
+## Query Usage Over Time
+
+`GET /v1/usage` aggregates events into time buckets (`day` or `month`) over
+an arbitrary window — the endpoint behind usage charts. Scope by
+`subscription_id`, `customer_id`, or both, and optionally filter to one
+dimension. The window defaults to the last 30 days.
+
+<CodeGroup>
+```typescript TypeScript
+const chart = await recurso.usage.query({
+  subscription_id: 'sub_xyz',
+  dimension: 'api_calls',
+  from: '2026-06-01T00:00:00Z',
+  to: '2026-07-01T00:00:00Z',
+  granularity: 'day',        // 'day' (default) | 'month'
+});
+
+// {
+//   data: [
+//     { period: '2026-06-01T00:00:00Z', dimension: 'api_calls', quantity: 1204 },
+//     { period: '2026-06-02T00:00:00Z', dimension: 'api_calls', quantity: 987 },
+//     ...
+//   ],
+//   from: '2026-06-01T00:00:00Z',
+//   to: '2026-07-01T00:00:00Z',
+//   granularity: 'day'
+// }
+```
+
+```bash cURL
+curl "https://billing.example.com/v1/usage?subscription_id=sub_xyz&dimension=api_calls&granularity=day" \
+  -H "Authorization: Bearer $API_KEY"
+```
+</CodeGroup>
+
+To discover which dimensions your services have been reporting, list the
+tenant's dimension catalog:
 
 ```typescript
-const usage = await recurso.usage.summary('sub_xyz');
-
-// Returns
-{
-  subscription_id: 'sub_xyz',
-  period_start: '2024-01-01',
-  period_end: '2024-01-31',
-  total_usage: 45230,
-  estimated_amount: 1523
-}
+const catalog = await recurso.usage.dimensions();
+// { data: [{ dimension: 'api_calls', event_count: 48210,
+//            first_seen: '...', last_seen: '...' }, ...] }
 ```
+
+## Show Customers Their Usage
+
+`GET /v1/subscriptions/{id}/usage` answers the question every usage-based
+product has to put on a dashboard: **"you've used 4,231 of 10,000 API
+calls this month."**
+
+It returns each dimension's total inside the current billing period plus
+its lifetime total — and here is the wiring that makes the "of 10,000"
+part work: when the customer holds an entitlement **limit** whose
+`feature_key` equals the dimension name, the effective `limit_value` and
+remaining headroom are joined into the row automatically.
+
+```typescript
+// 1. Grant a limit on the plan with a feature_key matching the dimension
+await recurso.entitlements.setForPlan(plan.id, [
+  { feature_key: 'api_calls', kind: 'limit', limit_value: 10000 },
+]);
+
+// 2. Meter usage against the dimension of the same name
+await recurso.usage.record({
+  subscription_id: sub.id,
+  customer_id: customer.id,
+  dimension: 'api_calls',
+  quantity: 150,
+});
+
+// 3. Read back period usage with entitlement headroom
+const usage = await recurso.subscriptions.usage(sub.id);
+
+// {
+//   subscription_id: 'sub_xyz',
+//   customer_id: 'cust_abc123',
+//   current_period_start: '2026-07-01T00:00:00Z',
+//   current_period_end: '2026-08-01T00:00:00Z',
+//   dimensions: [{
+//     dimension: 'api_calls',
+//     period_quantity: 4231,       // this billing period
+//     lifetime_quantity: 61540,    // all time
+//     limit_value: 10000,          // from the entitlement
+//     remaining: 5769              // limit_value - period_quantity
+//   }]
+// }
+
+const api = usage.dimensions.find((d) => d.dimension === 'api_calls');
+banner.show(`You've used ${api.period_quantity} of ${api.limit_value} API calls`);
+```
+
+Dimensions without a matching entitlement limit report `limit_value: null`
+and `remaining: null`; `remaining` goes **negative** when the customer is
+over their limit — a natural trigger for an upgrade prompt. See the
+[Entitlements guide](/advanced/entitlements) for how limits resolve across
+multiple subscriptions.
 
 ## Best Practices
 
