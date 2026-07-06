@@ -1,41 +1,62 @@
 ---
 title: "Get MRR Metrics"
 openapi: "GET /v1/analytics/mrr"
-description: "Retrieve monthly recurring revenue metrics broken down by movement category."
+description: "Current monthly recurring revenue, FX-normalized to your reporting currency."
 ---
 
-## Query Parameters
-
-| Parameter    | Type   | Required | Description                                                       |
-|--------------|--------|----------|-------------------------------------------------------------------|
-| `start_date` | string | No       | ISO 8601 date for the beginning of the reporting period. Defaults to 30 days ago. |
-| `end_date`   | string | No       | ISO 8601 date for the end of the reporting period. Defaults to today. |
-
-Returns MRR metrics for the specified date range, broken down into the standard SaaS categories: new, expansion, contraction, and churn. All monetary values are expressed in the smallest currency unit (e.g., cents for USD).
+Returns current MRR across active subscriptions. Per-currency buckets are converted to a single reporting currency (tenant `BaseCurrency` → `REPORTING_CURRENCY` env → `USD`), with the exchange rates, their source, and timestamp returned alongside. All monetary values are in the smallest currency unit (e.g., cents for USD). Responses are cached for up to 5 minutes.
 
 ## Example Request
 
 ```bash
-curl -X GET "https://api.recurso.io/v1/analytics/mrr?start_date=2026-06-01&end_date=2026-06-30" \
-  -H "Authorization: Bearer sk_live_26PHem9AhJZvU..." \
-  -H "Content-Type: application/json"
+curl "https://billing.example.com/v1/analytics/mrr" \
+  -H "Authorization: Bearer $API_KEY"
 ```
 
 ## Response
 
 ```json
 {
-  "object": "mrr_summary",
-  "currency": "usd",
-  "start_date": "2026-06-01",
-  "end_date": "2026-06-30",
-  "total_mrr": 28450000,
-  "new_mrr": 3200000,
-  "expansion_mrr": 1850000,
-  "contraction_mrr": -620000,
-  "churn_mrr": -980000,
-  "net_new_mrr": 3450000,
-  "customer_count": 342,
-  "computed_at": "2026-06-23T00:00:00Z"
+  "currency": "USD",
+  "amount": 4850000,
+  "mrr": 4850000,
+  "normalized_mrr": 4850000,
+  "reporting_currency": "USD",
+  "breakdown": [
+    {
+      "currency": "USD",
+      "amount": 3000000,
+      "converted_amount": 3000000,
+      "rate": 1,
+      "subscriptions": 120
+    },
+    {
+      "currency": "INR",
+      "amount": 155000000,
+      "converted_amount": 1850000,
+      "rate": 0.0119,
+      "subscriptions": 214
+    }
+  ],
+  "fx": {
+    "rates": { "USD": 1, "INR": 0.0119 },
+    "source": "live",
+    "as_of": "2026-07-06T10:30:00Z"
+  }
 }
 ```
+
+## Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `currency` | string | The reporting currency (same as `reporting_currency`) |
+| `amount` / `mrr` / `normalized_mrr` | integer | FX-normalized MRR total in the reporting currency, minor units |
+| `breakdown[]` | array | Per-currency buckets: native `amount`, `converted_amount`, `rate` applied, active `subscriptions`, and `error` when the currency could not be converted (excluded from the total) |
+| `fx.rates` | object | Exact rate per currency (native → reporting) |
+| `fx.source` | string | `live` (exchange-rate provider) or `static-fallback` (bundled rates used because the provider failed or is not configured) |
+| `fx.as_of` | string | When the rates were obtained |
+
+<Tip>
+See the [Analytics guide](/advanced/analytics#fx-normalization) for reporting-currency resolution, rate provenance, and how unconvertible currencies are flagged.
+</Tip>

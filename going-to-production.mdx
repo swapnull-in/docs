@@ -162,6 +162,10 @@ SMTP_PASSWORD=<smtp-password>
 # Webhook
 WEBHOOK_SECRET=whsec_your_webhook_secret
 
+# Analytics: reporting currency for FX-normalized MRR (default USD).
+# A tenant's BaseCurrency, when set, wins over this value.
+REPORTING_CURRENCY=USD
+
 # Operational alerting (see section 7)
 ALERT_WEBHOOK_URL=https://hooks.slack.com/services/T000/B000/XXXX
 ALERT_WEBHOOK_FORMAT=slack   # json (default) | slack

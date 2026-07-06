@@ -9,7 +9,7 @@ Recurso provides built-in analytics that give you real-time visibility into your
 
 <CardGroup cols={3}>
   <Card title="MRR Tracking" icon="chart-line">
-    New, expansion, contraction, and churn MRR broken down by period
+    FX-normalized MRR with per-currency breakdown and rate provenance
   </Card>
   <Card title="Usage Statistics" icon="gauge">
     Aggregate usage metrics across meters and customers
@@ -21,90 +21,76 @@ Recurso provides built-in analytics that give you real-time visibility into your
 
 ## MRR Tracking
 
-Monthly Recurring Revenue is the core health metric for any subscription business. Recurso automatically calculates MRR and breaks it down into movement categories.
-
-### MRR Components
-
-| Component | Description |
-|-----------|-------------|
-| `new_mrr` | Revenue from newly created subscriptions |
-| `expansion_mrr` | Revenue increase from upgrades or seat additions |
-| `contraction_mrr` | Revenue decrease from downgrades or seat removals |
-| `churn_mrr` | Revenue lost from cancelled subscriptions |
-| `net_new_mrr` | Net change: new + expansion - contraction - churn |
-| `total_mrr` | Total active MRR at end of period |
+Monthly Recurring Revenue is the core health metric for any subscription business. Recurso sums active-subscription MRR per currency, converts each currency bucket to a single **reporting currency**, and returns the normalized total together with the exact exchange rates used — auditable, not just a number.
 
 ### Get MRR Metrics
 
 <CodeGroup>
 ```typescript TypeScript
-const mrr = await recurso.analytics.getMRR({
-  start_date: '2026-01-01',
-  end_date: '2026-06-30'
-});
+const metrics = await recurso.analytics.mrr();
 
 // Response
 {
-  data: {
-    start_date: '2026-01-01',
-    end_date: '2026-06-30',
-    total_mrr: 4850000,          // in smallest currency unit (paise)
-    new_mrr: 1200000,
-    expansion_mrr: 350000,
-    contraction_mrr: 75000,
-    churn_mrr: 180000,
-    net_new_mrr: 1295000,
-    currency: 'INR',
-    periods: [
-      {
-        month: '2026-01',
-        total_mrr: 3555000,
-        new_mrr: 250000,
-        expansion_mrr: 50000,
-        contraction_mrr: 10000,
-        churn_mrr: 30000
-      },
-      // ... one entry per month
-    ]
+  currency: 'USD',              // the reporting currency
+  amount: 4850000,              // normalized total, minor units (alias)
+  mrr: 4850000,
+  normalized_mrr: 4850000,
+  reporting_currency: 'USD',
+  breakdown: [
+    { currency: 'USD', amount: 3000000, converted_amount: 3000000, rate: 1,       subscriptions: 120 },
+    { currency: 'INR', amount: 155000000, converted_amount: 1850000, rate: 0.0119, subscriptions: 214 },
+    { currency: 'XTS', amount: 40000, converted_amount: 0, rate: 0, subscriptions: 2,
+      error: 'no exchange rate available' }   // excluded from the total, flagged
+  ],
+  fx: {
+    rates: { USD: 1, INR: 0.0119 },
+    source: 'live',             // or 'static-fallback'
+    as_of: '2026-07-06T10:30:00Z'
   }
 }
 ```
 
 ```bash cURL
-curl -G https://billing.example.com/v1/analytics/mrr \
-  -H "Authorization: Bearer $API_KEY" \
-  -d start_date=2026-01-01 \
-  -d end_date=2026-06-30
+curl https://billing.example.com/v1/analytics/mrr \
+  -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
 
-### MRR Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `start_date` | `string` | Yes | Start of date range (YYYY-MM-DD) |
-| `end_date` | `string` | Yes | End of date range (YYYY-MM-DD) |
+Responses are cached for up to 5 minutes.
 
 <Info>
-MRR values are returned in the smallest currency unit (e.g., paise for INR, cents for USD). Divide by 100 to get the display value.
+MRR values are returned in the smallest currency unit (e.g., paise for INR, cents for USD). Divide by 100 to get the display value. Each `breakdown[]` entry shows the native amount, the converted amount in the reporting currency, and the rate applied.
 </Info>
 
-### MRR Calculation Flow
+### FX Normalization
 
-```mermaid
-flowchart LR
-    A[Subscription Events] --> B[Event Classifier]
-    B --> C{Event Type}
-    C -->|New sub| D[New MRR]
-    C -->|Upgrade / seats added| E[Expansion MRR]
-    C -->|Downgrade / seats removed| F[Contraction MRR]
-    C -->|Cancellation| G[Churn MRR]
-    D --> H[Net New MRR]
-    E --> H
-    F --> H
-    G --> H
-    H --> I[Total MRR]
-```
+#### Reporting currency resolution
+
+The reporting currency is resolved in order:
+
+1. The tenant's `BaseCurrency` (set on your account), when configured
+2. The `REPORTING_CURRENCY` environment variable (see [Going to Production](/going-to-production#6-environment-variables-for-production))
+3. `USD`
+
+Organization-level consolidated MRR (`GET /v1/organizations/{id}/analytics/mrr`) is normalized the same way and returns the same `fx` snapshot alongside its per-currency, per-tenant breakdown.
+
+#### Rate provenance (`fx.source`)
+
+The `fx` snapshot tells you exactly which rates produced the number, and how trustworthy they are:
+
+| Field | Description |
+|-------|-------------|
+| `rates` | The exact rate applied per currency (native → reporting) |
+| `source` | `live` — fetched from the exchange-rate provider (Open Exchange Rates); `static-fallback` — the provider failed or is not configured, and bundled static rates were used instead |
+| `as_of` | When the rates were obtained |
+
+<Warning>
+`source: 'static-fallback'` is deliberate honesty: the totals are still normalized, but with bundled approximate rates rather than live market rates. Treat such numbers as indicative and alert on the condition if your reporting depends on rate freshness.
+</Warning>
+
+#### Unconvertible currencies
+
+If a currency bucket cannot be converted (no rate available even in the static table), it is **excluded from `normalized_mrr` rather than silently mixed in**. The bucket still appears in `breakdown[]` with its native `amount`, `converted_amount: 0`, and an `error` explaining why — so the gap is visible instead of corrupting the total.
 
 ## Usage Statistics
 
