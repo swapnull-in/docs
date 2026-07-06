@@ -161,11 +161,47 @@ SMTP_PASSWORD=<smtp-password>
 
 # Webhook
 WEBHOOK_SECRET=whsec_your_webhook_secret
+
+# Operational alerting (see section 7)
+ALERT_WEBHOOK_URL=https://hooks.slack.com/services/T000/B000/XXXX
+ALERT_WEBHOOK_FORMAT=slack   # json (default) | slack
+
+# API rate limit per key (default 500/min)
+RATE_LIMIT_PER_MINUTE=500
 ```
 
 ## 7. Monitoring and Alerting Checklist
 
 Set up monitoring to catch issues before your customers do.
+
+### Built-in Health Alerting
+
+The API ships with a health watcher: every 60 seconds it evaluates the
+same component checks as `GET /health` (PostgreSQL, Redis if configured,
+TigerBeetle) and POSTs an alert to `ALERT_WEBHOOK_URL` on **state
+transitions only** — one alert when a component goes down (PostgreSQL =
+`critical`, Redis/TigerBeetle = `warning`), one when it recovers. No
+repeats while the state is steady, and no alerts at all if the variable
+is unset.
+
+```bash .env
+# Any HTTP endpoint, or a Slack incoming webhook with format=slack
+ALERT_WEBHOOK_URL=https://hooks.slack.com/services/T000/B000/XXXX
+ALERT_WEBHOOK_FORMAT=slack   # json (default) | slack
+```
+
+Payload formats:
+
+- `json` → `{"severity", "title", "body", "source": "recurso", "timestamp"}`
+- `slack` → `{"text": "[SEVERITY] title — body"}` (Slack incoming webhooks)
+
+<Warning>
+The alert fires from inside the API process — if the process or host
+dies, nothing fires. Pair it with an **external** uptime monitor on
+`/health` for coverage the process cannot provide about itself.
+</Warning>
+
+### External Monitoring
 
 <Steps>
   <Step title="Health check endpoint">
@@ -184,6 +220,31 @@ Set up monitoring to catch issues before your customers do.
     Ship Recurso logs to a centralized service (Datadog, Grafana, CloudWatch) for debugging production issues.
   </Step>
 </Steps>
+
+### Incident Response
+
+Before going live, read the
+[SEV1 incident runbook](https://github.com/swapnull-in/recur-so/blob/main/docs/incident-runbook.md)
+(the canonical copy lives in the main repository). In short:
+
+- **Severities** — SEV1: money moved wrongly or ledger integrity is broken;
+  SEV2: payments degraded (money that should move, isn't); SEV3: non-money
+  functionality broken. When unsure, treat it as one level higher until the
+  reconciliation report says the ledger is clean.
+- **SEV1, in order** — stop the bleeding (there is no partial kill-switch
+  for individual workers; stopping outbound charges means stopping the API
+  process), snapshot Postgres and logs *before* touching anything, verify
+  ledger integrity with
+  [`GET /v1/finance/reconciliation`](/api-reference/finance/reconciliation),
+  then check the **gateway dashboards** — Stripe/Razorpay are the source of
+  truth for money that actually moved.
+- **Recovery** — restore from `pg_dump`, replay missed gateway webhooks
+  from the gateway dashboards (handlers are idempotent on payment state),
+  and re-run reconciliation before re-enabling traffic.
+
+The runbook also includes a symptom → first-command triage table and an
+honest list of current gaps (single alert channel, no status page, no
+per-worker kill switch).
 
 ## 8. Migrate Existing Subscribers (optional)
 

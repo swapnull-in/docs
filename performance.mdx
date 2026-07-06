@@ -1,0 +1,70 @@
+---
+title: "Performance"
+description: "Measured throughput and latency numbers for a single Recurso instance"
+---
+
+Measured numbers, not aspirations. These are the published results from the
+main repository's
+[`docs/performance.md`](https://github.com/swapnull-in/recur-so/blob/main/docs/performance.md),
+which includes the full methodology and raw output so the numbers can be
+reproduced and challenged.
+
+<Info>
+**Test setup (as published, 2026-07-06, around v0.1.1+):** Apple M2 Pro
+(10 cores, 16 GB), macOS, full `docker-compose` stack (API + PostgreSQL 15 +
+TigerBeetle connected + Mailhog), load generated with
+[`hey`](https://github.com/rakyll/hey) from the same machine. Payment
+gateways in mock mode — the numbers isolate Recurso + PostgreSQL, not
+external gateway latency.
+</Info>
+
+## Results
+
+| Scenario | Concurrency | Duration | Throughput | p50 | p95 | p99 | Errors |
+|---|---|---|---|---|---|---|---|
+| `GET /version` (no auth, baseline) | 50 | 15s | 28,039 req/s | 1.6 ms | — | 4.9 ms | 0 |
+| `GET /v1/customers` (authenticated) | 50 | 30s | 7,814 req/s | 4.8 ms | 17.7 ms | 27.2 ms | 0 |
+| `POST /v1/subscriptions` (subscription + invoice + tax + double-entry ledger posting) | 20 | 30s | **578 req/s ≈ 34,600 invoices/min** | 32.2 ms | 55.3 ms | 67.0 ms | 0 |
+
+**Ledger integrity under load:** the 17,352 subscription creations produced
+exactly 17,352 ledger transactions — verified by count and by the
+[reconciliation report](/api-reference/finance/reconciliation) showing zero
+discrepancies for the post-fix window.
+
+## What the load test found (and fixed)
+
+Running the test the first time surfaced three production bugs, all fixed
+in the same change series (shipped in 0.2.0):
+
+1. **Per-request bcrypt capped the API at ~126 req/s** (p50 373 ms). A
+   TTL'd verified-key cache (SHA-256 keyed, 5-minute expiry, so revocation
+   still takes effect) took authenticated reads from 126 → 7,814 req/s and
+   p99 from 773 ms → 27 ms.
+2. **Only one tenant could register per database** — a unique constraint on
+   the always-empty hashed key column.
+3. **Ledger postings failed for all API-created tenants/customers** — AR
+   and chart-of-accounts provisioning is now self-healing on first posting.
+
+## Backup / restore drill (verified)
+
+Performed 2026-07-06 against the stack above with ~58k invoices and ~17k
+ledger transactions: `pg_dump` (43 MB), **all volumes destroyed**, restore
+into a clean database — row counts identical across tenants, customers,
+subscriptions, invoices, and ledger transactions; API keys still
+authenticate; `/health` green.
+
+## Caveats
+
+- Single-node everything, loopback networking, load generator on the same
+  box — treat these as an **upper bound for one instance**, not a cluster
+  benchmark.
+- Mock gateways: real Stripe/Razorpay calls add their own latency to
+  subscription creation.
+- Rate limiting was raised via `RATE_LIMIT_PER_MINUTE` for the test; the
+  default remains 500/min per key.
+
+<Tip>
+For HA, the supported path is stateless API replicas with PostgreSQL as the
+source of truth; single-node TigerBeetle is an optional accelerator. See
+[Going to Production](/going-to-production) for the full checklist.
+</Tip>
