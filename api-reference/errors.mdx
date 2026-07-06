@@ -1,23 +1,114 @@
 ---
 title: "Errors"
-description: "Understanding and handling API errors"
+description: "The canonical error envelope and machine-readable code taxonomy"
 ---
 
-## Error Response Format
+## The Error Envelope
 
-All errors return a consistent JSON structure:
+The API returns errors in exactly one shape — an `error` object with a
+stable machine-readable `code` and a human-readable `message`:
 
 ```json
 {
   "error": {
-    "type": "invalid_request",
-    "code": "resource_not_found",
-    "message": "Customer cust_xyz not found",
-    "param": "customer_id",
-    "doc_url": "https://docs.recurso.dev/errors#resource_not_found"
+    "code": "not_found",
+    "message": "Customer cust_xyz not found"
   }
 }
 ```
+
+There are no other error shapes. No bare-string errors, no `type` or
+`param` fields — every 4xx/5xx response from every endpoint carries this
+envelope.
+
+<Info>
+`code` values are stable snake_case identifiers — branch on them in your
+integration. `message` is for humans and may change without notice; never
+parse it.
+</Info>
+
+## Error Codes
+
+| Code | Typical Status | Meaning |
+|------|----------------|---------|
+| `validation_failed` | `400` / `422` | The request body or parameters failed validation |
+| `unauthorized` | `401` | Missing or unusable credentials |
+| `invalid_api_key` | `401` | The API key was supplied but is not valid |
+| `forbidden` | `403` | Authenticated, but not allowed to perform this action |
+| `not_found` | `404` | The resource does not exist (or belongs to another tenant) |
+| `conflict` | `409` | The request conflicts with current state (e.g. duplicate, reused idempotency key with a different body) |
+| `rate_limited` | `429` | Too many requests — back off and retry |
+| `internal_error` | `500` | Unexpected server-side failure |
+
+### Domain-specific codes
+
+Some money-handling endpoints return more specific codes so callers can
+react precisely:
+
+| Code | Typical Status | Meaning |
+|------|----------------|---------|
+| `over_refund` | `422` | A refund credit note would exceed the invoice's paid amount minus prior refunds |
+| `invoice_not_paid` | `422` | The operation requires a paid invoice |
+| `invoice_already_paid` | `409` | The invoice has already been paid |
+
+## Examples
+
+### Validation failure
+
+```json
+{
+  "error": {
+    "code": "validation_failed",
+    "message": "feature_key \"my key\" must match ^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+  }
+}
+```
+
+### Invalid API key
+
+```json
+{
+  "error": {
+    "code": "invalid_api_key",
+    "message": "Invalid API key"
+  }
+}
+```
+
+### Over-refund guard
+
+```json
+{
+  "error": {
+    "code": "over_refund",
+    "message": "refund of 5000 exceeds refundable balance of 2500"
+  }
+}
+```
+
+### Rate limited
+
+```json
+{
+  "error": {
+    "code": "rate_limited",
+    "message": "Rate limit exceeded"
+  }
+}
+```
+
+Rate-limit headers accompany the response:
+
+```
+X-RateLimit-Limit: 500
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1705312800
+```
+
+<Tip>
+Self-hosted deployments tune the per-key limit with the
+`RATE_LIMIT_PER_MINUTE` environment variable (default 500/min).
+</Tip>
 
 ## HTTP Status Codes
 
@@ -29,137 +120,52 @@ All errors return a consistent JSON structure:
 | `401` | Unauthorized | Invalid or missing API key |
 | `403` | Forbidden | Insufficient permissions |
 | `404` | Not Found | Resource doesn't exist |
-| `409` | Conflict | Resource already exists |
+| `409` | Conflict | Resource already exists or state conflict |
 | `422` | Unprocessable Entity | Validation failed |
 | `429` | Too Many Requests | Rate limit exceeded |
 | `500` | Internal Server Error | Server-side error |
 
-## Error Types
-
-### `invalid_request`
-
-The request was malformed or missing required parameters.
-
-```json
-{
-  "error": {
-    "type": "invalid_request",
-    "code": "missing_parameter",
-    "message": "Missing required parameter: email",
-    "param": "email"
-  }
-}
-```
-
-### `authentication_error`
-
-Invalid or missing API key.
-
-```json
-{
-  "error": {
-    "type": "authentication_error",
-    "code": "invalid_api_key",
-    "message": "Invalid API key provided"
-  }
-}
-```
-
-### `resource_not_found`
-
-The requested resource doesn't exist.
-
-```json
-{
-  "error": {
-    "type": "resource_not_found",
-    "code": "customer_not_found",
-    "message": "Customer cust_xyz not found"
-  }
-}
-```
-
-### `validation_error`
-
-The request failed validation.
-
-```json
-{
-  "error": {
-    "type": "validation_error",
-    "code": "invalid_email",
-    "message": "Invalid email format",
-    "param": "email"
-  }
-}
-```
-
-### `rate_limit_error`
-
-Too many requests.
-
-```json
-{
-  "error": {
-    "type": "rate_limit_error",
-    "code": "rate_limit_exceeded",
-    "message": "Rate limit exceeded. Retry after 60 seconds"
-  }
-}
-```
-
-Headers include:
-```
-X-RateLimit-Limit: 600
-X-RateLimit-Remaining: 0
-X-RateLimit-Reset: 1705312800
-```
-
-### `idempotency_error`
-
-Conflicting idempotency key.
-
-```json
-{
-  "error": {
-    "type": "idempotency_error",
-    "code": "idempotency_conflict",
-    "message": "Idempotency key already used with different parameters"
-  }
-}
-```
-
 ## Handling Errors
 
-Check the HTTP status code and parse the error response body:
+Check the HTTP status code and parse the envelope:
 
 ```bash
 # Example: requesting a non-existent customer
 curl -s -w "\nHTTP Status: %{http_code}\n" \
-  http://localhost:3000/v1/customers/invalid_id \
-  -H "Authorization: Bearer your-api-key"
+  https://billing.example.com/v1/customers/invalid_id \
+  -H "Authorization: Bearer $API_KEY"
 
 # Response (404):
 # {
 #   "error": {
-#     "type": "resource_not_found",
-#     "code": "customer_not_found",
+#     "code": "not_found",
 #     "message": "Customer invalid_id not found"
 #   }
 # }
 ```
 
+```typescript
+try {
+  await recurso.customers.create({ email: 'not-an-email' });
+} catch (err) {
+  if (err.body?.error?.code === 'validation_failed') {
+    // show err.body.error.message to the user
+  }
+}
+```
+
 ## Retry Logic
 
-Recommended retry strategy:
+Recommended retry strategy by status:
 
-| Error Type | Should Retry | Strategy |
-|------------|--------------|----------|
-| 400 | No | Fix request |
-| 401 | No | Check API key |
-| 404 | No | Check resource ID |
+| Status | Should Retry | Strategy |
+|--------|--------------|----------|
+| 400 / 422 | No | Fix the request |
+| 401 / 403 | No | Check the API key / permissions |
+| 404 | No | Check the resource ID |
+| 409 | No | Inspect current state first |
 | 429 | Yes | Exponential backoff |
-| 500 | Yes | Exponential backoff |
-| 503 | Yes | Exponential backoff |
+| 500 | Yes | Exponential backoff with an idempotency key |
 
-Use exponential backoff when retrying failed requests.
+Use an [idempotency key](/advanced/idempotency) when retrying mutating
+requests so a retry can never double-charge or double-create.

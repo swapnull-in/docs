@@ -13,6 +13,18 @@ https://billing.example.com/v1
 `billing.example.com` is a placeholder — substitute the domain where your Recurso instance is deployed. All API examples in this reference use the same placeholder.
 </Note>
 
+## OpenAPI Specification
+
+Every Recurso instance serves its own OpenAPI 3.1 spec at `/openapi.json`
+(and `/openapi.yaml`) — no authentication required. The interactive
+playground in this reference is powered by a vendored copy of the same
+spec, so you can also point code generators or API clients directly at
+your running instance:
+
+```bash
+curl https://billing.example.com/openapi.json
+```
+
 ## Authentication
 
 Authenticate using API keys in the `Authorization` header:
@@ -94,18 +106,20 @@ GET /v1/customers?limit=20&offset=40
 
 ## Errors
 
-Errors include helpful details:
+Every error — regardless of endpoint or status code — uses the same
+envelope: an `error` object with a stable machine-readable `code` and a
+human-readable `message`:
 
 ```json
 {
   "error": {
-    "type": "invalid_request",
-    "code": "resource_not_found",
-    "message": "Customer cust_xyz not found",
-    "param": "customer_id"
+    "code": "not_found",
+    "message": "Customer cust_xyz not found"
   }
 }
 ```
+
+See [Errors](/api-reference/errors) for the full code taxonomy.
 
 ### HTTP Status Codes
 
