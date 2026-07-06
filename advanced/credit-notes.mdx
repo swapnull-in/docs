@@ -92,6 +92,38 @@ const refund = await recurso.creditNotes.refund('cn_xyz', {
 | `refunded` | Refund processed |
 | `voided` | Cancelled |
 
+## Refund Lifecycle
+
+Refund credit notes additionally track the gateway refund in `refund_status`:
+
+| `refund_status` | Description |
+|-----------------|-------------|
+| `none` | No refund involved (adjustment/goodwill credit notes) |
+| `pending` | Refund initiated at the gateway, not yet settled |
+| `processed` | The gateway confirmed the refund |
+| `refund_failed` | The refund failed at the gateway; the gateway's reason is recorded — needs operator action |
+| `manual_required` | The invoice has no refundable gateway payment ID; refund the payment manually |
+
+### Automatic settlement via gateway webhooks
+
+Pending refunds no longer sit at `pending` forever. When the gateway settles a refund asynchronously, Recurso consumes its webhooks and advances the credit note automatically:
+
+- **Stripe**: `charge.refunded` / `refund.updated` / `refund.failed`
+- **Razorpay**: `refund.processed` / `refund.failed`
+
+```mermaid
+flowchart LR
+    A[refund created] --> B[pending]
+    B -->|gateway success webhook| C[processed]
+    B -->|gateway failure webhook| D[refund_failed<br/>gateway reason recorded]
+```
+
+Only `pending` credit notes move; every other state is a no-op, so re-delivered or late gateway webhooks cannot flip a settled refund. The credit note is looked up by the stored gateway refund ID.
+
+### Mandate payments are refundable
+
+Invoices collected via mandate auto-debit (UPI Autopay, cards on file) now capture the real gateway payment ID when the payment-captured webhook arrives, so their credit notes can be refunded through the normal flow instead of landing in `manual_required`.
+
 ## List Credit Notes
 
 Retrieve credit notes with filters:
