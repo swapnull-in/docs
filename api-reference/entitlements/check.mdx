@@ -1,0 +1,67 @@
+---
+title: "Check Entitlement"
+openapi: "GET /v1/entitlements/check"
+description: "Fast single-feature entitlement check — the hot path for feature gating."
+---
+
+The feature-gating hot path: answers one `customer_id` + `feature` pair
+with a single indexed query. Union semantics are the same as
+[customer entitlements](/api-reference/entitlements/customer) (any-true
+booleans, max limits, across active and trialing subscriptions).
+
+## Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `customer_id` | string (UUID) | Yes | The customer to check |
+| `feature` | string | Yes | The feature key to check |
+
+## Example Request
+
+```bash
+curl "https://billing.example.com/v1/entitlements/check?customer_id=1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed&feature=seats" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "feature_key": "seats",
+  "granted": true,
+  "limit_value": 25
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `feature_key` | string | Echo of the requested feature |
+| `granted` | boolean | Whether the customer is entitled to the feature |
+| `limit_value` | integer \| null | The effective limit for `limit` entitlements; `null` for booleans |
+
+A feature the customer does not have answers `granted: false` with a
+`null` limit — the endpoint never returns `404` for missing grants:
+
+```json
+{
+  "feature_key": "sso",
+  "granted": false,
+  "limit_value": null
+}
+```
+
+## Node SDK
+
+```typescript
+const check = await recurso.entitlements.check(customerId, 'seats');
+if (check.granted && usedSeats < (check.limit_value ?? 0)) {
+  // allow adding a seat
+}
+```
+
+<Tip>
+Cache results in your application for 30–60 seconds per
+`customer_id:feature` pair to keep this off your request-latency path.
+See the [Entitlements guide](/advanced/entitlements) for the full gating
+pattern.
+</Tip>

@@ -1,0 +1,66 @@
+---
+title: "Get Customer Entitlements"
+openapi: "GET /v1/customers/{id}/entitlements"
+description: "The customer's effective entitlement set — the union over the plans of their active and trialing subscriptions."
+---
+
+Resolves the customer's **effective** entitlements as a union across the
+plans of every `active` and `trialing` subscription they hold:
+
+- **`boolean`** — any-true wins: granted if any contributing plan grants it
+- **`limit`** — max wins: the highest `limit_value` across contributing plans
+- A feature key that is `boolean` on one plan and `limit` on another
+  resolves to `limit`
+
+Subscriptions in any other state contribute nothing.
+
+## Example Request
+
+```bash
+curl https://billing.example.com/v1/customers/1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed/entitlements \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "data": [
+    {
+      "feature_key": "api_calls_per_month",
+      "kind": "limit",
+      "bool_value": null,
+      "limit_value": 100000,
+      "plan_ids": ["8f14e45f-ceea-467f-a1d6-8f2f3f9a1b2c"]
+    },
+    {
+      "feature_key": "seats",
+      "kind": "limit",
+      "bool_value": null,
+      "limit_value": 25,
+      "plan_ids": [
+        "8f14e45f-ceea-467f-a1d6-8f2f3f9a1b2c",
+        "6512bd43-d9ca-4e9c-9f3a-1a2b3c4d5e6f"
+      ]
+    },
+    {
+      "feature_key": "sso",
+      "kind": "boolean",
+      "bool_value": true,
+      "limit_value": null,
+      "plan_ids": ["6512bd43-d9ca-4e9c-9f3a-1a2b3c4d5e6f"]
+    }
+  ]
+}
+```
+
+`plan_ids` lists every plan that contributed the feature, so you can show
+customers *why* they have an entitlement. A customer with no active or
+trialing subscriptions returns an empty `data` array; an unknown customer
+returns `404` with code `not_found`.
+
+<Tip>
+For per-request feature gating, prefer the single-query
+[check endpoint](/api-reference/entitlements/check) over fetching the full
+set.
+</Tip>

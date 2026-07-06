@@ -39,6 +39,7 @@
             "group": "Advanced Features",
             "pages": [
               "advanced/usage-billing",
+              "advanced/entitlements",
               "advanced/coupons",
               "advanced/quotes",
               "advanced/credit-notes",
@@ -143,6 +144,15 @@
               "api-reference/customers/create",
               "api-reference/customers/list",
               "api-reference/customers/update-payment-method"
+            ]
+          },
+          {
+            "group": "Entitlements",
+            "pages": [
+              "api-reference/entitlements/set-plan",
+              "api-reference/entitlements/get-plan",
+              "api-reference/entitlements/customer",
+              "api-reference/entitlements/check"
             ]
           },
           {

@@ -1,0 +1,46 @@
+---
+title: "List Plan Entitlements"
+openapi: "GET /v1/plans/{id}/entitlements"
+description: "List the entitlements granted by a plan."
+---
+
+## Example Request
+
+```bash
+curl https://billing.example.com/v1/plans/8f14e45f-ceea-467f-a1d6-8f2f3f9a1b2c/entitlements \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "data": [
+    {
+      "id": "e7c1a2d4-9b3f-4c6e-8a1d-2f3b4c5d6e7f",
+      "plan_id": "8f14e45f-ceea-467f-a1d6-8f2f3f9a1b2c",
+      "feature_key": "sso",
+      "kind": "boolean",
+      "bool_value": true,
+      "limit_value": null
+    },
+    {
+      "id": "a1b2c3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+      "plan_id": "8f14e45f-ceea-467f-a1d6-8f2f3f9a1b2c",
+      "feature_key": "seats",
+      "kind": "limit",
+      "bool_value": null,
+      "limit_value": 25
+    }
+  ]
+}
+```
+
+A plan with no entitlements returns an empty `data` array. A plan that
+does not exist returns `404` with code `not_found`.
+
+<Tip>
+This lists what one plan grants. For what a *customer* actually has across
+all of their subscriptions, use
+[customer entitlements](/api-reference/entitlements/customer).
+</Tip>

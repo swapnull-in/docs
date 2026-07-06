@@ -1,0 +1,72 @@
+---
+title: "Replace Plan Entitlements"
+openapi: "PUT /v1/plans/{id}/entitlements"
+description: "Replace a plan's full entitlement set. Feature keys absent from the request are removed."
+---
+
+## Request Body
+
+The body is a JSON **array** of entitlement inputs. The plan's stored set is
+fully replaced — any feature key not present in the array is removed from
+the plan.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `feature_key` | string | Yes | Machine identifier, max 128 chars, matching `^[A-Za-z0-9][A-Za-z0-9._:-]*$`. Must be unique within the request. |
+| `kind` | string | Yes | `boolean` or `limit` |
+| `bool_value` | boolean | For `boolean` | Required for `kind: boolean`; must be omitted for `limit` |
+| `limit_value` | integer | For `limit` | Required for `kind: limit` (`>= 0`); must be omitted for `boolean` |
+
+## Example Request
+
+```bash
+curl -X PUT https://billing.example.com/v1/plans/8f14e45f-ceea-467f-a1d6-8f2f3f9a1b2c/entitlements \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '[
+    { "feature_key": "sso", "kind": "boolean", "bool_value": true },
+    { "feature_key": "seats", "kind": "limit", "limit_value": 25 }
+  ]'
+```
+
+## Response
+
+```json
+{
+  "data": [
+    {
+      "id": "e7c1a2d4-9b3f-4c6e-8a1d-2f3b4c5d6e7f",
+      "plan_id": "8f14e45f-ceea-467f-a1d6-8f2f3f9a1b2c",
+      "feature_key": "sso",
+      "kind": "boolean",
+      "bool_value": true,
+      "limit_value": null
+    },
+    {
+      "id": "a1b2c3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+      "plan_id": "8f14e45f-ceea-467f-a1d6-8f2f3f9a1b2c",
+      "feature_key": "seats",
+      "kind": "limit",
+      "bool_value": null,
+      "limit_value": 25
+    }
+  ]
+}
+```
+
+## Errors
+
+| Status | Code | When |
+|--------|------|------|
+| `400` | `validation_failed` | Invalid plan id, malformed body, duplicate `feature_key`, or kind/value mismatch |
+| `404` | `not_found` | Plan does not exist for this tenant |
+
+<Warning>
+Send the complete entitlement set every time. A request containing only the
+feature you changed will delete every other grant on the plan.
+</Warning>
+
+<Tip>
+See the [Entitlements guide](/advanced/entitlements) for how plan grants
+resolve into a customer's effective entitlements.
+</Tip>

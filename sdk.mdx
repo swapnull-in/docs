@@ -4,9 +4,9 @@ description: "Typed Node.js client covering the core Recurso API"
 ---
 
 The official Node.js SDK (`recurso-node`) wraps the REST API with a typed,
-resource-oriented client: 15 resources and 56 methods covering plans,
+resource-oriented client: 16 resources and 60 methods covering plans,
 customers, the full subscription lifecycle, invoices, usage events, quotes,
-webhooks, and more.
+entitlements, webhooks, and more.
 
 <Info>
 The SDK lives in the main repository under
@@ -81,6 +81,7 @@ Every list method accepts optional server-side filter params
 | `mandates` | `create`, `list`, `get`, `revoke` |
 | `gifts` | `purchase`, `redeem`, `list` |
 | `referrals` | `create`, `list`, `generateCode`, `qualify` |
+| `entitlements` | `setForPlan`, `getForPlan`, `forCustomer`, `check` |
 | `ledger` | `accounts`, `entries` |
 
 ## Common flows
@@ -109,6 +110,25 @@ await recurso.usage.record({
   quantity: 1500,
 });
 ```
+
+### Entitlements and feature gating
+
+```typescript
+// Grant features on a plan (full replacement — send the complete set)
+await recurso.entitlements.setForPlan(plan.id, [
+  { feature_key: 'sso', kind: 'boolean', bool_value: true },
+  { feature_key: 'seats', kind: 'limit', limit_value: 25 },
+]);
+
+// Fast per-request check (union across active + trialing subscriptions)
+const check = await recurso.entitlements.check(customer.id, 'sso');
+if (check.granted) {
+  // feature enabled
+}
+```
+
+See the [Entitlements guide](/advanced/entitlements) for resolution
+semantics and the full gating pattern.
 
 ### Webhook endpoints
 
