@@ -256,6 +256,12 @@
             ]
           },
           {
+            "group": "Finance",
+            "pages": [
+              "api-reference/finance/reconciliation"
+            ]
+          },
+          {
             "group": "Analytics",
             "pages": [
               "api-reference/analytics/mrr",

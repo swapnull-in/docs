@@ -263,6 +263,64 @@ TIGERBEETLE_CLUSTER_ID=0
 
 The API surface remains identical — switching backends requires no changes to your integration code.
 
+## Reconciliation
+
+The reconciliation report answers "does the ledger agree with the billing
+records?" for your tenant. Run it on demand with
+[`GET /v1/finance/reconciliation`](/api-reference/finance/reconciliation);
+a scheduler also runs it **daily** and logs
+`Ledger reconciliation found discrepancies` when drift appears. The report
+is computed fresh on every run and never persisted — it only reads, fixing
+drift is a human decision.
+
+```bash
+curl https://billing.example.com/v1/finance/reconciliation \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+Two passes run:
+
+1. **Billing records vs. PostgreSQL ledger** — every non-draft invoice must
+   have invoice postings summing to its total, every paid invoice must have
+   payment postings summing to its amount paid, and every such posting must
+   reference an existing invoice.
+2. **PostgreSQL ledger vs. TigerBeetle** (when connected) — the tenant's
+   Postgres ledger transactions (authoritative) are diffed against the
+   enumerated TigerBeetle transfers by transaction ID.
+
+### Discrepancy types
+
+| Type | Comparison | Meaning |
+|------|------------|---------|
+| `missing_invoice_transaction` | Billing ↔ Postgres | A non-draft invoice has no ledger posting |
+| `invoice_amount_mismatch` | Billing ↔ Postgres | Invoice postings do not sum to the invoice total |
+| `missing_payment_transaction` | Billing ↔ Postgres | A paid invoice has no payment posting |
+| `payment_amount_mismatch` | Billing ↔ Postgres | Payment postings do not sum to the amount paid |
+| `orphaned_transaction` | Billing ↔ Postgres | A ledger posting references an invoice that does not exist |
+| `missing_in_tigerbeetle` | Postgres ↔ TigerBeetle | A Postgres ledger transaction has no TigerBeetle transfer |
+| `missing_in_postgres` | Postgres ↔ TigerBeetle | A TigerBeetle transfer has no Postgres ledger transaction |
+| `tb_amount_mismatch` | Postgres ↔ TigerBeetle | Same transaction ID, different amounts |
+
+### `tb_compared` and `tb_skip_reason`
+
+The TigerBeetle pass is best-effort and always honest: when it cannot run,
+the report sets `tb_compared: false` with the reason in `tb_skip_reason`
+instead of failing. Skip reasons you may see:
+
+- TigerBeetle is not configured or the client is not connected (normal for
+  Postgres-only deployments — Postgres is the authoritative ledger)
+- The tenant has more than 100,000 ledger transactions or transfers, above
+  the in-memory comparison guard
+- Enumerating transfers or loading transaction summaries failed
+
+When the pass runs, `tb_compared` is `true` and `tb_accounts_checked` /
+`tb_transfers_checked` report its scope.
+
+<Info>
+The report lists at most 100 discrepancies (`truncated: true` when more
+exist); `total_discrepancies` always carries the full count.
+</Info>
+
 ## Webhook Events
 
 The ledger emits events you can subscribe to:

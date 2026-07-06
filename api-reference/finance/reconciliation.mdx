@@ -1,0 +1,102 @@
+---
+title: "Run Ledger Reconciliation"
+openapi: "GET /v1/finance/reconciliation"
+description: "Reconcile billing records against the ledger and report drift. Read-only; nothing is persisted."
+---
+
+Reconciles the tenant's invoices against its PostgreSQL ledger entries —
+and, when TigerBeetle is connected, diffs the Postgres ledger
+(authoritative) against TigerBeetle transfers — returning the computed
+drift report. The same check runs automatically once a day; discrepancies
+are logged as `Ledger reconciliation found discrepancies`.
+
+## Example Request
+
+```bash
+curl https://billing.example.com/v1/finance/reconciliation \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Response
+
+```json
+{
+  "data": {
+    "tenant_id": "0b7a3f7e-4a2b-4c1d-9e8f-1a2b3c4d5e6f",
+    "started_at": "2026-07-06T04:00:00Z",
+    "finished_at": "2026-07-06T04:00:02Z",
+    "invoices_checked": 58231,
+    "paid_invoices_checked": 41207,
+    "total_discrepancies": 2,
+    "discrepancies": [
+      {
+        "type": "missing_payment_transaction",
+        "invoice_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        "expected_amount": 499900,
+        "found_amount": 0
+      },
+      {
+        "type": "tb_amount_mismatch",
+        "transaction_id": "9b2f1c4d-3e5a-4b6c-8d7e-0f1a2b3c4d5e",
+        "expected_amount": 129900,
+        "found_amount": 128900
+      }
+    ],
+    "truncated": false,
+    "tb_compared": true,
+    "tb_skip_reason": "",
+    "tb_accounts_checked": 214,
+    "tb_transfers_checked": 17352
+  }
+}
+```
+
+## Report Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `invoices_checked` | integer | Non-draft invoices covered by the run |
+| `paid_invoices_checked` | integer | Paid invoices whose payment postings were verified |
+| `total_discrepancies` | integer | Full discrepancy count, even when the listing is truncated |
+| `discrepancies` | array | Up to 100 listed discrepancies |
+| `truncated` | boolean | `true` when more discrepancies exist than are listed |
+| `tb_compared` | boolean | Whether the TigerBeetle comparison pass ran |
+| `tb_skip_reason` | string | Why the TigerBeetle pass was skipped (empty when it ran) |
+| `tb_accounts_checked` / `tb_transfers_checked` | integer | Scope of the TigerBeetle pass |
+
+## Discrepancy Types
+
+| `type` | Comparison | Meaning |
+|--------|------------|---------|
+| `missing_invoice_transaction` | Billing ↔ Postgres | Non-draft invoice with no ledger posting |
+| `invoice_amount_mismatch` | Billing ↔ Postgres | Invoice postings do not sum to the invoice total |
+| `missing_payment_transaction` | Billing ↔ Postgres | Paid invoice with no payment posting |
+| `payment_amount_mismatch` | Billing ↔ Postgres | Payment postings do not sum to `amount_paid` |
+| `orphaned_transaction` | Billing ↔ Postgres | Posting references a non-existent invoice |
+| `missing_in_tigerbeetle` | Postgres ↔ TigerBeetle | Postgres transaction with no matching transfer |
+| `missing_in_postgres` | Postgres ↔ TigerBeetle | TigerBeetle transfer with no matching transaction |
+| `tb_amount_mismatch` | Postgres ↔ TigerBeetle | Same transaction ID, different amounts |
+
+Each discrepancy carries the relevant identifier (`invoice_id`,
+`transaction_id`, or `reference_id`) plus `expected_amount` and
+`found_amount` in minor units.
+
+## `tb_skip_reason`
+
+The TigerBeetle pass never fails the report — when it cannot run,
+`tb_compared` is `false` and `tb_skip_reason` says why:
+
+- **Not connected** — TigerBeetle is not configured for this deployment
+  (normal: PostgreSQL is the authoritative ledger)
+- **Above the memory guard** — the tenant has more than 100,000 ledger
+  transactions or transfers; the in-memory diff is skipped rather than
+  risking an OOM
+- **Read failure** — enumerating transfers or loading transaction
+  summaries errored (the message includes the underlying error)
+
+<Info>
+The report is computed on demand and never persisted. It only reads —
+correcting drift (e.g. with a reversing entry) is a deliberate human
+action. See the [ledger guide](/advanced/ledger#reconciliation) and the
+incident runbook's SEV1 procedure for how to act on a non-zero report.
+</Info>
