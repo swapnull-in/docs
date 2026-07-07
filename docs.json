@@ -334,8 +334,7 @@
                 ]
               }
             ],
-            "icon": "chart-line",
-            "root": "advanced/finance-overview"
+            "icon": "chart-line"
           },
           {
             "group": "Growth & Recovery",
@@ -395,8 +394,7 @@
                 ]
               }
             ],
-            "icon": "arrow-trend-up",
-            "root": "advanced/growth-overview"
+            "icon": "arrow-trend-up"
           },
           {
             "group": "Compliance (India)",
