@@ -26,6 +26,7 @@
           {
             "group": "Core Billing",
             "pages": [
+              "core/overview",
               "core/plans",
               "core/customers",
               "core/subscriptions",
@@ -36,6 +37,7 @@
           {
             "group": "Monetization",
             "pages": [
+              "advanced/monetization-overview",
               "advanced/usage-billing",
               "advanced/entitlements",
               "advanced/coupons",
@@ -47,6 +49,7 @@
           {
             "group": "Revenue & Finance",
             "pages": [
+              "advanced/finance-overview",
               "advanced/ledger",
               "advanced/revenue-recognition",
               "advanced/multi-currency",
@@ -56,6 +59,7 @@
           {
             "group": "Growth & Recovery",
             "pages": [
+              "advanced/growth-overview",
               "advanced/smart-retry",
               "advanced/dunning-campaigns",
               "advanced/cancel-flows",
@@ -67,6 +71,7 @@
           {
             "group": "Integrations & Platform",
             "pages": [
+              "advanced/platform-overview",
               "advanced/webhooks",
               "advanced/accounting",
               "advanced/payment-gateways",
@@ -101,6 +106,7 @@
           {
             "group": "India (GST & RBI)",
             "pages": [
+              "compliance/overview",
               "compliance/gst-invoicing",
               "compliance/e-invoicing",
               "compliance/upi-mandates",
