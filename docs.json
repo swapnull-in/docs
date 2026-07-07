@@ -21,57 +21,61 @@
               "concepts",
               "sdk",
               "end-to-end"
-            ]
+            ],
+            "icon": "rocket"
           },
           {
             "group": "Core Billing",
             "pages": [
-              "core/overview",
               "core/plans",
               "core/customers",
               "core/subscriptions",
               "core/invoices",
               "core/payments"
-            ]
+            ],
+            "icon": "receipt",
+            "root": "core/overview"
           },
           {
             "group": "Monetization",
             "pages": [
-              "advanced/monetization-overview",
               "advanced/usage-billing",
               "advanced/entitlements",
               "advanced/coupons",
               "advanced/quotes",
               "advanced/credit-notes",
               "advanced/advanced-billing"
-            ]
+            ],
+            "icon": "coins",
+            "root": "advanced/monetization-overview"
           },
           {
             "group": "Revenue & Finance",
             "pages": [
-              "advanced/finance-overview",
               "advanced/ledger",
               "advanced/revenue-recognition",
               "advanced/multi-currency",
               "advanced/analytics"
-            ]
+            ],
+            "icon": "chart-line",
+            "root": "advanced/finance-overview"
           },
           {
             "group": "Growth & Recovery",
             "pages": [
-              "advanced/growth-overview",
               "advanced/smart-retry",
               "advanced/dunning-campaigns",
               "advanced/cancel-flows",
               "advanced/churn-prediction",
               "advanced/referrals",
               "advanced/gifts"
-            ]
+            ],
+            "icon": "arrow-trend-up",
+            "root": "advanced/growth-overview"
           },
           {
             "group": "Integrations & Platform",
             "pages": [
-              "advanced/platform-overview",
               "advanced/webhooks",
               "advanced/accounting",
               "advanced/payment-gateways",
@@ -79,16 +83,19 @@
               "advanced/virtual-accounts",
               "advanced/developer-settings",
               "advanced/idempotency"
-            ]
+            ],
+            "icon": "plug",
+            "root": "advanced/platform-overview"
           },
           {
             "group": "Customer Portal",
             "pages": [
-              "portal/overview",
               "portal/magic-links",
               "portal/self-service",
               "portal/cancel-self-service"
-            ]
+            ],
+            "icon": "user",
+            "root": "portal/overview"
           },
           {
             "group": "Deploy & Operate",
@@ -96,9 +103,11 @@
               "going-to-production",
               "performance",
               "pricing"
-            ]
+            ],
+            "icon": "server"
           }
-        ]
+        ],
+        "icon": "book-open"
       },
       {
         "tab": "Compliance",
@@ -112,15 +121,18 @@
               "compliance/upi-mandates",
               "compliance/consent-tracking",
               "compliance/dunning"
-            ]
+            ],
+            "icon": "landmark"
           },
           {
             "group": "Global Tax",
             "pages": [
               "compliance/us-sales-tax"
-            ]
+            ],
+            "icon": "globe"
           }
-        ]
+        ],
+        "icon": "scale-balanced"
       },
       {
         "tab": "API Reference",
@@ -132,7 +144,8 @@
               "api-reference/authentication",
               "api-reference/errors",
               "api-reference/auth/register"
-            ]
+            ],
+            "icon": "rocket"
           },
           {
             "group": "Core",
@@ -173,7 +186,8 @@
                   "api-reference/entitlements/check"
                 ]
               }
-            ]
+            ],
+            "icon": "cube"
           },
           {
             "group": "Billing & Invoicing",
@@ -256,7 +270,8 @@
                   "api-reference/billing/advance-invoice"
                 ]
               }
-            ]
+            ],
+            "icon": "receipt"
           },
           {
             "group": "Revenue & Finance",
@@ -292,7 +307,9 @@
                   "api-reference/analytics/dunning-recovered"
                 ]
               }
-            ]
+            ],
+            "icon": "chart-line",
+            "root": "advanced/finance-overview"
           },
           {
             "group": "Growth & Recovery",
@@ -351,7 +368,9 @@
                   "api-reference/gifts/list"
                 ]
               }
-            ]
+            ],
+            "icon": "arrow-trend-up",
+            "root": "advanced/growth-overview"
           },
           {
             "group": "Compliance (India)",
@@ -392,7 +411,8 @@
                   "api-reference/mandates/revoke"
                 ]
               }
-            ]
+            ],
+            "icon": "scale-balanced"
           },
           {
             "group": "Platform",
@@ -464,7 +484,8 @@
                   "api-reference/events/redeliver"
                 ]
               }
-            ]
+            ],
+            "icon": "plug"
           },
           {
             "group": "Customer Portal API",
@@ -482,9 +503,11 @@
                   "api-reference/portal/data"
                 ]
               }
-            ]
+            ],
+            "icon": "user"
           }
-        ]
+        ],
+        "icon": "code"
       }
     ],
     "global": {
