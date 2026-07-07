@@ -25,6 +25,23 @@
             "icon": "rocket"
           },
           {
+            "group": "Migrating to Recurso",
+            "pages": [
+              "migrate-from-stripe",
+              "migrate-from-chargebee"
+            ],
+            "icon": "right-left"
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "tutorials/usage-based-saas",
+              "tutorials/feature-gating",
+              "tutorials/india-gst-setup"
+            ],
+            "icon": "graduation-cap"
+          },
+          {
             "group": "Core Billing",
             "pages": [
               "core/plans",
@@ -105,6 +122,15 @@
               "pricing"
             ],
             "icon": "server"
+          },
+          {
+            "group": "Help & Reference",
+            "pages": [
+              "troubleshooting",
+              "faq",
+              "glossary"
+            ],
+            "icon": "circle-question"
           }
         ],
         "icon": "book-open"
