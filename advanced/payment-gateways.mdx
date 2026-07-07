@@ -152,6 +152,25 @@ flowchart TD
   </Accordion>
 </AccordionGroup>
 
+### European Local Payment Methods
+
+For Stripe-routed checkouts, Recurso enables localized European payment methods in addition to card, so customers can pay with the method they trust most. The available methods are chosen automatically from the invoice currency when the PaymentIntent is created.
+
+| Invoice currency | Payment methods offered |
+|------------------|-------------------------|
+| `EUR` | `card`, `sepa_debit`, `ideal`, `bancontact` |
+| `USD`, `GBP`, and all others | `card` |
+
+iDEAL (Netherlands), Bancontact (Belgium), and SEPA Direct Debit are euro-only methods, so they are offered only for `EUR` invoices. Every other currency continues to collect with `card` exactly as before (card also carries Apple Pay and Google Pay wallets).
+
+<Warning>
+Each localized method must also be **enabled in the Stripe Dashboard** under **Settings -> Payment methods** for your account. If a method is passed to Stripe but not activated in the Dashboard, PaymentIntent creation fails with an "invalid payment method type" error. Enable `card`, `sepa_debit`, `ideal`, and `bancontact` there before going live with EUR billing.
+</Warning>
+
+<Info>
+**Settlement timing.** Card, iDEAL, and Bancontact confirm within seconds. **SEPA Direct Debit authorizes immediately but funds settle over several business days** — the invoice is only marked **paid** when Stripe delivers the `payment_intent.succeeded` webhook, which fires once settlement completes. Recurso's Stripe webhook handler is payment-method agnostic, so no extra configuration is needed for these asynchronous, redirect-based methods; just ensure your `payment_intent.succeeded` webhook is configured (see above).
+</Info>
+
 ## Gateway Selection Per Subscription
 
 Specify the gateway when creating a subscription. Recurso stores the gateway association and uses it for all future payments on that subscription.
@@ -212,7 +231,7 @@ await recurso.customers.attachPaymentMethod('cust_us01', {
 | Gateway | Method Types | Best For |
 |---------|-------------|----------|
 | Razorpay | `card`, `upi`, `netbanking`, `wallet`, `emandate` | Indian customers, INR billing |
-| Stripe | `card`, `ach_debit`, `sepa_debit` | International customers, USD billing |
+| Stripe | `card`, `ach_debit`, `sepa_debit`, `ideal`, `bancontact` | International customers, USD and EUR billing |
 
 ## Webhook Handling from Gateways
 
