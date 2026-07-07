@@ -18,6 +18,16 @@ Compliance is Recurso's biggest differentiator. Indian billing compliance is not
 - **RBI e-mandates** — UPI Autopay mandate lifecycle via Razorpay, including the mandatory 24-hour pre-debit notifications and NPCI frequency rules
 - **DPDP consent** — capture, timestamp, and revoke explicit consent for recurring charges to satisfy RBI and DPDP requirements
 
+Whether GST splits into CGST + SGST or is levied as a single IGST comes down to
+the **place of supply** — Recurso resolves this automatically on every invoice:
+
+```mermaid
+flowchart TD
+    A["Taxable supply"] --> B{"Supplier state ==<br/>place-of-supply state?"}
+    B -->|Yes — intrastate| C["CGST + SGST<br/>split equally"]
+    B -->|No — interstate| D["IGST<br/>single levy"]
+```
+
 ## Global tax
 
 - **US sales tax** — live jurisdiction-level rates via TaxJar when configured; without a key, US invoices carry an explicit 0% stub rather than a silently wrong rate
