@@ -77,6 +77,21 @@ Debit   1000 (Cash)                  ₹4,999.00
 Credit  1100 (Accounts Receivable)   ₹4,999.00
 ```
 
+Across both events the postings balance — every debit is matched by an equal
+credit, and Accounts Receivable nets back to zero once the invoice is paid:
+
+```mermaid
+flowchart LR
+    INV["Invoice finalized<br/>₹4,999"] --> DR1["Debit 1100<br/>Accounts Receivable +4,999"]
+    INV --> CR1["Credit 2100<br/>Deferred Revenue +4,999"]
+    PAY["Payment received<br/>₹4,999"] --> DR2["Debit 1000<br/>Cash +4,999"]
+    PAY --> CR2["Credit 1100<br/>Accounts Receivable -4,999"]
+    DR1 --- BAL(["Debits = Credits<br/>AR balance = 0"])
+    CR1 --- BAL
+    DR2 --- BAL
+    CR2 --- BAL
+```
+
 ### Revenue Recognized
 
 As the subscription period elapses, deferred revenue is recognized:
@@ -261,6 +276,19 @@ TIGERBEETLE_ADDRESSES=127.0.0.1:3001
 TIGERBEETLE_CLUSTER_ID=0
 ```
 
+Every posting is **dual-written**: PostgreSQL is written first and is always
+authoritative; when TigerBeetle is connected, the same transfer is mirrored to it
+by transaction ID. If TigerBeetle is unavailable, Postgres still holds the
+complete, correct ledger.
+
+```mermaid
+flowchart LR
+    E["Financial event<br/>invoice · payment · refund"] --> L["Ledger service"]
+    L -->|always, authoritative| PG[("PostgreSQL")]
+    L -.->|dual-write if connected| TB[("TigerBeetle<br/>mirror")]
+    PG -->|reconciled by txn ID| TB
+```
+
 The API surface remains identical — switching backends requires no changes to your integration code.
 
 ## Reconciliation
@@ -276,6 +304,19 @@ drift is a human decision.
 ```bash
 curl https://api.recurso.dev/v1/finance/reconciliation \
   -H "Authorization: Bearer $API_KEY"
+```
+
+```mermaid
+flowchart TD
+    START["Reconciliation run<br/>daily + on demand"] --> P1["Pass 1<br/>Billing records vs PostgreSQL ledger"]
+    P1 --> C1{"Postings match every<br/>invoice & payment?"}
+    C1 -->|No| D1["Discrepancy<br/>missing / amount_mismatch / orphaned"]
+    C1 -->|Yes| P2["Pass 2<br/>PostgreSQL (authoritative) vs TigerBeetle"]
+    P2 --> TBQ{"TigerBeetle connected<br/>& within guard limits?"}
+    TBQ -->|No| SKIP["tb_compared: false<br/>with tb_skip_reason"]
+    TBQ -->|Yes| C2{"Transfers match by txn ID?"}
+    C2 -->|No| D2["Discrepancy<br/>missing_in_* / tb_amount_mismatch"]
+    C2 -->|Yes| OK["Ledger agrees with billing"]
 ```
 
 Two passes run:
