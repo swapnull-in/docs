@@ -1,0 +1,225 @@
+---
+title: "Build Usage-Based Billing"
+description: "A task-oriented walkthrough: create a metered plan, record usage, query it, and bill on it"
+---
+
+## Overview
+
+This tutorial builds metered billing end to end for an API product that charges
+per API call. By the end you'll have a plan with a base fee plus metered usage,
+a stream of recorded usage events, a windowed usage query for charts, and a
+per-subscription usage view your dashboard can show to customers.
+
+Everything here uses real endpoints. Follow along against a local
+`make demo` stack (`http://localhost:8080`, key `sk_test_12345`) or substitute
+`https://api.recurso.dev` and your own key.
+
+<Info>
+Recurso stores and aggregates usage; the **rating** (turning quantity into a
+charge) happens at invoice time from the plan's tiers. Enforcing limits in real
+time is your application's job — see [feature gating](/tutorials/feature-gating).
+</Info>
+
+## Step 1: Create a metered plan
+
+Combine a flat base fee with a metered usage component (the most common SaaS
+model — predictable revenue plus a usage upside).
+
+<CodeGroup>
+```bash cURL
+curl -X POST http://localhost:8080/v1/plans \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "API Pro",
+    "description": "Base plan with metered API calls",
+    "interval": "month",
+    "prices": [
+      { "amount": 4999, "currency": "INR" }
+    ],
+    "usage_prices": [{
+      "unit_label": "API call",
+      "currency": "INR",
+      "tiers_mode": "graduated",
+      "tiers": [
+        { "up_to": 10000, "unit_amount": 0 },
+        { "up_to": 100000, "unit_amount": 0.05 },
+        { "up_to": "inf", "unit_amount": 0.01 }
+      ]
+    }]
+  }'
+```
+
+```typescript Node
+const plan = await recurso.plans.create({
+  name: 'API Pro',
+  description: 'Base plan with metered API calls',
+  interval: 'month',
+  prices: [{ amount: 4999, currency: 'INR' }],
+  usage_prices: [{
+    unit_label: 'API call',
+    currency: 'INR',
+    tiers_mode: 'graduated',
+    tiers: [
+      { up_to: 10000, unit_amount: 0 },       // first 10k included
+      { up_to: 100000, unit_amount: 0.05 },   // overage: ₹0.05/call
+      { up_to: 'inf', unit_amount: 0.01 },
+    ],
+  }],
+});
+```
+</CodeGroup>
+
+<Note>
+`graduated` tiers charge each tier's rate across its own range; `volume` tiers
+apply the final tier's rate to *all* units. See
+[Usage-Based Billing](/advanced/usage-billing#pricing-models) for the difference
+with worked examples.
+</Note>
+
+Then create a customer and subscribe them to this plan — see the
+[end-to-end flow](/end-to-end) if you need the exact calls. Keep the resulting
+`subscription_id` and `customer_id`; you need both to record usage.
+
+## Step 2: Record usage events
+
+Report usage against the subscription's `dimension` throughout the period. All
+four fields are required, and the record call is **ownership-checked**: the
+subscription must belong to your tenant and `customer_id` must match the
+subscription's customer.
+
+<CodeGroup>
+```bash cURL
+curl -X POST http://localhost:8080/v1/usage/events \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subscription_id": "sub_xyz",
+    "customer_id": "cust_abc",
+    "dimension": "api_calls",
+    "quantity": 150
+  }'
+```
+
+```typescript Node
+await recurso.usage.record({
+  subscription_id: 'sub_xyz',
+  customer_id: 'cust_abc',
+  dimension: 'api_calls',
+  quantity: 150,
+});
+```
+
+```python Python
+import requests
+
+requests.post(
+    "http://localhost:8080/v1/usage/events",
+    headers={"Authorization": f"Bearer {API_KEY}"},
+    json={
+        "subscription_id": "sub_xyz",
+        "customer_id": "cust_abc",
+        "dimension": "api_calls",
+        "quantity": 150,
+    },
+)
+```
+</CodeGroup>
+
+A successful call returns `{ "status": "recorded", "event_id": "..." }`. The
+event timestamp is set server-side at ingestion.
+
+<Warning>
+Report usage **frequently** (e.g. hourly batches) rather than one giant call at
+period end — it keeps the customer-facing usage view accurate and spreads load.
+If a `404` comes back, the subscription isn't in your tenant; a `400` means
+`customer_id` doesn't match the subscription's customer.
+</Warning>
+
+## Step 3: Query windowed usage
+
+`GET /v1/usage` aggregates events into `day` or `month` buckets over an
+arbitrary window — this is the endpoint behind a usage chart. The window
+defaults to the last 30 days.
+
+<CodeGroup>
+```bash cURL
+curl "http://localhost:8080/v1/usage?subscription_id=sub_xyz&dimension=api_calls&granularity=day" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+```typescript Node
+const chart = await recurso.usage.query({
+  subscription_id: 'sub_xyz',
+  dimension: 'api_calls',
+  from: '2026-06-01T00:00:00Z',
+  to: '2026-07-01T00:00:00Z',
+  granularity: 'day',        // 'day' (default) | 'month'
+});
+// { data: [{ period, dimension, quantity }, ...], from, to, granularity }
+```
+</CodeGroup>
+
+To discover which meters your services have reported, list the tenant's
+dimension catalog with `recurso.usage.dimensions()`
+(`GET /v1/usage/dimensions`).
+
+## Step 4: Show customers their usage
+
+`GET /v1/subscriptions/{id}/usage` answers "you've used 4,231 of 10,000 API
+calls this month." It returns each dimension's current-period and lifetime
+totals — and if you attach an entitlement **limit** whose `feature_key` equals
+the dimension name, the limit and remaining headroom are joined in
+automatically.
+
+```typescript Node
+// Attach a limit so the "of 10,000" part is populated
+await recurso.entitlements.setForPlan(plan.id, [
+  { feature_key: 'api_calls', kind: 'limit', limit_value: 10000 },
+]);
+
+const usage = await recurso.subscriptions.usage('sub_xyz');
+const api = usage.dimensions.find((d) => d.dimension === 'api_calls');
+banner.show(`You've used ${api.period_quantity} of ${api.limit_value} API calls`);
+// api.remaining goes negative when the customer is over the limit —
+// a natural trigger for an upgrade prompt.
+```
+
+## Step 5: Bill on usage
+
+You don't call anything to invoice. At the end of each billing period Recurso
+aggregates the recorded events and rates them against the plan's usage tiers,
+producing invoice line items automatically:
+
+| Line Item | Amount |
+|-----------|--------|
+| API Pro - Base Fee | ₹4,999.00 |
+| API Calls — 45,000 (10,000 included, 35,000 overage) | ₹1,750.00 |
+| **Total** | **₹6,749.00** |
+
+You'll receive the `invoice.created` webhook when the invoice is generated and
+`invoice.paid` once it's collected. See the [end-to-end flow](/end-to-end) for
+the full webhook sequence.
+
+<Tip>
+Always attach an `Idempotency-Key` to any request your client might retry, so a
+network blip can't double-record usage or double-charge. See
+[Idempotency](/advanced/idempotency).
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Usage-Based Billing" icon="gauge" href="/advanced/usage-billing">
+    Full pricing-model reference and the metering + entitlements pattern
+  </Card>
+  <Card title="Feature Gating" icon="lock" href="/tutorials/feature-gating">
+    Enforce plan limits and boolean features at request time
+  </Card>
+  <Card title="Record Usage Event API" icon="code" href="/api-reference/usage/record-event">
+    Endpoint reference with ownership rules
+  </Card>
+  <Card title="Analytics" icon="chart-line" href="/advanced/analytics">
+    MRR and usage analytics
+  </Card>
+</CardGroup>

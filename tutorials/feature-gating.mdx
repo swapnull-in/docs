@@ -1,0 +1,183 @@
+---
+title: "Gate Features with Entitlements"
+description: "A task-oriented walkthrough: define plan entitlements, check them at request time, and wire usage headroom"
+---
+
+## Overview
+
+This tutorial gates product features by plan without hard-coding plan names into
+your app. You'll grant boolean and limit entitlements to a plan, check them on
+the hot path with a single endpoint, and wire a usage limit so your dashboard
+can show remaining headroom.
+
+The pattern replaces `if (plan === 'pro')` scattered through your codebase with
+`if (entitled(customer, 'sso'))`. Change what a plan includes in Recurso and
+every subscriber picks it up immediately — no deploy.
+
+<Info>
+Recurso resolves *whether* a customer is entitled and *how much*. Counting
+actual consumption against a limit is your application's job. For metered
+billing on that consumption, see [usage-based billing](/tutorials/usage-based-saas).
+</Info>
+
+## Step 1: Define plan entitlements
+
+Entitlements come in two kinds: **boolean** (on/off, uses `bool_value`) and
+**limit** (a numeric quota, uses `limit_value`). Setting a plan's entitlements
+is a **full replacement** — always send the complete set the plan should grant.
+
+<CodeGroup>
+```bash cURL
+curl -X PUT http://localhost:8080/v1/plans/plan_pro/entitlements \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '[
+    { "feature_key": "sso", "kind": "boolean", "bool_value": true },
+    { "feature_key": "api_access", "kind": "boolean", "bool_value": true },
+    { "feature_key": "seats", "kind": "limit", "limit_value": 25 },
+    { "feature_key": "api_calls", "kind": "limit", "limit_value": 100000 }
+  ]'
+```
+
+```typescript Node
+await recurso.entitlements.setForPlan('plan_pro', [
+  { feature_key: 'sso', kind: 'boolean', bool_value: true },
+  { feature_key: 'api_access', kind: 'boolean', bool_value: true },
+  { feature_key: 'seats', kind: 'limit', limit_value: 25 },
+  { feature_key: 'api_calls', kind: 'limit', limit_value: 100000 },
+]);
+```
+</CodeGroup>
+
+<Warning>
+Because this replaces the whole set, sending only the feature you changed
+**deletes the rest**. Send the full list every time. Feature keys must match
+`^[A-Za-z0-9][A-Za-z0-9._:-]*$`; duplicate keys in one request are rejected with
+`validation_failed`.
+</Warning>
+
+A customer holding several subscriptions gets the **union**: booleans resolve
+**any-true wins**, limits resolve **maximum wins**, and only `active` and
+`trialing` subscriptions count. See
+[Entitlements](/advanced/entitlements#effective-entitlements-union-semantics)
+for the full resolution rules.
+
+## Step 2: Check a feature at request time
+
+`GET /v1/entitlements/check` is the hot path — one indexed query for a
+`customer_id` + `feature` pair. A feature the customer doesn't have answers
+`granted: false` with a `null` limit; it is **never a 404**.
+
+<CodeGroup>
+```bash cURL
+curl "http://localhost:8080/v1/entitlements/check?customer_id=cust_abc&feature=sso" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+```typescript Node
+const check = await recurso.entitlements.check('cust_abc', 'sso');
+if (check.granted) {
+  // feature enabled
+}
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "http://localhost:8080/v1/entitlements/check",
+    headers={"Authorization": f"Bearer {API_KEY}"},
+    params={"customer_id": "cust_abc", "feature": "sso"},
+).json()
+# { "feature_key": "sso", "granted": true, "limit_value": null }
+```
+</CodeGroup>
+
+### Gate a route with middleware
+
+```typescript Node
+function requireFeature(feature: string) {
+  return async (req, res, next) => {
+    const check = await recurso.entitlements.check(req.user.recursoCustomerId, feature);
+    if (!check.granted) {
+      return res.status(403).json({
+        error: { code: 'feature_not_entitled', message: `Upgrade to use ${feature}` },
+      });
+    }
+    next();
+  };
+}
+
+app.post('/api/sso/configure', requireFeature('sso'), configureSSO);
+```
+
+<Tip>
+For latency-sensitive paths, cache check results for a short TTL (30–60s) keyed
+by `customer_id:feature`. Entitlements only change when a plan or subscription
+changes, so a short cache is safe and removes the round-trip.
+</Tip>
+
+## Step 3: Enforce a limit
+
+For `limit` entitlements, compare the entitled ceiling to your own counter:
+
+```typescript Node
+async function canAddSeat(customerId: string, currentSeats: number) {
+  const check = await recurso.entitlements.check(customerId, 'seats');
+  return check.granted && currentSeats < (check.limit_value ?? 0);
+}
+```
+
+## Step 4: Wire usage headroom
+
+When a limit's `feature_key` matches a usage **dimension** of the same name,
+`GET /v1/subscriptions/{id}/usage` joins the limit and remaining headroom into
+each row automatically — the "4,231 of 10,000" view, without you doing the math.
+
+```typescript Node
+// Limit and dimension share the name "api_calls"
+await recurso.entitlements.setForPlan('plan_pro', [
+  { feature_key: 'api_calls', kind: 'limit', limit_value: 100000 },
+]);
+
+await recurso.usage.record({
+  subscription_id: 'sub_xyz',
+  customer_id: 'cust_abc',
+  dimension: 'api_calls',
+  quantity: 150,
+});
+
+const usage = await recurso.subscriptions.usage('sub_xyz');
+const api = usage.dimensions.find((d) => d.dimension === 'api_calls');
+// api.limit_value = 100000, api.remaining = limit_value - period_quantity
+// remaining goes negative when over the limit — a natural upgrade trigger.
+```
+
+See the [usage tutorial](/tutorials/usage-based-saas) for the full metering flow.
+
+## Step 5: See why a customer has a feature
+
+To display *why* a feature is granted (which plans contributed), fetch the
+effective set for the customer — each entry lists the contributing `plan_ids`:
+
+```bash
+curl http://localhost:8080/v1/customers/cust_abc/entitlements \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Entitlements" icon="key" href="/advanced/entitlements">
+    Full resolution semantics and validation rules
+  </Card>
+  <Card title="Check Feature API" icon="code" href="/api-reference/entitlements/check">
+    The hot-path check endpoint reference
+  </Card>
+  <Card title="Usage-Based Billing" icon="gauge" href="/tutorials/usage-based-saas">
+    Meter and bill on consumption
+  </Card>
+  <Card title="Set Plan Entitlements API" icon="list" href="/api-reference/entitlements/set-plan">
+    Replace a plan's grants
+  </Card>
+</CardGroup>

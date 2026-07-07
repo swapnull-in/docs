@@ -1,0 +1,206 @@
+---
+title: "Set Up India GST End-to-End"
+description: "A task-oriented walkthrough: configure GSTIN, understand place-of-supply, enable IRP e-invoicing, and generate a compliant invoice"
+---
+
+## Overview
+
+This tutorial takes an Indian SaaS seller from zero to a GST-compliant invoice.
+You'll save your seller GST configuration, see how place of supply decides
+CGST/SGST vs IGST, connect the Invoice Registration Portal (IRP) for
+e-invoicing, and generate a compliant invoice for a B2B customer.
+
+<Info>
+GST configuration applies to **all future invoices**. Finalized invoices are
+never modified retroactively — set this up before you start billing Indian
+customers.
+</Info>
+
+## Step 1: Save your seller GST configuration
+
+Store your GSTIN, legal name, state code, SAC code, and default GST rate. This
+one call drives both invoice formatting and the CGST/SGST-vs-IGST decision.
+
+<CodeGroup>
+```bash cURL
+curl -X PUT http://localhost:8080/v1/settings/gst \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gstin": "29AABCT1332L1ZM",
+    "legal_name": "Recurso Technologies Pvt Ltd",
+    "trade_name": "Recurso",
+    "state_code": "29",
+    "sac_code": "998314",
+    "gst_rate": 18.0
+  }'
+```
+
+```typescript Node
+await recurso.settings.update({
+  gstin: '29AABCT1332L1ZM',
+  legal_name: 'Recurso Technologies Pvt Ltd',
+  trade_name: 'Recurso',
+  state_code: '29',       // Karnataka
+  sac_code: '998314',
+  gst_rate: 18.0,
+});
+```
+</CodeGroup>
+
+| Field | Meaning |
+|-------|---------|
+| `gstin` | Your 15-character GST Identification Number. Validated against the standard pattern: 2-digit state code + 10-char PAN + entity digit + `Z` + check character. |
+| `legal_name` | Registered legal name as per GST records. |
+| `state_code` | Two-digit state code — the **seller** side of the place-of-supply comparison (e.g. `29` Karnataka, `27` Maharashtra). |
+| `sac_code` | Services Accounting Code for your service (SaaS commonly uses `9983xx`). |
+| `gst_rate` | Default rate as a percentage (e.g. `18.0`). |
+
+Read it back any time with `GET /v1/settings/gst` — note that it returns `404`
+until a configuration exists, which is exactly why unconfigured tenants see
+0% GST.
+
+<Warning>
+Changing `state_code` later affects CGST/SGST vs IGST on all future invoices.
+Set it to your actual place of registration.
+</Warning>
+
+## Step 2: Understand place of supply
+
+GST splits by where the supply happens. Recurso derives the buyer side from the
+customer's billing-address state / `place_of_supply` and compares it to your
+seller `state_code`:
+
+| Buyer vs seller state | Tax applied | Example at 18% |
+|-----------------------|-------------|----------------|
+| **Same** state (intrastate) | CGST + SGST | 9% CGST (₹450) + 9% SGST (₹450) |
+| **Different** state (interstate) | IGST | 18% IGST (₹900) |
+
+Create the B2B customer with GSTIN and state so the invoice is correct:
+
+```bash
+curl -X POST http://localhost:8080/v1/customers \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Customer Corp Pvt Ltd",
+    "email": "accounts@customer.com",
+    "gstin": "27DQBPS8356J1Z1",
+    "address": {
+      "state": "Maharashtra",
+      "country": "IN"
+    }
+  }'
+```
+
+Here the seller is in Karnataka (`29`) and the buyer in Maharashtra (`27`) — a
+different state — so the invoice will carry **IGST at 18%**. A Karnataka buyer
+would instead get **CGST 9% + SGST 9%**.
+
+<Tip>
+For B2B customers, always capture the buyer `gstin` — it puts the customer's
+GSTIN on the invoice and supports their input tax credit. See
+[GST Invoicing](/compliance/gst-invoicing) for the full invoice format.
+</Tip>
+
+## Step 3: Enable e-invoicing (IRP)
+
+If you're under India's e-invoicing mandate (turnover above the threshold),
+register your IRP credentials so B2B invoices are submitted to the government
+portal automatically. This is a separate endpoint from GST config.
+
+```bash
+curl -X PUT http://localhost:8080/v1/settings/irp \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_id": "ABCD1234EF",
+    "client_secret": "sk_irp_9f8e7d6c5b4a3210",
+    "username": "recurso_einv",
+    "password": "s3cureP@ssw0rd",
+    "gstin": "29AABCT1332L1ZM",
+    "environment": "sandbox",
+    "is_enabled": true
+  }'
+```
+
+<Note>
+Start with `environment: "sandbox"` to validate credentials, then switch to
+`production` once submissions succeed. Recurso manages IRP token refresh for you;
+sensitive fields are masked in responses. Setting `is_enabled: false` pauses
+e-invoice generation without deleting credentials.
+</Note>
+
+<Warning>
+Ensure your IRP credentials are valid before switching to `production` —
+invalid credentials cause every e-invoice submission to fail. See
+[E-Invoicing](/compliance/e-invoicing) for retry and cancel flows.
+</Warning>
+
+## Step 4: Generate a compliant invoice
+
+With GST configured, invoices are generated automatically at each billing
+period end — no extra call. The result includes the full GST breakup. For the
+interstate example above:
+
+```json
+{
+  "invoice_number": "REC/2026/0002",
+  "seller_gstin": "29AABCT1332L1ZM",
+  "buyer_gstin": "27DQBPS8356J1Z1",
+  "place_of_supply": "Maharashtra (27)",
+  "lines": [{
+    "description": "Pro Plan Subscription",
+    "sac_code": "998314",
+    "gst_rate": 18,
+    "amount": 4999
+  }],
+  "subtotal": 4999,
+  "igst_amount": 900,
+  "cgst_amount": 0,
+  "sgst_amount": 0,
+  "total": 5899
+}
+```
+
+When e-invoicing is enabled and the invoice is above the threshold, Recurso
+submits it to the IRP and attaches the **IRN**, acknowledgement number, and
+signed **QR code**. Check status with
+`GET /v1/invoices/{id}/einvoice-status`, and download the PDF via
+`recurso.invoices.pdfUrl(invoiceId)`.
+
+## Verify Your Setup
+
+<Steps>
+  <Step title="GST config saved">
+    `GET /v1/settings/gst` returns your GSTIN and rate (not a 404).
+  </Step>
+  <Step title="Place of supply correct">
+    A same-state customer's invoice shows CGST + SGST; a different-state
+    customer's shows IGST.
+  </Step>
+  <Step title="IRP connected">
+    Sandbox submissions succeed before you flip `environment` to `production`.
+  </Step>
+  <Step title="Invoice compliant">
+    The invoice carries both GSTINs, place of supply, SAC code, and the correct
+    tax breakup.
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="GST Invoicing" icon="file-invoice" href="/compliance/gst-invoicing">
+    Full invoice format, SAC codes, and B2B fields
+  </Card>
+  <Card title="E-Invoicing" icon="qrcode" href="/compliance/e-invoicing">
+    IRN, QR codes, retry and cancel
+  </Card>
+  <Card title="Update GST Config API" icon="code" href="/api-reference/gst/update-config">
+    Endpoint reference
+  </Card>
+  <Card title="UPI & Mandates" icon="building-columns" href="/compliance/upi-mandates">
+    RBI e-mandates for recurring auto-debit
+  </Card>
+</CardGroup>
