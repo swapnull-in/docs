@@ -11,9 +11,16 @@ Core Billing is the backbone of Recurso. A handful of objects work together to r
 graph LR
     A[Plan] -->|priced offering| B[Subscription]
     C[Customer] --> B
-    B -->|each cycle| D[Invoice]
+    B -->|each billing cycle| D[Invoice]
     D -->|settled by| E[Payment]
+    E -.->|next cycle| B
+    D --> F[Ledger Entry]
+    E --> F
 ```
+
+The cycle repeats on each renewal: the subscription cuts a new invoice, the
+payment settles it, and both post balanced entries to the [double-entry
+ledger](/advanced/ledger).
 
 ## Key capabilities
 

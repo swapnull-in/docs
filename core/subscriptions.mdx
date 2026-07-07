@@ -64,11 +64,14 @@ stateDiagram-v2
     Created --> Trialing: Has Trial
     Created --> Active: First Payment OK
     Trialing --> Active: Trial Ends + Payment OK
+    Active --> Paused: Pause
+    Paused --> Active: Resume
     Active --> PastDue: Payment Failed
     PastDue --> Active: Payment Recovered
     PastDue --> Canceled: Max Retries
     Active --> Canceled: Customer Cancels
-    Canceled --> Active: Reactivate
+    Canceled --> Active: Reactivate (before period end)
+    Canceled --> [*]
 ```
 
 | Status | Description |
@@ -76,6 +79,7 @@ stateDiagram-v2
 | `created` | Awaiting first payment |
 | `trialing` | In free trial period |
 | `active` | Active and paid |
+| `paused` | Billing temporarily suspended; no invoices generated |
 | `past_due` | Payment failed, in dunning |
 | `canceled` | Subscription ended |
 

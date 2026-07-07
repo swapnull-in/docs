@@ -5,17 +5,51 @@ description: "Understand the building blocks of Recurso"
 
 ## Overview
 
-Recurso uses a simple hierarchy of objects to manage billing:
+Recurso uses a simple hierarchy of objects to manage billing. A **plan** priced
+offering and a **customer** meet in a **subscription**, which generates
+**invoices** each cycle; **payments** settle those invoices, and every financial
+movement lands in the **ledger**.
 
 ```mermaid
 graph TD
     A[Tenant] --> B[Plans]
     A --> C[Customers]
-    C --> D[Subscriptions]
+    B --> D[Subscriptions]
+    C --> D
     D --> E[Invoices]
     E --> F[Payments]
     D --> G[Usage Records]
+    G --> E
+    E --> H[Ledger Entries]
+    F --> H
 ```
+
+## Architecture
+
+Every request flows through the same layers, and every financial event is written
+to a proper set of books. Recurso keeps a **double-entry ledger** with PostgreSQL
+as the authoritative store; when a [TigerBeetle](https://tigerbeetle.com) backend
+is connected, each posting is also dual-written to it as an optional
+high-throughput mirror.
+
+```mermaid
+flowchart TD
+    Client["Your App / SDK"] -->|REST request| API["HTTP Handler"]
+    API --> SVC["Service Layer<br/>billing logic"]
+    SVC --> REPO["Repository"]
+    REPO --> PG[("PostgreSQL<br/>authoritative store")]
+    SVC --> LEDGER["Ledger Posting"]
+    LEDGER -->|always| PG
+    LEDGER -.->|dual-write if connected| TB[("TigerBeetle<br/>optional mirror")]
+    SVC --> WH["Webhooks"]
+    WH -->|events| Client
+```
+
+<Info>
+PostgreSQL is always authoritative. TigerBeetle is optional and reconciled
+against Postgres by transaction ID — see the [Double-Entry Ledger](/advanced/ledger)
+guide.
+</Info>
 
 ## Tenants
 
