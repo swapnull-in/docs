@@ -1,0 +1,193 @@
+---
+title: "Migrate from Chargebee"
+description: "Map Chargebee concepts to Recurso and move your subscribers over without double-billing"
+---
+
+## Overview
+
+Moving off Chargebee? Recurso covers the same billing surface — plans,
+subscriptions, invoices, dunning, usage, entitlements — with a self-hosted
+architecture and native India compliance. This guide maps Chargebee's object
+model to Recurso, calls out what's different, and walks through the `cmd/import`
+tool to migrate your live subscriber base idempotently and **without
+double-billing anyone mid-cycle**.
+
+## Concept Mapping
+
+| Chargebee | Recurso | Notes |
+|-----------|---------|-------|
+| Item (Plan) + Item Price | **Plan** (with one or more `prices`) | Chargebee's Item / Item Price pair becomes a single Recurso Plan carrying per-currency prices. |
+| Customer | **Customer** | Same idea. Add `gstin` / billing address for tax. |
+| Subscription | **Subscription** | Connects a customer to a plan; carries `current_period_start` / `current_period_end`. |
+| Invoice | **Invoice** | Auto-generated at period end; GST/tax computed automatically. |
+| Metered / usage-based Item Price | **Usage events** (`POST /v1/usage/events`) | Report against a subscription `dimension`. See [Usage-Based Billing](/advanced/usage-billing). |
+| Entitlements / Feature | **Entitlements** | Native boolean + limit grants per plan. See [Entitlements](/advanced/entitlements). |
+| Webhooks | **Webhooks** (signed with `recurso-signature`) | HMAC-SHA256 over the raw body. |
+| Coupons | **Coupons** | See [Coupons](/advanced/coupons). |
+| Credit Notes | **Credit Notes** | See [Credit Notes](/advanced/credit-notes). |
+| Quotes | **Quotes** | Full quote lifecycle: create, send, accept, convert. See [Quotes](/advanced/quotes). |
+| Hosted Pages / Checkout | **Checkout** (`checkout_url`) | Recurso returns a `checkout_url` on subscription creation. |
+
+<Tip>
+Chargebee's Item Family / Item / Item Price hierarchy flattens in Recurso: one
+**Plan** holds the recurring price(s) directly. A metered add-on maps to a
+usage `dimension` you report events against.
+</Tip>
+
+## What's Different
+
+- **Self-hosted** — Recurso runs on your infrastructure (Go + PostgreSQL,
+  optionally TigerBeetle). Your billing data lives in your own database.
+- **No percentage fee** — there's no per-transaction billing fee taken by
+  Recurso. You pay gateway fees and your own hosting.
+- **Built-in double-entry ledger** — every billing event posts to a ledger with
+  a first-class [reconciliation report](/api-reference/finance/reconciliation).
+- **India compliance is native** — GST (CGST/SGST/IGST), e-invoicing via the
+  IRP, and RBI e-mandates are first-class. See
+  [GST Invoicing](/compliance/gst-invoicing).
+- **Your gateway, your relationship** — Recurso orchestrates billing but charges
+  through your own Razorpay or Stripe account.
+
+## Migrating Your Subscribers
+
+The `cmd/import` tool loads plans, customers, and subscriptions **directly into
+the database without generating invoices or calling payment gateways**. Each
+imported subscription keeps its original billing period, so Recurso only issues
+the *next* invoice at `current_period_end` — no mid-cycle double-billing.
+
+### Step 1: Export from Chargebee
+
+Export your active subscriptions with their customers and item prices (via the
+Chargebee export or API). Keep each Chargebee subscription ID — it becomes the
+`external_id` that makes the import idempotent.
+
+### Step 2: Build the import file
+
+Recurso reads a single JSON file (or three CSVs). Amounts are in **minor units**
+(paise/cents). This example shows an Indian B2B subscriber with GSTIN and place
+of supply carried across:
+
+```json data.json
+{
+  "plans": [
+    {
+      "code": "BASIC-INR",
+      "name": "Basic Plan",
+      "amount": 50000,
+      "currency": "INR",
+      "interval_unit": "month",
+      "interval_count": 1
+    }
+  ],
+  "customers": [
+    {
+      "email": "ramesh.gupta@example.in",
+      "name": "Ramesh Gupta",
+      "country": "IN",
+      "state": "MH",
+      "zip": "400001",
+      "gstin": "27DQBPS8356J1Z1",
+      "place_of_supply": "MH"
+    }
+  ],
+  "subscriptions": [
+    {
+      "external_id": "sub_chargebee_9QrSt",
+      "customer_email": "ramesh.gupta@example.in",
+      "plan_code": "BASIC-INR",
+      "status": "active",
+      "current_period_start": "2026-07-01T00:00:00Z",
+      "current_period_end": "2026-08-01T00:00:00Z"
+    }
+  ]
+}
+```
+
+<Note>
+The importer matches **plans by `code`, customers by `email`, and subscriptions
+by `external_id`** (your Chargebee subscription ID). Set `external_id` to the
+Chargebee ID so re-running the import skips anything already migrated.
+</Note>
+
+Field reference:
+
+| Object | Required fields | Optional |
+|--------|-----------------|----------|
+| plan | `code`, `name`, `amount`, `currency`, `interval_unit` | `interval_count` (default 1) |
+| customer | `email`, `name` | `phone`, `country`, `state`, `city`, `line1`, `zip`, `tax_id`, `gstin`, `place_of_supply` |
+| subscription | `external_id`, `customer_email`, `plan_code`, `status`, `current_period_start`, `current_period_end` | `payment_terms` |
+
+Valid subscription `status` values: `active`, `trialing`, `paused`, `canceled`,
+`past_due`, `unpaid`. Timestamps are RFC 3339.
+
+<Tip>
+Carrying `gstin` and `place_of_supply` over means the first Recurso invoice is
+already GST-correct — CGST/SGST vs IGST is decided from the customer's state
+against your seller state code.
+</Tip>
+
+### Step 3: Dry-run first
+
+The dry run validates the whole file and reports what *would* happen without
+writing anything — surfacing **every** problem in one pass.
+
+```bash
+DATABASE_URL=postgres://user:pass@localhost:5432/recurso \
+  go run ./cmd/import \
+  -tenant <your-tenant-uuid> \
+  -input data.json \
+  -dry-run
+```
+
+<Note>
+Find your tenant UUID in the dashboard under **Settings**, or in the
+`POST /auth/register` response. The tenant must already exist.
+</Note>
+
+### Step 4: Import for real
+
+```bash
+DATABASE_URL=postgres://user:pass@localhost:5432/recurso \
+  go run ./cmd/import \
+  -tenant <your-tenant-uuid> \
+  -input data.json
+```
+
+The tool prints `N created, N skipped (already exist), N failed`. Because it's
+idempotent, re-running after fixing a failure only creates what's still missing.
+
+<Warning>
+No invoices are generated by the import. The renewal worker issues each
+subscription's next invoice at its `current_period_end`. Configure your gateway
+credentials (see [Payment Gateways](/advanced/payment-gateways)) **before** that
+first renewal.
+</Warning>
+
+## After Migrating
+
+<Steps>
+  <Step title="Point webhooks at Recurso">
+    Register your endpoint with `POST /v1/webhooks` and verify the
+    `recurso-signature` header. See [Webhooks](/advanced/webhooks).
+  </Step>
+  <Step title="Configure tax">
+    Set GST (India) or TaxJar (US) so the first Recurso invoice is compliant.
+    See [India GST setup](/tutorials/india-gst-setup).
+  </Step>
+  <Step title="Reconcile">
+    After the first renewal cycle, run
+    `GET /v1/finance/reconciliation` to confirm the ledger, invoices, and gateway
+    agree.
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Going to Production" icon="rocket" href="/going-to-production">
+    The full pre-launch checklist
+  </Card>
+  <Card title="End-to-End Flow" icon="diagram-project" href="/end-to-end">
+    See the complete billing lifecycle
+  </Card>
+</CardGroup>
