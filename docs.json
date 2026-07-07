@@ -44,18 +44,19 @@
           {
             "group": "Core Billing",
             "pages": [
+              "core/overview",
               "core/plans",
               "core/customers",
               "core/subscriptions",
               "core/invoices",
               "core/payments"
             ],
-            "icon": "receipt",
-            "root": "core/overview"
+            "icon": "receipt"
           },
           {
             "group": "Monetization",
             "pages": [
+              "advanced/monetization-overview",
               "advanced/usage-billing",
               "advanced/entitlements",
               "advanced/coupons",
@@ -63,23 +64,23 @@
               "advanced/credit-notes",
               "advanced/advanced-billing"
             ],
-            "icon": "coins",
-            "root": "advanced/monetization-overview"
+            "icon": "coins"
           },
           {
             "group": "Revenue & Finance",
             "pages": [
+              "advanced/finance-overview",
               "advanced/ledger",
               "advanced/revenue-recognition",
               "advanced/multi-currency",
               "advanced/analytics"
             ],
-            "icon": "chart-line",
-            "root": "advanced/finance-overview"
+            "icon": "chart-line"
           },
           {
             "group": "Growth & Recovery",
             "pages": [
+              "advanced/growth-overview",
               "advanced/smart-retry",
               "advanced/dunning-campaigns",
               "advanced/cancel-flows",
@@ -87,12 +88,12 @@
               "advanced/referrals",
               "advanced/gifts"
             ],
-            "icon": "arrow-trend-up",
-            "root": "advanced/growth-overview"
+            "icon": "arrow-trend-up"
           },
           {
             "group": "Integrations & Platform",
             "pages": [
+              "advanced/platform-overview",
               "advanced/webhooks",
               "advanced/accounting",
               "advanced/payment-gateways",
@@ -101,18 +102,17 @@
               "advanced/developer-settings",
               "advanced/idempotency"
             ],
-            "icon": "plug",
-            "root": "advanced/platform-overview"
+            "icon": "plug"
           },
           {
             "group": "Customer Portal",
             "pages": [
+              "portal/overview",
               "portal/magic-links",
               "portal/self-service",
               "portal/cancel-self-service"
             ],
-            "icon": "user",
-            "root": "portal/overview"
+            "icon": "user"
           },
           {
             "group": "Deploy & Operate",
