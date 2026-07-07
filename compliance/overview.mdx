@@ -1,0 +1,47 @@
+---
+title: "Compliance"
+description: "Deep, native India tax and payments compliance — GST, e-invoicing, RBI e-mandates, and DPDP consent — plus TaxJar-backed US sales tax"
+---
+
+## Overview
+
+Compliance is Recurso's biggest differentiator. Indian billing compliance is notoriously hard — GST place-of-supply rules, IRP e-invoicing, RBI recurring-payment mandates, and DPDP consent — and Recurso implements it **natively and deeply**, not as an afterthought. Alongside that, US sales tax is available through TaxJar. We frame this honestly below: India is our moat; global tax is functional but narrower in scope.
+
+<Note>
+**Where Recurso is deep vs. where it is not.** India compliance — GST, e-invoicing, UPI/RBI mandates, and consent — is native and first-class. Global tax is TaxJar-backed for the **US only** (behind an API key). EU VAT is served from a static rate table, and US economic-nexus thresholds are **not yet modeled**.
+</Note>
+
+## India compliance (the moat)
+
+- **GST** — automatic CGST/SGST for intrastate and IGST for interstate, determined by place of supply, with SAC codes and GSTIN validation
+- **E-invoicing** — direct integration with the NIC/IRP portal to generate IRN and signed QR codes, with automatic retry and cancellation
+- **RBI e-mandates** — UPI Autopay mandate lifecycle via Razorpay, including the mandatory 24-hour pre-debit notifications and NPCI frequency rules
+- **DPDP consent** — capture, timestamp, and revoke explicit consent for recurring charges to satisfy RBI and DPDP requirements
+
+## Global tax
+
+- **US sales tax** — live jurisdiction-level rates via TaxJar when configured; without a key, US invoices carry an explicit 0% stub rather than a silently wrong rate
+- **Honest limits** — EU VAT uses a static table and US economic nexus is not yet modeled
+
+## Explore Compliance
+
+<CardGroup cols={2}>
+  <Card title="GST-Compliant Invoicing" icon="file-invoice" href="/compliance/gst-invoicing">
+    Generate India-compliant tax invoices with GSTIN, SAC codes, and CGST/SGST/IGST breakup.
+  </Card>
+  <Card title="E-Invoicing" icon="qrcode" href="/compliance/e-invoicing">
+    Auto-submit invoices to the NIC/IRP portal for IRN and signed QR codes.
+  </Card>
+  <Card title="UPI Autopay Mandates" icon="mobile-screen" href="/compliance/upi-mandates">
+    Manage the RBI e-mandate lifecycle with pre-debit notifications via Razorpay.
+  </Card>
+  <Card title="Consent Tracking" icon="clipboard-check" href="/compliance/consent-tracking">
+    Capture, store, and revoke consent for recurring billing under RBI and DPDP.
+  </Card>
+  <Card title="US Sales Tax" icon="dollar-sign" href="/compliance/us-sales-tax">
+    Live jurisdiction-level US sales tax via TaxJar — or an honest 0% stub without it.
+  </Card>
+  <Card title="Dunning & Recovery" icon="rotate-right" href="/compliance/dunning">
+    Compliant retry and recovery workflows for failed recurring payments.
+  </Card>
+</CardGroup>
