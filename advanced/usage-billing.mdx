@@ -70,7 +70,7 @@ await recurso.usage.record({
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/usage/events \
+curl -X POST https://api.recurso.dev/v1/usage/events \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -196,7 +196,7 @@ const chart = await recurso.usage.query({
 ```
 
 ```bash cURL
-curl "https://billing.example.com/v1/usage?subscription_id=sub_xyz&dimension=api_calls&granularity=day" \
+curl "https://api.recurso.dev/v1/usage?subscription_id=sub_xyz&dimension=api_calls&granularity=day" \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>

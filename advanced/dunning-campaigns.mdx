@@ -47,7 +47,7 @@ const campaign = await recurso.dunningCampaigns.create({
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/dunning-campaigns \
+curl -X POST https://api.recurso.dev/v1/dunning-campaigns \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -166,7 +166,7 @@ const status = await recurso.invoices.paymentWall('inv_overdue_456');
 ```
 
 ```bash cURL
-curl -X GET https://billing.example.com/v1/invoices/inv_overdue_456/payment-wall \
+curl -X GET https://api.recurso.dev/v1/invoices/inv_overdue_456/payment-wall \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -189,10 +189,10 @@ const campaign = await recurso.dunningCampaigns.get('dc_abc123');
 ```
 
 ```bash cURL
-curl -X GET https://billing.example.com/v1/dunning-campaigns \
+curl -X GET https://api.recurso.dev/v1/dunning-campaigns \
   -H "Authorization: Bearer $API_KEY"
 
-curl -X GET https://billing.example.com/v1/dunning-campaigns/dc_abc123 \
+curl -X GET https://api.recurso.dev/v1/dunning-campaigns/dc_abc123 \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -215,17 +215,17 @@ await recurso.dunningCampaigns.steps.delete('dc_abc123', 'step_004');
 ```
 
 ```bash cURL
-curl -X PUT https://billing.example.com/v1/dunning-campaigns/dc_abc123 \
+curl -X PUT https://api.recurso.dev/v1/dunning-campaigns/dc_abc123 \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "name": "Aggressive Recovery", "payment_wall_grace_days": 3 }'
 
-curl -X PUT https://billing.example.com/v1/dunning-campaigns/dc_abc123/steps/step_002 \
+curl -X PUT https://api.recurso.dev/v1/dunning-campaigns/dc_abc123/steps/step_002 \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "day_offset": 2, "body": "Updated SMS content" }'
 
-curl -X DELETE https://billing.example.com/v1/dunning-campaigns/dc_abc123/steps/step_004 \
+curl -X DELETE https://api.recurso.dev/v1/dunning-campaigns/dc_abc123/steps/step_004 \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -270,7 +270,7 @@ was in effect, and how many days the invoice took to recover.
 Query totals and a last-12-months series:
 
 ```bash
-curl https://billing.example.com/v1/analytics/dunning/recovered \
+curl https://api.recurso.dev/v1/analytics/dunning/recovered \
   -H "Authorization: Bearer $API_KEY"
 ```
 

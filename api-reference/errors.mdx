@@ -132,7 +132,7 @@ Check the HTTP status code and parse the envelope:
 ```bash
 # Example: requesting a non-existent customer
 curl -s -w "\nHTTP Status: %{http_code}\n" \
-  https://billing.example.com/v1/customers/invalid_id \
+  https://api.recurso.dev/v1/customers/invalid_id \
   -H "Authorization: Bearer $API_KEY"
 
 # Response (404):

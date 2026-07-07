@@ -53,7 +53,7 @@ Before connecting an accounting provider, configure the OAuth credentials for yo
 
 <Steps>
   <Step title="Register an app with the provider">
-    Create a developer app in [QuickBooks Developer Portal](https://developer.intuit.com) or [Xero Developer Portal](https://developer.xero.com). Set the redirect URI to `https://billing.example.com/v1/accounting/callback/:provider`.
+    Create a developer app in [QuickBooks Developer Portal](https://developer.intuit.com) or [Xero Developer Portal](https://developer.xero.com). Set the redirect URI to `https://api.recurso.dev/v1/accounting/callback/:provider`.
   </Step>
   <Step title="Add credentials to Recurso">
     Provide the client ID and client secret via your Recurso dashboard or environment configuration.
@@ -93,7 +93,7 @@ window.location.href = connection.auth_url;
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/accounting/connect/quickbooks \
+curl -X POST https://api.recurso.dev/v1/accounting/connect/quickbooks \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -153,7 +153,7 @@ const connections = await recurso.accounting.listConnections();
 ```
 
 ```bash cURL
-curl https://billing.example.com/v1/accounting/connections \
+curl https://api.recurso.dev/v1/accounting/connections \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -181,7 +181,7 @@ await recurso.accounting.disconnect('acc_qb_abc123');
 ```
 
 ```bash cURL
-curl -X DELETE https://billing.example.com/v1/accounting/connections/acc_qb_abc123 \
+curl -X DELETE https://api.recurso.dev/v1/accounting/connections/acc_qb_abc123 \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -203,7 +203,7 @@ await recurso.accounting.triggerSync();
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/accounting/sync \
+curl -X POST https://api.recurso.dev/v1/accounting/sync \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -292,7 +292,7 @@ const status = await recurso.accounting.syncStatus();
 ```
 
 ```bash cURL
-curl https://billing.example.com/v1/accounting/sync/status \
+curl https://api.recurso.dev/v1/accounting/sync/status \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>

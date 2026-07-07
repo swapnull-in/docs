@@ -31,7 +31,7 @@ if (subscription.status === 'created') {
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/subscriptions \
+curl -X POST https://api.recurso.dev/v1/subscriptions \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -191,7 +191,7 @@ await recurso.subscriptions.reactivate('sub_xyz');
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/subscriptions/sub_xyz/reactivate \
+curl -X POST https://api.recurso.dev/v1/subscriptions/sub_xyz/reactivate \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>

@@ -63,7 +63,7 @@ flowchart TD
     In the Razorpay Dashboard, add a webhook pointing to your Recurso instance:
 
     ```
-    URL: https://billing.example.com/v1/webhooks/razorpay
+    URL: https://api.recurso.dev/v1/webhooks/razorpay
     Events: payment.authorized, payment.captured, payment.failed, refund.created, subscription.charged
     ```
   </Step>
@@ -121,7 +121,7 @@ flowchart TD
     In the Stripe Dashboard, add a webhook endpoint:
 
     ```
-    URL: https://billing.example.com/v1/webhooks/stripe
+    URL: https://api.recurso.dev/v1/webhooks/stripe
     Events: payment_intent.succeeded, payment_intent.payment_failed, charge.refunded, invoice.payment_succeeded, customer.subscription.updated
     ```
   </Step>
@@ -174,7 +174,7 @@ const usdSub = await recurso.subscriptions.create({
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/subscriptions \
+curl -X POST https://api.recurso.dev/v1/subscriptions \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

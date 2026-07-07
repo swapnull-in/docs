@@ -34,7 +34,7 @@ const plan = await recurso.plans.create({
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/plans \
+curl -X POST https://api.recurso.dev/v1/plans \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -169,7 +169,7 @@ const plans = await recurso.plans.list({
 ```
 
 ```bash cURL
-curl -G https://billing.example.com/v1/plans \
+curl -G https://api.recurso.dev/v1/plans \
   -H "Authorization: Bearer $API_KEY" \
   -d active=true \
   -d limit=10
@@ -216,7 +216,7 @@ await recurso.plans.archive('plan_old');
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/plans/plan_old/archive \
+curl -X POST https://api.recurso.dev/v1/plans/plan_old/archive \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>

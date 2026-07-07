@@ -129,12 +129,12 @@ const { url } = await recurso.invoices.pdfUrl('inv_001');
 
 ```bash cURL
 # Download PDF directly
-curl https://billing.example.com/v1/invoices/inv_001/pdf \
+curl https://api.recurso.dev/v1/invoices/inv_001/pdf \
   -H "Authorization: Bearer $API_KEY" \
   -o invoice.pdf
 
 # Or get a signed URL
-curl https://billing.example.com/v1/invoices/inv_001/pdf?url_only=true \
+curl https://api.recurso.dev/v1/invoices/inv_001/pdf?url_only=true \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -155,7 +155,7 @@ const preview = await recurso.invoices.preview({
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/invoices/preview \
+curl -X POST https://api.recurso.dev/v1/invoices/preview \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -225,7 +225,7 @@ const status = await recurso.invoices.einvoiceStatus('inv_001');
 ```
 
 ```bash cURL
-curl https://billing.example.com/v1/invoices/inv_001/einvoice-status \
+curl https://api.recurso.dev/v1/invoices/inv_001/einvoice-status \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -263,7 +263,7 @@ jurisdiction-level sales tax via TaxJar — or an honest 0% marked
 Generate invoices for future billing periods ahead of schedule. This is useful for customers who want to prepay:
 
 ```bash
-curl -X POST https://billing.example.com/v1/billing/advance-invoice \
+curl -X POST https://api.recurso.dev/v1/billing/advance-invoice \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

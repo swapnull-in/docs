@@ -59,7 +59,7 @@ await recurso.entitlements.setForPlan(plan.id, [
 ```
 
 ```bash cURL
-curl -X PUT https://billing.example.com/v1/plans/8f14e45f-.../entitlements \
+curl -X PUT https://api.recurso.dev/v1/plans/8f14e45f-.../entitlements \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '[
@@ -110,7 +110,7 @@ const { data } = await recurso.entitlements.forCustomer(customer.id);
 ```
 
 ```bash cURL
-curl https://billing.example.com/v1/customers/1b9d6bcd-.../entitlements \
+curl https://api.recurso.dev/v1/customers/1b9d6bcd-.../entitlements \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -143,7 +143,7 @@ single `customer_id` + `feature` pair. A feature the customer does not have
 answers `granted: false` with a `null` limit — it is never a 404.
 
 ```bash
-curl "https://billing.example.com/v1/entitlements/check?customer_id=1b9d6bcd-...&feature=api_access" \
+curl "https://api.recurso.dev/v1/entitlements/check?customer_id=1b9d6bcd-...&feature=api_access" \
   -H "Authorization: Bearer $API_KEY"
 ```
 

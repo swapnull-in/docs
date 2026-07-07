@@ -6,11 +6,11 @@ description: "Getting started with the Recurso REST API"
 ## Base URL
 
 ```
-https://billing.example.com/v1
+https://api.recurso.dev/v1
 ```
 
 <Note>
-`billing.example.com` is a placeholder — substitute the domain where your Recurso instance is deployed. All API examples in this reference use the same placeholder.
+`api.recurso.dev` is a placeholder — substitute the domain where your Recurso instance is deployed. All API examples in this reference use the same placeholder.
 </Note>
 
 ## OpenAPI Specification
@@ -22,7 +22,7 @@ spec, so you can also point code generators or API clients directly at
 your running instance:
 
 ```bash
-curl https://billing.example.com/openapi.json
+curl https://api.recurso.dev/openapi.json
 ```
 
 ## Authentication
@@ -30,7 +30,7 @@ curl https://billing.example.com/openapi.json
 Authenticate using API keys in the `Authorization` header:
 
 ```bash
-curl https://billing.example.com/v1/customers \
+curl https://api.recurso.dev/v1/customers \
   -H "Authorization: Bearer rsk_live_xxx"
 ```
 
@@ -52,7 +52,7 @@ Test keys only work with test data and test payment methods.
 All requests use JSON:
 
 ```bash
-curl -X POST https://billing.example.com/v1/customers \
+curl -X POST https://api.recurso.dev/v1/customers \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -161,7 +161,7 @@ X-RateLimit-Reset: 1705312800
 For POST requests, use idempotency keys to prevent duplicate operations:
 
 ```bash
-curl -X POST https://billing.example.com/v1/subscriptions \
+curl -X POST https://api.recurso.dev/v1/subscriptions \
   -H "Authorization: Bearer $API_KEY" \
   -H "Idempotency-Key: unique-request-id-123" \
   -d '{ ... }'

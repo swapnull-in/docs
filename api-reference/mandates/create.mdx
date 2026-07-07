@@ -17,7 +17,7 @@ description: "Create a new UPI autopay mandate for recurring payments."
 ## Example Request
 
 ```bash
-curl -X POST https://billing.example.com/v1/mandates \
+curl -X POST https://api.recurso.dev/v1/mandates \
   -H "Authorization: Bearer rsk_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{
@@ -44,7 +44,7 @@ Returns the newly created mandate object with `status` set to `created`.
   "frequency": "monthly",
   "status": "created",
   "umn": "UMN-202606231015-ABCDEF",
-  "mandate_url": "https://billing.example.com/v1/mandates/mdt_7a6b5c4d3e2f1098/authorize",
+  "mandate_url": "https://api.recurso.dev/v1/mandates/mdt_7a6b5c4d3e2f1098/authorize",
   "valid_from": "2026-06-23T00:00:00Z",
   "valid_until": "2031-06-23T00:00:00Z",
   "created_at": "2026-06-23T10:15:30Z",

@@ -646,7 +646,7 @@
       "display": "interactive"
     },
     "mdx": {
-      "server": "https://billing.example.com",
+      "server": "https://api.recurso.dev",
       "auth": {
         "method": "key",
         "name": "Authorization"

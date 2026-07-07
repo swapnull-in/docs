@@ -86,7 +86,7 @@ await recurso.quotes.decline('quote_xyz');
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/quotes/quote_xyz/decline \
+curl -X POST https://api.recurso.dev/v1/quotes/quote_xyz/decline \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -156,7 +156,7 @@ await recurso.quotes.update('quote_xyz', {
 ```
 
 ```bash cURL
-curl -X PUT https://billing.example.com/v1/quotes/quote_xyz \
+curl -X PUT https://api.recurso.dev/v1/quotes/quote_xyz \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -182,7 +182,7 @@ await recurso.quotes.delete('quote_xyz');
 ```
 
 ```bash cURL
-curl -X DELETE https://billing.example.com/v1/quotes/quote_xyz \
+curl -X DELETE https://api.recurso.dev/v1/quotes/quote_xyz \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>

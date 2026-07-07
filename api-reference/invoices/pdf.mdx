@@ -13,7 +13,7 @@ description: "Download invoice as PDF"
 ## Example Request
 
 ```bash
-curl https://billing.example.com/v1/invoices/inv_001/pdf \
+curl https://api.recurso.dev/v1/invoices/inv_001/pdf \
   -H "Authorization: Bearer $API_KEY" \
   -o invoice.pdf
 ```
@@ -27,7 +27,7 @@ Returns the PDF file with content type `application/pdf`.
 For frontend access, get a temporary signed URL:
 
 ```bash
-curl https://billing.example.com/v1/invoices/inv_001/pdf-url \
+curl https://api.recurso.dev/v1/invoices/inv_001/pdf-url \
   -H "Authorization: Bearer $API_KEY"
 ```
 

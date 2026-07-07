@@ -67,7 +67,7 @@ console.log(result.code); // "RECURSO-X7K9M2"
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/referrals/generate-code \
+curl -X POST https://api.recurso.dev/v1/referrals/generate-code \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -95,7 +95,7 @@ const referral = await recurso.referrals.create({
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/referrals \
+curl -X POST https://api.recurso.dev/v1/referrals \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -133,7 +133,7 @@ console.log(qualified.qualified_at); // "2026-06-23T14:30:00Z"
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/referrals/ref_r8n2v4/qualify \
+curl -X POST https://api.recurso.dev/v1/referrals/ref_r8n2v4/qualify \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -163,7 +163,7 @@ const referrals = await recurso.referrals.list({
 ```
 
 ```bash cURL
-curl -G https://billing.example.com/v1/referrals \
+curl -G https://api.recurso.dev/v1/referrals \
   -H "Authorization: Bearer $API_KEY" \
   -d page=1 \
   -d per_page=25

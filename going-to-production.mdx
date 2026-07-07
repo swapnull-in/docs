@@ -52,11 +52,11 @@ See the [Payment Gateways guide](/advanced/payment-gateways) for detailed config
 Configure production webhook URLs in Recurso to receive billing events.
 
 <Note>
-The examples below use `https://billing.example.com` as a placeholder for your Recurso instance. Substitute the domain where your deployment is hosted.
+The examples below use `https://api.recurso.dev` as a placeholder for your Recurso instance. Substitute the domain where your deployment is hosted.
 </Note>
 
 ```bash
-curl -X POST https://billing.example.com/v1/webhooks \
+curl -X POST https://api.recurso.dev/v1/webhooks \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -87,7 +87,7 @@ Register for all event types you plan to handle. You can update the event list l
 If you are registered under India's GST e-invoicing mandate (turnover above the threshold), configure your IRP credentials.
 
 ```bash
-curl -X POST https://billing.example.com/v1/einvoice/irp-config \
+curl -X POST https://api.recurso.dev/v1/einvoice/irp-config \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -101,7 +101,7 @@ curl -X POST https://billing.example.com/v1/einvoice/irp-config \
 Test the connection before going live:
 
 ```bash
-curl -X POST https://billing.example.com/v1/einvoice/test-irp \
+curl -X POST https://api.recurso.dev/v1/einvoice/test-irp \
   -H "Authorization: Bearer $API_KEY"
 ```
 

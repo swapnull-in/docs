@@ -44,7 +44,7 @@ const session = await recurso.portal.sessions.create({
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/portal/sessions \
+curl -X POST https://api.recurso.dev/v1/portal/sessions \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -211,7 +211,7 @@ await recurso.settings.portal.update({
 ```
 
 ```bash cURL
-curl -X PUT https://billing.example.com/v1/settings/portal \
+curl -X PUT https://api.recurso.dev/v1/settings/portal \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

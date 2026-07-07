@@ -68,7 +68,7 @@ const charge = await recurso.subscriptions.charges.add("sub_xyz", {
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/subscriptions/sub_xyz/charges \
+curl -X POST https://api.recurso.dev/v1/subscriptions/sub_xyz/charges \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -133,7 +133,7 @@ const charges = await recurso.subscriptions.charges.list("sub_xyz");
 ```
 
 ```bash cURL
-curl https://billing.example.com/v1/subscriptions/sub_xyz/charges \
+curl https://api.recurso.dev/v1/subscriptions/sub_xyz/charges \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -208,7 +208,7 @@ const invoice = await recurso.subscriptions.advance("sub_xyz", {
 ```
 
 ```bash cURL
-curl -X POST https://billing.example.com/v1/subscriptions/sub_xyz/advance \
+curl -X POST https://api.recurso.dev/v1/subscriptions/sub_xyz/advance \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

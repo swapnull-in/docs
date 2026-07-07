@@ -188,7 +188,7 @@ const overview = await recurso.analytics.dunning.overview();
 ```
 
 ```bash cURL
-curl -X GET https://billing.example.com/v1/analytics/dunning/overview \
+curl -X GET https://api.recurso.dev/v1/analytics/dunning/overview \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
@@ -224,7 +224,7 @@ const weights = await recurso.analytics.dunning.weights({
 ```
 
 ```bash cURL
-curl -X GET "https://billing.example.com/v1/analytics/dunning/weights?context_key=USD:insufficient_funds:card:medium&limit=20" \
+curl -X GET "https://api.recurso.dev/v1/analytics/dunning/weights?context_key=USD:insufficient_funds:card:medium&limit=20" \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>
