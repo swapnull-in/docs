@@ -1,0 +1,291 @@
+---
+title: "Troubleshooting"
+description: "Symptom → cause → fix for the issues self-hosters hit most often"
+---
+
+## Overview
+
+This page collects the problems people actually run into when running Recurso
+themselves — most of them are configuration, not bugs. Each entry follows the
+same shape: **symptom → cause → fix**. If you are stuck, work through the
+matching section top to bottom.
+
+<Info>
+Running `make demo`? It builds and starts the full stack (API, dashboard,
+PostgreSQL, TigerBeetle, Mailhog), waits for the API to become healthy, and
+loads demo data — so most of the setup issues below are already handled for
+you. The demo API key is `sk_test_12345`.
+</Info>
+
+## Database & Migrations
+
+### Symptom: API won't start, `dial tcp ... connection refused` or `pq: database "recurso" does not exist`
+
+**Cause** — `DATABASE_URL` points at a database that isn't reachable or hasn't
+been created yet.
+
+**Fix**
+
+<Steps>
+  <Step title="Confirm Postgres is up and the URL is right">
+    ```bash
+    psql "$DATABASE_URL" -c "SELECT 1;"
+    ```
+    If this fails, fix the host/port/credentials in `DATABASE_URL`
+    (`postgres://user:pass@host:5432/recurso`) before doing anything else.
+  </Step>
+  <Step title="Create the database if it is missing">
+    ```bash
+    createdb recurso   # or: psql -c 'CREATE DATABASE recurso;'
+    ```
+  </Step>
+</Steps>
+
+### Symptom: `relation "customers" does not exist` (or any `relation ... does not exist`)
+
+**Cause** — The schema migrations haven't been applied to this database. This
+is the single most common first-run error.
+
+**Fix**
+
+```bash
+make migrate
+```
+
+Then restart the API. `make demo` runs migrations for you; only standalone or
+production deployments need this step explicitly.
+
+<Warning>
+If you later see missing columns after pulling new code, a migration was added
+upstream. Re-run `make migrate` — migrations are additive and safe to re-apply.
+</Warning>
+
+## Authentication (401)
+
+### Symptom: Every request returns `401` with `{"error":{"code":"invalid_api_key"}}`
+
+**Cause** — The key is missing, malformed, or from a different environment than
+the endpoint you are calling.
+
+**Fix**
+
+- Send the key as a **Bearer** token in the `Authorization` header — not as a
+  query param or a custom header:
+
+  ```bash
+  curl http://localhost:8080/v1/customers \
+    -H "Authorization: Bearer $API_KEY"
+  ```
+
+- Check the prefix matches the mode you intend: `rsk_test_` for development,
+  `rsk_live_` for production. A live key against test data (or vice versa)
+  authenticates against the wrong tenant scope.
+- On a local `make demo` stack, the seeded key is `sk_test_12345`. If you ran
+  `make seed` again, the data was wiped and re-seeded — the key still works,
+  but any keys *you* created were deleted.
+
+### Symptom: `401` with `{"error":{"code":"unauthorized"}}` (not `invalid_api_key`)
+
+**Cause** — The `Authorization` header is absent entirely, or the value is not
+in `Bearer <key>` form.
+
+**Fix** — Add the header. See [Authentication](/api-reference/authentication)
+for the exact format.
+
+## Webhooks
+
+### Symptom: Your endpoint rejects every delivery — "signature verification failed"
+
+**Cause** — The secret your handler uses doesn't match the secret registered on
+the webhook endpoint, or the signed payload has been altered before verifying
+(body parsers re-serialize JSON and change the bytes).
+
+**Fix**
+
+<Steps>
+  <Step title="Verify against the raw request body">
+    HMAC is computed over the exact bytes Recurso sent. If your framework parses
+    JSON first and you re-`JSON.stringify` it, key order and whitespace change and
+    the signature won't match. Read the **raw** body:
+    ```javascript
+    import express from 'express';
+    import crypto from 'crypto';
+
+    app.post('/webhooks/recurso',
+      express.raw({ type: 'application/json' }),   // raw, not express.json()
+      (req, res) => {
+        const signature = req.headers['recurso-signature'];
+        const expected = crypto
+          .createHmac('sha256', process.env.WEBHOOK_SECRET)
+          .update(req.body)                        // Buffer of raw bytes
+          .digest('hex');
+        if (signature !== expected) return res.sendStatus(400);
+        // ... handle event, then:
+        res.sendStatus(200);
+      });
+    ```
+  </Step>
+  <Step title="Confirm the secret matches">
+    The `WEBHOOK_SECRET` in your app must equal the `secret` set when you created
+    the endpoint (`POST /v1/webhooks`). If you didn't set one, Recurso
+    auto-generated it — read it back from the endpoint and copy it into your
+    environment.
+  </Step>
+</Steps>
+
+The signature is delivered in the `recurso-signature` header. See the
+[Webhooks guide](/advanced/webhooks) for the full verification snippet in
+Node and Python.
+
+### Symptom: Deliveries show as `failed` in the dashboard
+
+**Cause** — Your endpoint didn't return `2xx` within the timeout, or isn't
+reachable over HTTPS.
+
+**Fix** — Your handler must respond `200` within **5 seconds** and process the
+event asynchronously if the work is slow. Inspect recent attempts and re-queue
+them once the endpoint is healthy:
+
+```bash
+# Recent failed deliveries to one endpoint
+curl "https://api.recurso.dev/v1/webhooks/{endpoint_id}/deliveries?status=failed" \
+  -H "Authorization: Bearer $API_KEY"
+
+# Re-queue a single event across endpoints
+curl -X POST https://api.recurso.dev/v1/events/{event_id}/redeliver \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Payment Gateways
+
+### Symptom: Creating a subscription fails, or `checkout_url` is never returned
+
+**Cause** — The gateway named in `payment_gateway` (`razorpay` or `stripe`)
+has no credentials configured, so Recurso can't create the gateway-side
+subscription.
+
+**Fix** — Set the keys for the gateway you use, then restart the API:
+
+```bash .env
+# Razorpay (India)
+RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
+RAZORPAY_KEY_SECRET=your_secret
+
+# Stripe (global)
+STRIPE_SECRET_KEY=sk_test_xxxxxxxxxxxx
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxx
+```
+
+<Note>
+Use **test** keys (`rzp_test_` / `sk_test_`) until you go live. Switching to
+`rzp_live_` / `sk_live_` is a step in the
+[Going to Production](/going-to-production) checklist.
+</Note>
+
+## Tax Computes as 0%
+
+### Symptom: US invoices come out with `tax_amount: 0` and `tax_type: sales_tax_stub`
+
+**Cause** — `TAXJAR_API_KEY` isn't set. Recurso deliberately does **not** guess
+US rates; without TaxJar it ships US invoices at 0%, honestly labeled
+`sales_tax_stub`.
+
+**Fix** — Configure TaxJar and give US customers a billing `state` + `zip`:
+
+```bash .env
+COMPANY_COUNTRY=US
+COMPANY_STATE=CA
+TAXJAR_API_KEY=your_taxjar_api_token
+```
+
+If tax is still 0 with `tax_type: sales_tax` and the note says *"no nexus in
+buyer state per provider"*, that is correct — TaxJar reports you have no nexus
+there. Nexus lives in your **TaxJar account**, not Recurso. See
+[US Sales Tax](/compliance/us-sales-tax) for the full behavior matrix.
+
+### Symptom: Indian invoices compute 0% GST
+
+**Cause** — No GST configuration has been saved for the tenant, so there is no
+`gst_rate` to apply.
+
+**Fix** — Save your seller GST config (this also drives CGST/SGST vs IGST):
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/settings/gst \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gstin": "29AABCT1332L1ZM",
+    "legal_name": "Your Company Pvt Ltd",
+    "state_code": "29",
+    "sac_code": "998314",
+    "gst_rate": 18.0
+  }'
+```
+
+`GET /v1/settings/gst` returns `404` until this is set. See the
+[India GST tutorial](/tutorials/india-gst-setup) for the end-to-end walkthrough.
+
+## Idempotency Key Reuse
+
+### Symptom: A retried POST returns `409 conflict` / `422` instead of the original result
+
+**Cause** — You reused an `Idempotency-Key` with a **different** request body.
+Recurso rejects this so two different operations can't quietly share a key.
+
+**Fix**
+
+- Generate one key per distinct business operation (a UUID v4 prefixed with
+  `idem_` is a good default) and reuse **that same key** only for retries of
+  **that same request**.
+- Keys are scoped to your API key and expire after 24 hours.
+- Error responses are not cached: if the first attempt returned a 5xx, retry
+  with the *same* key — it re-executes and can still succeed.
+
+See [Idempotency & Rate Limiting](/advanced/idempotency) for the full rules.
+
+## TigerBeetle (Optional Ledger)
+
+### Symptom: Startup logs mention TigerBeetle being unavailable, or `/health` reports it as a `warning`
+
+**Cause** — TigerBeetle is an **optional** high-performance ledger backend. When
+it isn't running, Recurso falls back to the Postgres ledger — billing still
+works end to end.
+
+**Fix**
+
+- **If you don't need it:** ignore the warning. TigerBeetle degrades to a
+  `warning` (not `critical`) in the health watcher precisely because the system
+  keeps functioning without it. `make demo` starts it for you.
+- **If you want it:** make sure the TigerBeetle container/process is running and
+  reachable at its configured address, then restart the API. Verify with:
+
+  ```bash
+  curl http://localhost:8080/health
+  ```
+
+  A healthy response reports each component (PostgreSQL, Redis if configured,
+  TigerBeetle) individually.
+
+<Note>
+PostgreSQL going down is `critical`; Redis and TigerBeetle are `warning`
+because the API can serve billing without them. See the health-alerting section
+of [Going to Production](/going-to-production) for the alert semantics.
+</Note>
+
+## Still Stuck?
+
+<CardGroup cols={2}>
+  <Card title="Error Reference" icon="triangle-exclamation" href="/api-reference/errors">
+    The full error-code taxonomy and what each one means
+  </Card>
+  <Card title="FAQ" icon="circle-question" href="/faq">
+    Honest answers on production-readiness, licensing, and tax coverage
+  </Card>
+  <Card title="GitHub Issues" icon="github" href="https://github.com/swapnull-in/recur-so/issues">
+    Search existing issues or open a new one
+  </Card>
+  <Card title="Support" icon="envelope" href="mailto:support@recurso.dev">
+    Email the team
+  </Card>
+</CardGroup>

@@ -1,0 +1,139 @@
+---
+title: "Glossary"
+description: "Billing and Recurso terminology, with the Recurso-specific meaning where it matters"
+---
+
+## Overview
+
+Short definitions of the billing, tax, and Recurso-specific terms used across
+these docs. Where a term has a Recurso-specific nuance, that's noted.
+
+## Revenue & Metrics
+
+**MRR (Monthly Recurring Revenue)**
+The normalized monthly value of your active recurring subscriptions. In
+Recurso, `GET /v1/analytics/mrr` returns both raw MRR and an **FX-normalized**
+MRR in a single reporting currency, with the exchange-rate source
+(`live` or `static-fallback`) attached.
+
+**ARR (Annual Recurring Revenue)**
+MRR × 12 — the annualized run-rate of recurring revenue.
+
+**Churn**
+The rate at which customers or revenue leave over a period. *Customer churn*
+counts cancellations; *revenue churn* measures lost recurring revenue. Recurso
+also predicts churn risk per customer (see
+[Churn Prediction](/advanced/churn-prediction)).
+
+**Proration**
+Charging or crediting a partial amount when a subscription changes mid-cycle
+(an upgrade, downgrade, or mid-period start) so the customer pays only for what
+they used.
+
+## Subscriptions & Recovery
+
+**Dunning**
+The process of recovering failed payments through automated retries and reminder
+emails before a subscription lapses. See [Dunning Campaigns](/advanced/dunning-campaigns).
+
+**Smart Retry**
+Recurso's intelligent payment-retry logic that schedules retries at times more
+likely to succeed, rather than at fixed intervals. See
+[Smart Retry](/advanced/smart-retry).
+
+**Entitlement**
+A feature grant attached to a plan. Two kinds: **boolean** (on/off, e.g.
+`sso: true`) and **limit** (a numeric quota, e.g. `seats: 25`). A customer's
+*effective* entitlements are the union across their active and trialing
+subscriptions. See [Entitlements](/advanced/entitlements).
+
+**Reconciliation**
+Confirming that the ledger, the invoices, and the payment gateway all agree on
+what money moved. Recurso exposes this as a first-class report at
+`GET /v1/finance/reconciliation` — the source of truth for ledger integrity
+during an incident.
+
+## Ledger & Payments
+
+**Double-entry ledger**
+An accounting system where every transaction posts equal and opposite debits and
+credits, so the books always balance. Recurso records billing events in a
+double-entry ledger; TigerBeetle is an optional high-throughput backend, with
+Postgres as the default. See [Ledger](/advanced/ledger).
+
+**Idempotency key**
+A client-supplied value (the `Idempotency-Key` header) that lets you safely
+retry a mutating request without causing a duplicate side effect — the same key
+returns the original result instead of charging or creating twice. Keys are
+scoped to your API key and expire after 24 hours. See
+[Idempotency](/advanced/idempotency).
+
+**Mandate (RBI e-mandate)**
+A customer's standing authorization to auto-debit recurring payments, governed
+by the Reserve Bank of India's e-mandate framework. Required for compliant
+recurring charges in India. See [UPI & Mandates](/compliance/upi-mandates).
+
+## Multi-Tenancy
+
+**Tenant**
+A single business/account boundary inside Recurso. All data — plans, customers,
+subscriptions, ledger accounts — is scoped to a tenant, and API keys authenticate
+against exactly one. Most single-product SaaS companies have one tenant;
+multi-tenant setups (agencies, resellers) have many. Resources belonging to
+another tenant return `404`, not `403`, to avoid leaking their existence.
+
+## India GST & Tax
+
+**GSTIN (GST Identification Number)**
+The 15-character tax ID of a GST-registered business in India: 2-digit state
+code + 10-character PAN + entity digit + `Z` + a check character. Recurso
+validates it against that pattern.
+
+**SAC (Services Accounting Code)**
+The classification code for a service under GST (SaaS commonly uses codes in the
+`9983xx` family). Printed on GST-compliant invoices.
+
+**Place of supply**
+The location that determines which GST applies. When the seller and buyer are in
+the same state it's **intrastate** (CGST + SGST); different states make it
+**interstate** (IGST). Recurso derives it from the customer's billing-address
+state / `place_of_supply`.
+
+**CGST / SGST / IGST**
+The three components of GST. **CGST** (Central) and **SGST** (State) each take
+half the rate on *intrastate* sales; **IGST** (Integrated) takes the full rate
+on *interstate* sales. Example: 18% is either 9% CGST + 9% SGST, or 18% IGST.
+
+**IRN / IRP (Invoice Reference Number / Invoice Registration Portal)**
+Under India's e-invoicing mandate, B2B invoices above the turnover threshold
+must be registered with the government **IRP**, which returns a unique **IRN**,
+an acknowledgement number, and a signed QR code. Recurso submits automatically
+when e-invoicing is enabled. See [E-Invoicing](/compliance/e-invoicing).
+
+**LUT (Letter of Undertaking)**
+A document that lets an Indian exporter supply services abroad **without**
+charging IGST (a zero-rated export supply), instead of paying tax and claiming a
+refund. Relevant when billing international customers from an Indian entity.
+
+## US & Global Tax
+
+**Nexus**
+A connection to a US state (physical or economic) that obligates a seller to
+collect that state's sales tax. Recurso does **not** model nexus itself — it
+relies on your **TaxJar** account configuration and records TaxJar's answer
+honestly on the invoice. See [US Sales Tax](/compliance/us-sales-tax).
+
+**Reverse charge**
+A mechanism (in GST and EU VAT) where the *buyer*, not the seller, accounts for
+the tax — common in cross-border B2B. Flagged on the invoice where it applies.
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="Core Concepts" icon="book" href="/concepts">
+    How plans, customers, subscriptions, and invoices fit together
+  </Card>
+  <Card title="FAQ" icon="circle-question" href="/faq">
+    Honest answers on coverage and licensing
+  </Card>
+</CardGroup>

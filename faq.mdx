@@ -1,0 +1,184 @@
+---
+title: "FAQ"
+description: "Honest answers about Recurso — production-readiness, self-hosting, licensing, and tax coverage"
+---
+
+## Overview
+
+Straight answers to the questions people ask before adopting Recurso. Where the
+honest answer is "not yet" or "partially," it says so.
+
+## Product & Positioning
+
+<AccordionGroup>
+  <Accordion title="Is Recurso production-ready?">
+    Recurso runs a complete billing lifecycle — plans, customers, subscriptions,
+    invoices, payments, dunning, usage metering, entitlements, and a
+    double-entry ledger — with idempotent APIs and webhook delivery tracking.
+    The core billing paths are built to be run for real.
+
+    That said, it is a self-hosted system: **you** own operations. Before
+    accepting live payments, work through the
+    [Going to Production](/going-to-production) checklist (live gateway keys,
+    HTTPS, webhook signature verification, backups, monitoring) and run at least
+    one end-to-end transaction with live keys. Some capabilities are explicitly
+    incomplete — see the tax and roadmap answers below.
+  </Accordion>
+
+  <Accordion title="Self-host or Recurso Cloud — which should I use?">
+    **Self-host** if you want full data ownership, no per-transaction fee, and
+    control over your infrastructure. You run PostgreSQL, the API, and
+    (optionally) TigerBeetle and Redis.
+
+    **Recurso Cloud** is managed hosting — the team handles hosting, scaling,
+    backups, and TLS, so you can skip most of the production checklist. It's in
+    early access; join the waitlist at [cloud@recurso.dev](mailto:cloud@recurso.dev).
+    See [Pricing](/pricing) for details. The API and SDK are identical either
+    way — only the base URL changes.
+  </Accordion>
+
+  <Accordion title="How does Recurso compare to Stripe Billing / Chargebee at a glance?">
+    Capability facts, not marketing:
+
+    - **Hosting** — Recurso is self-hostable; Stripe Billing and Chargebee are
+      SaaS only.
+    - **Pricing model** — Recurso charges no percentage-of-revenue billing fee;
+      you pay for your own infrastructure (or Cloud hosting).
+    - **Ledger** — Recurso ships a built-in double-entry ledger with a
+      reconciliation report as a first-class object.
+    - **India compliance** — Recurso models GST (CGST/SGST/IGST), e-invoicing
+      via the IRP, RBI e-mandates, and DPDP consent tracking natively.
+    - **License** — Recurso is MIT (see below).
+
+    If you're coming from one of these, see
+    [Migrate from Stripe](/migrate-from-stripe) or
+    [Migrate from Chargebee](/migrate-from-chargebee) for concept mappings.
+  </Accordion>
+</AccordionGroup>
+
+## Architecture
+
+<AccordionGroup>
+  <Accordion title="Why Go, PostgreSQL, and TigerBeetle?">
+    - **Go** — a single statically-linked binary, low memory footprint, and
+      strong concurrency for billing workers. Easy to deploy and operate.
+    - **PostgreSQL** — the system of record. Battle-tested, transactional, and
+      something most teams already know how to back up and run.
+    - **TigerBeetle** — an *optional* purpose-built double-entry accounting
+      database for high-throughput ledger writes. It is not required: when it
+      isn't running, Recurso uses the Postgres ledger and billing works end to
+      end. That's why the health watcher treats TigerBeetle as a `warning`, not
+      `critical`.
+  </Accordion>
+
+  <Accordion title="Is TigerBeetle required?">
+    No. It's an optional performance backend for the ledger. Start without it;
+    add it if your ledger write volume warrants it. See the TigerBeetle section
+    of [Troubleshooting](/troubleshooting) for what the health warnings mean.
+  </Accordion>
+</AccordionGroup>
+
+## Licensing & Data
+
+<AccordionGroup>
+  <Accordion title="What does the MIT license mean for me?">
+    Recurso is released under the MIT license — one of the most permissive open
+    source licenses. You can self-host it, modify it, embed it in a commercial
+    product, and run it for your own customers, at no license cost and with no
+    copyleft obligation to publish your changes. The only requirement is
+    retaining the copyright and license notice. There is no per-seat or
+    per-transaction license fee.
+  </Accordion>
+
+  <Accordion title="Who owns the billing data?">
+    On self-hosted deployments, **you do** — it lives in your PostgreSQL
+    database, on your infrastructure. Recurso doesn't phone home and there is no
+    mandatory external dependency for core billing. You can `pg_dump` at any
+    time and take your data with you.
+  </Accordion>
+
+  <Accordion title="Does Recurso help with India's DPDP Act?">
+    Recurso includes consent tracking — recording, revoking, and querying
+    customer and subscription-level consents — which supports DPDP-aligned
+    workflows. Because you self-host, personal data stays in your own database
+    under your control. See [Consent Tracking](/compliance/consent-tracking).
+    Recurso is a tool, not legal advice — confirm your obligations with counsel.
+  </Accordion>
+</AccordionGroup>
+
+## Tax & Compliance Coverage
+
+<AccordionGroup>
+  <Accordion title="How complete is tax coverage — India vs global?">
+    Coverage is **deep for India, partial elsewhere** — and Recurso is honest
+    about the edges rather than guessing:
+
+    - **India (GST)** — full: CGST/SGST for intrastate, IGST for interstate,
+      place-of-supply logic, SAC codes, GSTIN validation, and e-invoicing via
+      the IRP.
+    - **US sales tax** — live jurisdiction rates via **TaxJar** when configured.
+      Without TaxJar, US invoices ship at 0% explicitly marked
+      `sales_tax_stub` — no silently wrong rates. See
+      [US Sales Tax](/compliance/us-sales-tax).
+    - **EU / UK VAT** — handled statically (reverse charge, exports); not a live
+      rate service.
+    - **Nexus** — **not modeled inside Recurso.** For the US, nexus is whatever
+      your TaxJar account is configured for; Recurso records TaxJar's answer
+      honestly.
+  </Accordion>
+
+  <Accordion title="My US invoices show 0% tax — is that a bug?">
+    Almost always a configuration state, not a bug. Without `TAXJAR_API_KEY`,
+    invoices are `sales_tax_stub` at 0% by design. With TaxJar configured, a 0%
+    result usually means TaxJar reports no nexus in the buyer's state. The
+    [Troubleshooting](/troubleshooting) page walks through both cases.
+  </Accordion>
+</AccordionGroup>
+
+## Operations
+
+<AccordionGroup>
+  <Accordion title="How do upgrades and migrations work?">
+    Pull the new code and run `make migrate`. Schema migrations are additive and
+    safe to re-apply, so re-running after an upgrade only applies what's new.
+    Take a database backup before upgrading production — billing data is
+    critical. The [Going to Production](/going-to-production) checklist covers
+    backups and the incident runbook.
+  </Accordion>
+
+  <Accordion title="How do I bring existing subscribers over from another system?">
+    Use the `cmd/import` tool in the main repository. It loads plans, customers,
+    and subscriptions **without generating invoices or calling payment gateways**,
+    so migrated customers are never double-billed mid-cycle — each subscription
+    keeps its original period and renews at `current_period_end`. It's idempotent
+    and supports a `-dry-run`. See
+    [Migrate from Stripe](/migrate-from-stripe) or
+    [Migrate from Chargebee](/migrate-from-chargebee).
+  </Accordion>
+
+  <Accordion title="What's on the roadmap / not done yet?">
+    Known gaps are documented honestly rather than hidden. Examples called out
+    elsewhere in these docs: native nexus configuration (currently delegated to
+    TaxJar), and operational limits noted in the incident runbook (single alert
+    channel, no built-in status page, no per-worker kill switch). See the
+    [ROADMAP](https://github.com/swapnull-in/recur-so/blob/main/ROADMAP.md) in
+    the main repository.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get the stack running in under 5 minutes
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/troubleshooting">
+    Fixes for the most common setup issues
+  </Card>
+  <Card title="Glossary" icon="book" href="/glossary">
+    Billing and Recurso terminology
+  </Card>
+  <Card title="Going to Production" icon="server" href="/going-to-production">
+    The pre-launch checklist
+  </Card>
+</CardGroup>
