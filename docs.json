@@ -490,9 +490,29 @@
     "global": {
       "anchors": [
         {
+          "anchor": "Documentation",
+          "href": "https://docs.recurso.dev",
+          "icon": "book-open"
+        },
+        {
+          "anchor": "API Reference",
+          "href": "https://docs.recurso.dev/api-reference/introduction",
+          "icon": "code"
+        },
+        {
           "anchor": "GitHub",
           "href": "https://github.com/swapnull-in/recur-so",
           "icon": "github"
+        },
+        {
+          "anchor": "Changelog",
+          "href": "https://github.com/swapnull-in/recur-so/releases",
+          "icon": "clock-rotate-left"
+        },
+        {
+          "anchor": "Website",
+          "href": "https://recurso.dev",
+          "icon": "globe"
         }
       ]
     }
@@ -503,6 +523,10 @@
   },
   "navbar": {
     "links": [
+      {
+        "label": "Quickstart",
+        "href": "/quickstart"
+      },
       {
         "label": "Pricing",
         "href": "/pricing"
@@ -530,7 +554,68 @@
   "footer": {
     "socials": {
       "github": "https://github.com/swapnull-in/recur-so"
-    }
+    },
+    "links": [
+      {
+        "header": "Product",
+        "items": [
+          {
+            "label": "Quickstart",
+            "href": "/quickstart"
+          },
+          {
+            "label": "Core Concepts",
+            "href": "/concepts"
+          },
+          {
+            "label": "Compliance",
+            "href": "/compliance/overview"
+          },
+          {
+            "label": "Pricing",
+            "href": "/pricing"
+          }
+        ]
+      },
+      {
+        "header": "Developers",
+        "items": [
+          {
+            "label": "API Reference",
+            "href": "/api-reference/introduction"
+          },
+          {
+            "label": "SDKs",
+            "href": "/sdk"
+          },
+          {
+            "label": "Going to Production",
+            "href": "/going-to-production"
+          },
+          {
+            "label": "Performance",
+            "href": "/performance"
+          }
+        ]
+      },
+      {
+        "header": "Resources",
+        "items": [
+          {
+            "label": "GitHub",
+            "href": "https://github.com/swapnull-in/recur-so"
+          },
+          {
+            "label": "Changelog",
+            "href": "https://github.com/swapnull-in/recur-so/releases"
+          },
+          {
+            "label": "Support",
+            "href": "mailto:support@recurso.dev"
+          }
+        ]
+      }
+    ]
   },
   "api": {
     "openapi": "api-reference/openapi.yaml",
