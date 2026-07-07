@@ -124,6 +124,23 @@ Build your recovery sequence by adding steps at specific day offsets.
   </Step>
 </Steps>
 
+Steps execute in `day_offset` order, escalating from a gentle reminder to a
+hard payment wall. If the invoice is paid at any point, the campaign stops
+immediately and any remaining steps are cancelled:
+
+```mermaid
+flowchart LR
+    F["Payment fails<br/>Day 0"] --> S0["Day 0<br/>Email: action required"]
+    S0 --> S3["Day 3<br/>SMS reminder"]
+    S3 --> S5["Day 5<br/>Urgent email"]
+    S5 --> S7["Day 7<br/>Payment wall"]
+    S0 -.->|paid| R(["Recovered<br/>campaign stops"])
+    S3 -.->|paid| R
+    S5 -.->|paid| R
+    S7 -.->|paid| R
+    S7 --> X["Unresolved<br/>manual review"]
+```
+
 ### Step Parameters
 
 | Parameter | Type | Required | Description |

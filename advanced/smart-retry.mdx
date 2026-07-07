@@ -23,19 +23,19 @@ Smart Retry works alongside [Dunning Campaigns](/advanced/dunning-campaigns) to 
 
 ```mermaid
 flowchart TD
-    A[Payment Fails] --> B[Build Context Key]
-    B --> C[Select Algorithm]
-    C --> D{Explore or Exploit?}
-    D -->|Exploit| E[Pick Best Known Interval]
-    D -->|Explore| F[Try Alternative Interval]
-    E --> G[Schedule Retry]
+    A["Payment fails"] --> B["Build context key<br/>currency:error:method:amount:day:tenure"]
+    B --> C["Bandit algorithm selects interval<br/>epsilon-greedy / Thompson / UCB1"]
+    C --> D{"Explore or exploit?"}
+    D -->|Exploit| E["Best-known interval"]
+    D -->|Explore| F["Alternative interval"]
+    E --> G["Schedule retry<br/>1h / 24h / 3d / 7d"]
     F --> G
-    G --> H{Payment Result}
-    H -->|Success| I[Record Reward = 1.0]
-    H -->|Failure| J[Record Reward = 0.0]
-    I --> K[Update Weights]
-    J --> K
-    K --> L[Improved Future Decisions]
+    G --> H{"Retry result"}
+    H -->|Success| I["Recovered<br/>reward = 1.0"]
+    H -->|"Failure, retries remain"| J["Reward = 0.0<br/>update weights"]
+    J --> B
+    H -->|"Failure, 10th attempt"| K["Exhausted<br/>terminal failed state"]
+    I --> L["Update weights<br/>smarter next decision"]
 ```
 
 ## Bandit Algorithms

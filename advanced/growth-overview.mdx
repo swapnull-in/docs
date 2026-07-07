@@ -7,6 +7,18 @@ description: "Recover failed payments and reduce churn with smart retries, dunni
 
 Winning a customer is only half the battle — keeping them, and getting paid, is the other half. Growth & Recovery brings together the tools that protect and grow revenue: a reinforcement-learning **smart retry** engine that learns the best time to re-attempt failed payments, multi-step **dunning campaigns** for customer communication, **cancel flows** and **churn prediction** to keep customers, and **referrals** and **gifts** to bring new ones in.
 
+These tools map onto the customer lifecycle — acquire, retain, and recover:
+
+```mermaid
+flowchart LR
+    ACQ["Acquire<br/>referrals · gifts"] --> ACT["Active customer"]
+    ACT --> RET["Retain<br/>cancel flows · churn prediction"]
+    ACT -->|payment fails| REC["Recover<br/>smart retry + dunning campaigns"]
+    REC -->|recovered| ACT
+    RET -->|deflected| ACT
+    REC --> ATTR["Recovered-revenue attribution"]
+```
+
 ## Key capabilities
 
 - **Smart retry** — epsilon-greedy, Thompson sampling, and UCB1 bandit strategies pick optimal retry timing per context
