@@ -45,6 +45,14 @@ await recurso.settings.update({
 });
 ```
 
+<Note>
+  **The `sac_code` drives the rate.** GST rates in India follow the SAC/HSN
+  classification of the service, so Recurso derives the applied rate from
+  `sac_code` (e.g. `998314` → 18% for SaaS). `gst_rate` is only a **fallback**,
+  used when the SAC code isn't a recognized classification — a recognized code
+  always takes precedence. To change the rate, set the correct `sac_code`.
+</Note>
+
 ## Tax Calculation
 
 GST is calculated automatically based on place of supply:

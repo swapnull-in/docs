@@ -12,8 +12,8 @@ description: "Update your organization's GST configuration for tax compliance an
 | `legal_name` | string | Yes | The registered legal name of your business as per GST records. |
 | `trade_name` | string | No | The trade or brand name of your business. |
 | `state_code` | string | Yes | The two-digit state code (e.g., `"29"` for Karnataka, `"27"` for Maharashtra). |
-| `sac_code` | string | Yes | The Services Accounting Code for your primary service category. |
-| `gst_rate` | number | Yes | The GST rate to apply on invoices, as a percentage (e.g., `18.0`). |
+| `sac_code` | string | Yes | The Services Accounting Code for your primary service category. **This determines the GST rate** — the rate follows the SAC/HSN classification. |
+| `gst_rate` | number | No | **Fallback** rate (percentage, e.g. `18.0`) applied only when `sac_code` isn't a recognized classification. A recognized `sac_code` always takes precedence; `0` uses the built-in default. |
 
 ## Example Request
 
