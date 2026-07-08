@@ -115,6 +115,13 @@
             "icon": "user"
           },
           {
+            "group": "Dashboard & Access",
+            "pages": [
+              "dashboard/account-security"
+            ],
+            "icon": "shield-halved"
+          },
+          {
             "group": "Deploy & Operate",
             "pages": [
               "going-to-production",
