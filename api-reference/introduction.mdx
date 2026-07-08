@@ -25,6 +25,19 @@ your running instance:
 curl https://api.recurso.dev/openapi.json
 ```
 
+## Postman collection
+
+A ready-to-import Postman collection covering every endpoint (generated from the
+OpenAPI spec, grouped by resource) lives in the repository under
+[`postman/`](https://github.com/swapnull-in/recur-so/tree/main/postman).
+
+Import both `recurso.postman_collection.json` and
+`recurso.postman_environment.json`, select the **Recurso** environment, then set
+`baseUrl` (your instance) and `bearerToken` (an API key from **Developers**).
+Every request then authenticates automatically — see
+[`postman/README.md`](https://github.com/swapnull-in/recur-so/blob/main/postman/README.md)
+for the regenerate command.
+
 ## Authentication
 
 Authenticate using API keys in the `Authorization` header:
