@@ -578,7 +578,7 @@
         },
         {
           "anchor": "Changelog",
-          "href": "https://github.com/swapnull-in/recur-so/releases",
+          "href": "https://github.com/swapnull-in/recur-so/releases/tag/v0.4.0",
           "icon": "clock-rotate-left"
         },
         {
@@ -679,7 +679,7 @@
           },
           {
             "label": "Changelog",
-            "href": "https://github.com/swapnull-in/recur-so/releases"
+            "href": "https://github.com/swapnull-in/recur-so/releases/tag/v0.4.0"
           },
           {
             "label": "Support",
