@@ -21,10 +21,11 @@ by your Recurso API key. Recurso surfaces the current mode as `gateway_mode`:
 | `live` | Real gateway keys | Real money. Don't point tests here |
 
 <Warning>
-Recurso does not currently issue separate test vs. live API keys — a generated
-key works against whatever `gateway_mode` the server is running in. Treat the
-running server's `gateway_mode` as the source of truth, and keep a separate
-Recurso instance (or database) for anything that talks to `live` gateways.
+Your API key's mode must match the server's `gateway_mode`. A test key
+(`rsk_test_…`) is accepted on a `none`/`test` server and **rejected on a live
+one** (`401 key_mode_mismatch`); a live key (`rsk_live_…`) is the opposite. So a
+test key can never move real money — develop with one against a `none`/`test`
+instance. See [Authentication](/api-reference/authentication).
 </Warning>
 
 ## Which mode am I in?

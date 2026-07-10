@@ -13,37 +13,56 @@ curl https://api.recurso.dev/v1/customers \
   -H "Authorization: Bearer $RECURSO_API_KEY"
 ```
 
-Keys are secret credentials prefixed with `sk_` (for example
-`sk_live_9f8e7d6c…`). The demo dataset ships with the fixed key `sk_test_12345`
-for local exploration.
+Keys are secret credentials. Newly created keys are prefixed by mode —
+`rsk_test_…` or `rsk_live_…`. The demo dataset ships with the fixed test key
+`sk_test_12345` for local exploration.
 
 <Warning>
 **Never expose API keys in client-side code.** Keys are secret and must only be
 used from your backend.
 </Warning>
 
-## Test vs. live
+## Test vs. live keys
 
-Recurso issues a single kind of secret key — there is **no separate "test" API
-key**. Whether requests move real money is determined by the **payment-gateway
-keys configured on the server**, not by your Recurso key. The API reports the
-current mode at `GET /version`:
+Every key is either a **test** key (`rsk_test_…`) or a **live** key
+(`rsk_live_…`). A new account starts with a test key.
 
-| `gateway_mode` | Meaning |
-| --- | --- |
-| `none` | No gateway configured — the mock gateway simulates payments (full sandbox) |
-| `test` | Stripe `sk_test…` / Razorpay `rzp_test…` keys — real gateway test mode |
-| `live` | Real gateway keys — real money |
+| Type | Prefix | For |
+| --- | --- | --- |
+| Test | `rsk_test_` | Development and sandbox |
+| Live | `rsk_live_` | Production (real money) |
 
-The dashboard's **Test mode** chip is driven by this same value. To build and
-test safely, run against an instance in `none` or `test` mode — see
+A key's mode must match the server's payment configuration, reported at
+`GET /version` as `gateway_mode`:
+
+| `gateway_mode` | When | Keys accepted |
+| --- | --- | --- |
+| `none` | No gateway configured — mock gateway (full sandbox) | test keys |
+| `test` | Stripe `sk_test…` / Razorpay `rzp_test…` keys | test keys |
+| `live` | Real gateway keys — real money | live keys |
+
+<Warning>
+If a key's mode doesn't match the server, the request is rejected with
+`401 key_mode_mismatch`. This is deliberate: a **test key can never run against a
+live-money server**, and a live key won't run on a non-live one. Build and test
+against a `none`/`test` instance with a test key — see
 [Testing & Sandbox](/testing).
+</Warning>
 
 ## Generate a key
 
 1. Go to **Settings → API Keys** in your dashboard
-2. Click **Create API Key**
+2. Click **Create API Key** and choose **Test** or **Live**
 3. Copy and store it securely — the full key is shown only once
+
+Or via the API — the mode defaults to `test`:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/developer/keys \
+  -H "Authorization: Bearer $RECURSO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "Server key", "mode": "live" }'
+```
 
 ## Usage
 
@@ -70,8 +89,8 @@ Create keys with limited permissions via the dashboard or API.
   <Card title="Rotate Regularly" icon="arrows-rotate">
     Rotate keys periodically and after breaches
   </Card>
-  <Card title="Test Safely" icon="flask">
-    Develop against an instance in `none`/`test` [gateway mode](/testing)
+  <Card title="Use Test Keys in Dev" icon="flask">
+    Develop with an `rsk_test_` key against a `none`/`test` [server](/testing)
   </Card>
   <Card title="Restrict Permissions" icon="lock">
     Use scoped keys with minimal permissions (coming soon)

@@ -46,7 +46,7 @@ npm link          # or: npm pack and install the tarball in your project
 import { Recurso } from 'recurso-node';
 
 const recurso = new Recurso(
-  'sk_live_your_api_key',
+  'rsk_test_your_api_key',
   'http://localhost:8080'   // your API base URL
 );
 ```
@@ -241,7 +241,7 @@ from recurso.models import (
 
 client = AuthenticatedClient(
     base_url="https://billing.example.com",
-    token="sk_live_your_api_key",   # sent as: Authorization: Bearer <token>
+    token="rsk_test_your_api_key",   # sent as: Authorization: Bearer <token>
 )
 
 with client:
@@ -307,7 +307,7 @@ import (
 func main() {
 	ctx := context.Background()
 	client := recurso.NewClient(
-		"sk_live_your_api_key",
+		"rsk_test_your_api_key",
 		recurso.WithBaseURL("https://billing.example.com/v1"), // default: https://api.recurso.dev/v1
 	)
 
