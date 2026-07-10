@@ -1,19 +1,35 @@
 ---
-title: "Node.js SDK"
-description: "Typed Node.js client covering the core Recurso API"
+title: "SDKs"
+description: "Official Node.js, Python, and Go clients for the Recurso API"
 ---
 
-The official Node.js SDK (`recurso-node`) wraps the REST API with a typed,
-resource-oriented client: 17 resources and 67 methods covering plans,
-customers, the full subscription lifecycle, invoices, the usage platform
-(recording, windowed queries, and per-period reports), quotes, entitlements,
-webhooks (including delivery tracking and redelivery), analytics, and more.
+Recurso ships three official SDKs — **Node.js**, **Python**, and **Go** — each a
+typed, resource-oriented client over the REST API covering the full surface:
+plans, customers, the subscription lifecycle, invoices, the usage platform
+(recording, windowed queries, per-period reports), quotes, entitlements,
+webhooks (with delivery tracking and redelivery), analytics, and more.
+
+| Language | Package | Install |
+| --- | --- | --- |
+| Node.js / TypeScript | `recurso-node` | from `sdk/node` (see below) |
+| Python 3.11+ | `recurso` | `pip install ./sdk/python` |
+| Go 1.22+ | `github.com/swapnull-in/recurso-go` | `go get github.com/swapnull-in/recurso-go` |
 
 <Info>
-The SDK lives in the main repository under
-[`sdk/node`](https://github.com/swapnull-in/recur-so/tree/main/sdk/node). It is
-not yet published to npm — install it from the repo for now.
+The Node and Python packages aren't published to npm / PyPI yet — install them
+from the [main repository](https://github.com/swapnull-in/recur-so/tree/main/sdk)
+for now. The Go module is `go get`-able directly from its import path.
 </Info>
+
+All three authenticate the same way — your API key is sent as a bearer token
+(`Authorization: Bearer <key>`) — and mirror the same resources and method names.
+The worked examples in **Node.js** below are the fullest reference; the
+[Python](#python) and [Go](#go) quickstarts follow at the end.
+
+## Node.js
+
+The Node SDK (`recurso-node`) is the fullest reference — 17 resources and 67
+methods. Install it from the repo:
 
 ## Installation
 
@@ -30,7 +46,7 @@ npm link          # or: npm pack and install the tarball in your project
 import { Recurso } from 'recurso-node';
 
 const recurso = new Recurso(
-  'rsk_live_your_api_key',
+  'sk_live_your_api_key',
   'http://localhost:8080'   // your API base URL
 );
 ```
@@ -198,8 +214,148 @@ const invoices = await recurso.invoices.list({ status: 'paid' });
 const url = recurso.invoices.pdfUrl(invoices.data[0].id);
 ```
 
+## Python
+
+The Python SDK (`recurso`) is generated from the OpenAPI 3.1 spec, so it tracks
+the REST surface exactly, with typed request/response models and both **sync and
+async** call styles. Requires Python 3.11+.
+
+```bash
+pip install ./sdk/python          # from the repo root
+# or, editable, for development:
+pip install -e ./sdk/python
+```
+
+```python
+from recurso import AuthenticatedClient
+from recurso.api.plans import create_plan
+from recurso.api.customers import create_customer
+from recurso.api.subscriptions import create_subscription
+from recurso.api.entitlements import check_entitlement
+from recurso.models import (
+    CreatePlanRequest,
+    CreatePlanRequestIntervalUnit,
+    CreateCustomerRequest,
+    CreateSubscriptionRequest,
+)
+
+client = AuthenticatedClient(
+    base_url="https://billing.example.com",
+    token="sk_live_your_api_key",   # sent as: Authorization: Bearer <token>
+)
+
+with client:
+    plan = create_plan.sync(
+        client=client,
+        body=CreatePlanRequest(
+            name="Pro Plan",
+            code="PRO-USD",
+            amount=2900,  # minor units (cents/paise)
+            currency="USD",
+            interval_unit=CreatePlanRequestIntervalUnit.MONTH,
+            interval_count=1,
+        ),
+    )
+
+    customer = create_customer.sync(
+        client=client,
+        body=CreateCustomerRequest(
+            name="Jane User",
+            email="jane@example.com",
+            country="US",
+        ),
+    )
+
+    subscription = create_subscription.sync(
+        client=client,
+        body=CreateSubscriptionRequest(customer_id=customer.id, plan_id=plan.id),
+    )
+
+    # Fast single-feature entitlement check (the feature-gating hot path)
+    result = check_entitlement.sync(client=client, customer_id=customer.id, feature="sso")
+```
+
+Every endpoint module exposes four functions: `sync` and `sync_detailed`
+(blocking), and `asyncio` / `asyncio_detailed` (awaitable). Mutating endpoints
+support idempotency via a per-call header:
+
+```python
+client = client.with_headers({"X-Idempotency-Key": "order-1234"})
+```
+
+## Go
+
+The Go SDK (`recurso-go`) is hand-crafted from the same OpenAPI spec — 18
+resources / 68 methods, **standard library only** (no third-party deps).
+Requires Go 1.22+. Monetary amounts are `int64` in the currency's smallest unit.
+
+```bash
+go get github.com/swapnull-in/recurso-go
+```
+
+```go
+package main
+
+import (
+	"context"
+	"errors"
+	"log"
+
+	recurso "github.com/swapnull-in/recurso-go"
+)
+
+func main() {
+	ctx := context.Background()
+	client := recurso.NewClient(
+		"sk_live_your_api_key",
+		recurso.WithBaseURL("https://billing.example.com/v1"), // default: https://api.recurso.dev/v1
+	)
+
+	plan, err := client.Plans.Create(ctx, &recurso.PlanCreateParams{
+		Name:          "Pro Plan",
+		Code:          "PRO-USD",
+		Amount:        2900, // minor units ($29.00)
+		Currency:      "USD",
+		IntervalUnit:  "month",
+		IntervalCount: 1,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	customer, err := client.Customers.Create(ctx, &recurso.CustomerCreateParams{
+		Name:    "Jane User",
+		Email:   "jane@example.com",
+		Country: "US",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sub, err := client.Subscriptions.Create(ctx, &recurso.SubscriptionCreateParams{
+		CustomerID: customer.ID,
+		PlanID:     plan.ID,
+	})
+	if err != nil {
+		// Any non-2xx response decodes to *recurso.APIError.
+		var apiErr *recurso.APIError
+		if errors.As(err, &apiErr) {
+			log.Fatalf("recurso: %s (%s, HTTP %d)", apiErr.Message, apiErr.Code, apiErr.StatusCode)
+		}
+		log.Fatal(err)
+	}
+
+	log.Printf("created subscription %s (%s)", sub.ID, sub.Status)
+}
+```
+
+Every method takes a `context.Context` first and returns `(T, error)`;
+non-2xx responses come back as `*recurso.APIError` carrying the standard
+`{"error": {"code", "message"}}` envelope and the HTTP status.
+
 ## Other languages
 
-Only Node.js has an official SDK today. For other languages, call the
-[REST API](/api-reference/introduction) directly — every endpoint is
-documented with `curl` examples.
+Node.js, Python, and Go are the official SDKs. For any other language, call the
+[REST API](/api-reference/introduction) directly — every endpoint is documented
+with `curl` examples, and all three SDKs are generated from the same
+[OpenAPI 3.1 spec](/api-reference/introduction) you can point your own generator at.
