@@ -1,0 +1,29 @@
+---
+title: "Start Card Update"
+openapi: "POST /portal/api/payment-method/setup-intent"
+description: "Create a Stripe SetupIntent for the logged-in portal customer"
+---
+
+<Note>
+Requires a portal session (`X-Portal-Session` header from magic-link login).
+</Note>
+
+Creates a Stripe SetupIntent and returns the `client_secret` the Payment Element confirms in the browser. Card data goes **browser → Stripe directly** — no PAN ever reaches Recurso (PCI SAQ-A preserved). After `stripe.confirmSetup`, finalize with [`POST /portal/api/payment-method/confirm`](/api-reference/portal/payment-method-confirm).
+
+On deployments without Stripe configured this returns `503`; UPI-mandate customers should use [mandate re-authorization](/api-reference/portal/payment-method-mandate) instead.
+
+## Example
+
+```bash
+curl -X POST https://api.recurso.dev/portal/api/payment-method/setup-intent \
+  -H "X-Portal-Session: <session token>"
+```
+
+```json
+{
+  "data": {
+    "client_secret": "seti_1Tra..._secret_...",
+    "publishable_key": "pk_live_..."
+  }
+}
+```

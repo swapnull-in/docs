@@ -1,40 +1,42 @@
 ---
-title: "Checkout Success"
+title: "Verify Checkout Payment"
 openapi: "GET /checkout/{id}/success"
-description: "Display the checkout success confirmation page"
+description: "Verify a Stripe payment server-side and report settlement status"
 ---
 
 <Note>
-This is a public endpoint called automatically after the payment gateway confirms a successful payment. You do not need to call this endpoint directly.
+Public endpoint called by the hosted checkout after `stripe.confirmPayment` — and hit automatically on redirect-method returns, since Stripe appends `?payment_intent=` to the return URL.
 </Note>
 
-## Path Parameters
+This endpoint **never settles on trust**. With `payment_intent` present it verifies, directly with Stripe, that the intent succeeded **and** that its metadata `invoice_id` matches this invoice — so a succeeded intent for one invoice can never be replayed to pay another. Only then is the invoice marked paid through the ledger path (idempotent with the payment webhook).
+
+## Query Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `id` | string | The invoice ID |
+| `payment_intent` | string | Stripe PaymentIntent id (`pi_*`) to verify. Omit to just read the invoice's current status. |
 
-## Example Request
+## Response statuses
+
+| `status` | Meaning |
+|----------|---------|
+| `paid` | Verified and settled (or already settled by the webhook). |
+| `processing` | Genuinely in flight — e.g. ACH/SEPA settling over days, or a pending `requires_action`. The webhook settles it later. |
+| `failed` | The attempt was declined or abandoned (`requires_payment_method` / `canceled`). The customer should retry. |
+| `open` / `past_due` | No verifiable payment supplied; current invoice status reported unchanged. |
+
+## Example
 
 ```bash
-curl https://api.recurso.dev/checkout/inv_001/success
+curl "https://api.recurso.dev/checkout/9b2f6c1e-.../success?payment_intent=pi_3TrZw5..."
 ```
 
-## Response
-
-Returns an HTML page confirming that the payment was completed successfully. The page displays a receipt summary with the invoice amount and payment details.
-
+```json
+{
+  "data": {
+    "status": "paid",
+    "invoice_id": "9b2f6c1e-...",
+    "invoice_number": "INV-..."
+  }
+}
 ```
-HTTP/1.1 200 OK
-Content-Type: text/html; charset=utf-8
-
-<!DOCTYPE html>
-<html>
-  <!-- Recurso payment success confirmation -->
-  ...
-</html>
-```
-
-<Tip>
-You can customize the success page appearance and redirect URL from the Recurso dashboard under **Settings > Checkout**.
-</Tip>

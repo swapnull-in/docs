@@ -1,47 +1,68 @@
 ---
 title: "Initiate Checkout Payment"
 openapi: "POST /checkout/{id}/pay"
-description: "Initiate payment for a checkout session"
+description: "Create a gateway payment order for an unpaid invoice"
 ---
 
 <Note>
-This is a public endpoint. No authentication is required.
+This is a public, rate-limited endpoint used by the hosted checkout page. No authentication is required.
 </Note>
+
+Creates a payment order on the currency-routed gateway. The response tells the client which flow to drive:
+
+- **`gateway: "stripe"`** — mount the Stripe Payment Element with `client_secret` and `publishable_key`, confirm client-side, then verify via [`GET /checkout/{id}/success`](/api-reference/checkout/success).
+- **`gateway: "razorpay"`** — open the Razorpay Checkout.js modal with `order_id` and `razorpay_key_id`, then verify via [`POST /checkout/{id}/razorpay/verify`](/api-reference/checkout/razorpay-verify).
+
+Settlement is never client-trusted: both verify endpoints confirm the payment with the gateway and bind it to this invoice before marking anything paid, and the gateway webhooks remain the authoritative backstop.
 
 ## Path Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `id` | string | The invoice ID |
-
-## Request Body
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `payment_method` | string | No | Preferred payment method (e.g. `upi`, `card`, `netbanking`) |
+| `id` | string (UUID) | The invoice ID |
 
 ## Example Request
 
 ```bash
-curl -X POST https://api.recurso.dev/checkout/inv_001/pay \
-  -H "Content-Type: application/json" \
-  -d '{
-    "payment_method": "upi"
-  }'
+curl -X POST https://api.recurso.dev/checkout/9b2f6c1e-.../pay
 ```
 
-## Response
+## Response (Stripe-routed currency)
 
 ```json
 {
-  "order_id": "order_r4z8k1m2n3",
-  "gateway": "razorpay",
-  "amount": 5899,
-  "currency": "INR",
-  "checkout_url": "https://api.razorpay.com/v1/checkout/order_r4z8k1m2n3"
+  "data": {
+    "order_id": "pi_3TrZw5...",
+    "amount": 2900,
+    "currency": "USD",
+    "invoice_id": "9b2f6c1e-...",
+    "invoice_number": "INV-...",
+    "gateway": "stripe",
+    "client_secret": "pi_3TrZw5..._secret_...",
+    "publishable_key": "pk_test_...",
+    "razorpay_key_id": ""
+  }
+}
+```
+
+## Response (INR / Razorpay-routed)
+
+```json
+{
+  "data": {
+    "order_id": "order_TBf3HG...",
+    "amount": 58882,
+    "currency": "INR",
+    "invoice_id": "8b7a9358-...",
+    "invoice_number": "INV-...",
+    "gateway": "razorpay",
+    "client_secret": "",
+    "publishable_key": "",
+    "razorpay_key_id": "rzp_test_..."
+  }
 }
 ```
 
 <Warning>
-If the invoice has already been paid or is in a `void` status, this endpoint returns a `400` error. Always check the invoice status before initiating payment.
+Already-paid invoices return `400`. A `503` means the deployment is missing the gateway's browser-side key (`STRIPE_PUBLISHABLE_KEY` or `RAZORPAY_KEY_ID`) — fix the configuration rather than retrying.
 </Warning>

@@ -126,6 +126,7 @@
             "pages": [
               "going-to-production",
               "performance",
+              "telemetry",
               "pricing"
             ],
             "icon": "server"
@@ -240,7 +241,8 @@
                 "pages": [
                   "api-reference/checkout/show",
                   "api-reference/checkout/pay",
-                  "api-reference/checkout/success"
+                  "api-reference/checkout/success",
+                  "api-reference/checkout/razorpay-verify"
                 ]
               },
               {
@@ -527,6 +529,9 @@
                   "api-reference/portal/auth-request",
                   "api-reference/portal/auth-verify",
                   "api-reference/portal/profile",
+                  "api-reference/portal/payment-method-setup-intent",
+                  "api-reference/portal/payment-method-confirm",
+                  "api-reference/portal/payment-method-mandate",
                   "api-reference/portal/invoices",
                   "api-reference/portal/redeem",
                   "api-reference/portal/logout",

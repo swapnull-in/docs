@@ -1,0 +1,46 @@
+---
+title: "Verify Razorpay Payment"
+openapi: "POST /checkout/{id}/razorpay/verify"
+description: "Verify a Razorpay checkout payment and settle the invoice"
+---
+
+<Note>
+Public endpoint called by the hosted checkout's Razorpay success handler with the fields Checkout.js returns.
+</Note>
+
+Verification is two-step and never client-trusted:
+
+1. **Signature** — the HMAC-SHA256 of `order_id|payment_id` is checked against the key secret, proving a genuine Razorpay payment.
+2. **Binding** — the order is fetched from Razorpay and its `notes.invoice_id` must match this invoice, so a genuine payment for a different invoice can't be replayed here.
+
+Settlement then goes through the same idempotent ledger path as the `payment.captured` webhook (the authoritative backstop) — replays report `paid` without double-posting.
+
+## Request Body
+
+| Parameter | Type | Required |
+|-----------|------|----------|
+| `razorpay_order_id` | string | Yes |
+| `razorpay_payment_id` | string | Yes |
+| `razorpay_signature` | string | Yes |
+
+## Example
+
+```bash
+curl -X POST https://api.recurso.dev/checkout/8b7a9358-.../razorpay/verify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "razorpay_order_id": "order_TBf3HG...",
+    "razorpay_payment_id": "pay_TBf4Jk...",
+    "razorpay_signature": "9c1f..."
+  }'
+```
+
+```json
+{
+  "data": {
+    "status": "paid",
+    "invoice_id": "8b7a9358-...",
+    "invoice_number": "INV-..."
+  }
+}
+```

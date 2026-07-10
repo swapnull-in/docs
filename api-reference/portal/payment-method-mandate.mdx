@@ -1,0 +1,39 @@
+---
+title: "Re-authorize UPI Autopay"
+openapi: "POST /portal/api/payment-method/mandate"
+description: "Create a fresh UPI mandate and return Razorpay's hosted authorization URL"
+---
+
+<Note>
+Requires a portal session. Available only on deployments with real Razorpay keys (`503` otherwise).
+</Note>
+
+Creates a fresh UPI Autopay mandate for the authenticated customer and returns Razorpay's hosted authorization page (`auth_url`) — redirect the customer there to approve. The mandate cap is sized automatically at **2× the largest recent non-void invoice**, and activation happens only when Razorpay confirms the token via the `token.confirmed` webhook; nothing is trusted from the browser.
+
+<Warning>
+Razorpay requires a **contact number** on recurring registration links. A customer without a phone on file gets a `422` with an actionable message — add a phone to the customer record first.
+</Warning>
+
+## Request Body (optional)
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `vpa` | string | Optional UPI id. When omitted, Razorpay's hosted page collects it. |
+
+## Example
+
+```bash
+curl -X POST https://api.recurso.dev/portal/api/payment-method/mandate \
+  -H "X-Portal-Session: <session token>" \
+  -H "Content-Type: application/json" -d '{}'
+```
+
+```json
+{
+  "data": {
+    "auth_url": "https://rzp.io/rzp/Xo5MA3JR",
+    "mandate_id": "b17ad1d5-...",
+    "status": "created"
+  }
+}
+```

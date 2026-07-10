@@ -16,7 +16,7 @@ info:
     name: MIT
     identifier: MIT
 servers:
-  - url: https://api.recurso.dev
+  - url: https://billing.example.com
     description: Example deployment — substitute the base URL of your own Recurso deployment.
 
 security:
@@ -156,8 +156,12 @@ paths:
     post:
       operationId: registerTenant
       tags: [Auth]
-      summary: Register a tenant (signup)
-      description: Creates a tenant and returns its first API key. The key is shown only once.
+      summary: Register a tenant + owner user (signup)
+      description: >
+        Creates a tenant, its first user (role owner), and opens a login
+        session (sets the httpOnly `recurso_session` cookie). The tenant's first
+        API key is still returned in the body so CLI/dev flows keep a key; it is
+        shown only once.
       security: []
       requestBody:
         required: true
@@ -165,16 +169,24 @@ paths:
           application/json:
             schema:
               type: object
-              required: [name, email]
+              required: [company_name, name, email, password]
               properties:
+                company_name:
+                  type: string
+                  description: The tenant / company name.
                 name:
                   type: string
+                  description: The owner user's display name.
                 email:
                   type: string
                   format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
       responses:
         '201':
-          description: Tenant registered.
+          description: Tenant, owner user, and session created. Sets recurso_session cookie.
           content:
             application/json:
               schema:
@@ -185,8 +197,247 @@ paths:
                   api_key:
                     type: string
                     description: The raw API key. Store it securely — it is not retrievable later.
+                  user:
+                    $ref: '#/components/schemas/User'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [Auth]
+      summary: Log in (dashboard user)
+      description: >
+        Verifies email + password and opens a session (sets the httpOnly
+        `recurso_session` cookie). Errors are deliberately generic ("invalid
+        credentials") for both unknown email and wrong password — no user
+        enumeration.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Authenticated. Sets recurso_session cookie.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  tenant:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [Auth]
+      summary: Log out
+      description: Deletes the current session and clears the recurso_session cookie.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Logged out (idempotent). Clears recurso_session cookie.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [Auth]
+      summary: Current user + tenant
+      description: Returns the authenticated dashboard user and tenant, resolved from the recurso_session cookie.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: The current user and tenant.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  tenant:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/users:
+    get:
+      operationId: listUsers
+      tags: [Team]
+      summary: List team members
+      description: Lists all dashboard users in the caller's tenant. Any authenticated member may read.
+      responses:
+        '200':
+          description: Users in the tenant.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createUser
+      tags: [Team]
+      summary: Add a team member
+      description: Creates a teammate. Requires the caller to be owner or admin (or a tenant API key).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, name, role, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                name:
+                  type: string
+                role:
+                  type: string
+                  enum: [owner, admin, member]
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+      responses:
+        '201':
+          description: Teammate created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /v1/users/{id}:
+    patch:
+      operationId: updateUserRole
+      tags: [Team]
+      summary: Change a team member's role
+      description: Updates a teammate's role. Owner/admin only. The last owner cannot be demoted.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [owner, admin, member]
+      responses:
+        '200':
+          description: Updated user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      operationId: deleteUser
+      tags: [Team]
+      summary: Remove a team member
+      description: Removes a teammate. Owner/admin only. Cannot remove the last owner or your own account.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User removed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /v1/plans:
     post:
@@ -415,6 +666,39 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /v1/subscriptions/{id}/preview-change:
+    get:
+      operationId: previewPlanChange
+      tags: [Subscriptions]
+      summary: Preview proration for a plan change (nothing is applied)
+      description: >-
+        Computes the credit for unused time on the current plan, the prorated
+        charge for the new plan, the net amount, tax, effective date, and the
+        resulting next-invoice amount — using the same proration math as
+        PUT /v1/subscriptions/{id}. Nothing is charged or persisted.
+      parameters:
+        - $ref: '#/components/parameters/PathID'
+        - name: plan_id
+          in: query
+          required: true
+          description: The plan to preview switching to.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Proration breakdown.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanChangePreview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /v1/subscriptions/{id}/cancel:
     post:
       operationId: cancelSubscription
@@ -536,6 +820,11 @@ paths:
                   type: string
                 description:
                   type: string
+                hsn_code:
+                  type: string
+                  description: >-
+                    Optional HSN/SAC code the charge is taxed at on the invoice.
+                    Empty falls back to the tenant SAC.
       responses:
         '201':
           description: Charge recorded.
@@ -601,6 +890,97 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /v1/subscriptions/{id}/addons:
+    post:
+      operationId: addSubscriptionAddon
+      tags: [Subscriptions]
+      summary: Attach an add-on plan to a subscription
+      description: >
+        Attaches an existing plan to the subscription as a priced add-on with a
+        quantity. The subscription's base plan is unchanged; the add-on is billed
+        as an extra line (add-on plan price × quantity, taxed independently)
+        starting from the NEXT recurring invoice. The add-on plan's currency must
+        match the subscription's base-plan currency. Mid-cycle proration is not
+        applied in v1.
+      parameters:
+        - $ref: '#/components/parameters/PathID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [plan_id, quantity]
+              properties:
+                plan_id:
+                  type: string
+                  format: uuid
+                  description: The plan to attach as an add-on.
+                quantity:
+                  type: integer
+                  minimum: 1
+      responses:
+        '201':
+          description: Add-on attached.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionAddon'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    get:
+      operationId: listSubscriptionAddons
+      tags: [Subscriptions]
+      summary: List a subscription's add-ons
+      parameters:
+        - $ref: '#/components/parameters/PathID'
+      responses:
+        '200':
+          description: Add-ons attached to the subscription.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SubscriptionAddon'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/subscriptions/{id}/addons/{addonId}:
+    delete:
+      operationId: removeSubscriptionAddon
+      tags: [Subscriptions]
+      summary: Detach an add-on from a subscription
+      description: >
+        Removes the add-on from the subscription. The change takes effect from
+        the next recurring invoice.
+      parameters:
+        - $ref: '#/components/parameters/PathID'
+        - name: addonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Add-on removed.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /v1/invoices:
     get:
       operationId: listInvoices
@@ -626,8 +1006,11 @@ paths:
       operationId: downloadInvoicePDF
       tags: [Invoices]
       summary: Download a printable invoice
-      description: Returns a print-ready HTML rendering of the invoice (public, rate-limited).
-      security: []
+      description: >
+        Returns a print-ready HTML rendering of the invoice, tenant-scoped.
+        Requires authentication (API key or dashboard session): the document
+        carries the buyer's legal name, address, and GSTIN, so it is never
+        publicly fetchable by UUID.
       parameters:
         - $ref: '#/components/parameters/PathID'
       responses:
@@ -639,6 +1022,10 @@ paths:
                 type: string
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /v1/invoices/{id}/einvoice:
     get:
@@ -1390,7 +1777,13 @@ paths:
       operationId: initiateCheckoutPayment
       tags: [Checkout]
       summary: Initiate payment for an invoice
-      description: Creates a payment order on the configured gateway for an unpaid invoice.
+      description: >
+        Creates a payment order on the currency-routed gateway for an unpaid
+        invoice. The response tells the frontend which flow to drive: `stripe`
+        returns a PaymentIntent `client_secret` + `publishable_key` for the
+        Payment Element; `razorpay` returns the order id + `razorpay_key_id`
+        for the Checkout.js modal. Settlement is always verified server-side —
+        see `/checkout/{id}/success` and `/checkout/{id}/razorpay/verify`.
       security: []
       parameters:
         - $ref: '#/components/parameters/PathID'
@@ -1407,6 +1800,7 @@ paths:
                     properties:
                       order_id:
                         type: string
+                        description: Gateway order/intent id (Stripe `pi_*`, Razorpay `order_*`).
                       amount:
                         type: integer
                         format: int64
@@ -1418,23 +1812,111 @@ paths:
                         format: uuid
                       invoice_number:
                         type: string
+                      gateway:
+                        type: string
+                        enum: [stripe, razorpay, mock, other]
+                        description: Which client-side flow to use.
+                      client_secret:
+                        type: string
+                        description: Stripe PaymentIntent client secret (empty for non-Stripe gateways).
+                      publishable_key:
+                        type: string
+                        description: Stripe publishable key for mounting the Payment Element.
+                      razorpay_key_id:
+                        type: string
+                        description: Razorpay public key id for Checkout.js.
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '503':
+          description: Checkout is not fully configured (e.g. the gateway's browser-side key is missing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /checkout/{id}/success:
     get:
       operationId: checkoutSuccess
       tags: [Checkout]
-      summary: Confirm checkout success
-      description: Marks the invoice as paid (demo flow) and returns a confirmation payload.
+      summary: Verify a checkout payment and report settlement status
+      description: >
+        Never settles on trust. When `payment_intent` is provided, the intent
+        is verified directly with Stripe — it must have succeeded AND carry
+        this invoice's id in its metadata — before the invoice is marked paid
+        through the ledger path (idempotent with the payment webhook, which
+        remains the authoritative backstop). A declined or abandoned intent
+        reports `failed`; asynchronous methods (ACH, SEPA) report `processing`
+        until the webhook settles them. Without `payment_intent`, the current
+        invoice status is reported unchanged.
       security: []
       parameters:
         - $ref: '#/components/parameters/PathID'
+        - name: payment_intent
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Stripe PaymentIntent id (`pi_*`) to verify — also appended automatically by Stripe on redirect-method returns.
       responses:
         '200':
-          description: Invoice confirmed paid.
+          description: Settlement status for this invoice.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        enum: [paid, processing, failed, open, past_due]
+                      payment_status:
+                        type: string
+                        description: Raw gateway intent status (present when a payment_intent was inspected).
+                      invoice_id:
+                        type: string
+                        format: uuid
+                      invoice_number:
+                        type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /checkout/{id}/razorpay/verify:
+    post:
+      operationId: checkoutRazorpayVerify
+      tags: [Checkout]
+      summary: Verify a Razorpay checkout payment and settle the invoice
+      description: >
+        Called by the hosted checkout after the Razorpay modal reports success.
+        Verifies the HMAC signature, fetches the order from Razorpay and
+        confirms its `notes.invoice_id` matches this invoice, then settles
+        through the idempotent ledger path. The `payment.captured` webhook
+        remains the authoritative backstop.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/PathID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [razorpay_order_id, razorpay_payment_id, razorpay_signature]
+              properties:
+                razorpay_order_id:
+                  type: string
+                razorpay_payment_id:
+                  type: string
+                razorpay_signature:
+                  type: string
+      responses:
+        '200':
+          description: Invoice settled (idempotent — already-paid invoices report paid).
           content:
             application/json:
               schema:
@@ -1455,6 +1937,12 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '503':
+          description: Razorpay checkout isn't available on this deployment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /payments/order:
     post:
@@ -1580,8 +2068,7 @@ paths:
       operationId: previewInvoiceHTML
       tags: [Invoices]
       summary: Preview an invoice as HTML
-      description: Returns the same print-ready HTML rendering as the PDF endpoint (public, rate-limited).
-      security: []
+      description: Returns the same tenant-scoped, authenticated rendering as the PDF endpoint.
       parameters:
         - $ref: '#/components/parameters/PathID'
       responses:
@@ -1593,6 +2080,10 @@ paths:
                 type: string
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /portal/{customer_id}:
     get:
@@ -1833,6 +2324,361 @@ paths:
                 properties:
                   message:
                     type: string
+
+  /portal/api/payment-method:
+    put:
+      operationId: portalUpdatePaymentMethod
+      tags: [Customer Portal]
+      summary: Update the logged-in customer's payment method
+      description: >
+        Updates the vaulted payment method for the authenticated portal
+        customer. The card metadata (brand/last4/expiry) is produced by the
+        client-side gateway tokenization step — no raw PAN is ever accepted.
+        The customer is resolved from the portal session; it can never be
+        supplied in the body.
+      security:
+        - portalSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [card_brand, card_last4, card_exp_month, card_exp_year]
+              properties:
+                card_brand:
+                  type: string
+                  example: visa
+                card_last4:
+                  type: string
+                  minLength: 4
+                  maxLength: 4
+                  example: '4242'
+                card_exp_month:
+                  type: integer
+                  minimum: 1
+                  maximum: 12
+                card_exp_year:
+                  type: integer
+                  minimum: 2020
+      responses:
+        '200':
+          description: Payment method updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /portal/api/payment-method/setup-intent:
+    post:
+      operationId: portalStartPaymentMethodSetup
+      tags: [Customer Portal]
+      summary: Start a card update (Stripe SetupIntent)
+      description: >
+        Creates a Stripe SetupIntent for the authenticated portal customer and
+        returns the client secret the Payment Element confirms. Card data goes
+        browser→Stripe directly — no PAN ever reaches Recurso (PCI SAQ-A).
+        Reports 503 on deployments without Stripe.
+      security:
+        - portalSession: []
+      responses:
+        '200':
+          description: SetupIntent created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      client_secret:
+                        type: string
+                      publishable_key:
+                        type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: Self-serve card update isn't available on this deployment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /portal/api/payment-method/confirm:
+    post:
+      operationId: portalConfirmPaymentMethod
+      tags: [Customer Portal]
+      summary: Finalize a confirmed SetupIntent
+      description: >
+        Verifies the SetupIntent succeeded and that its metadata customer_id
+        matches the authenticated portal customer, then records the saved card
+        as the customer's default payment method. Called after
+        `stripe.confirmSetup` — inline on success, or from the
+        `?setup_intent=` return param after a 3DS/bank redirect.
+      security:
+        - portalSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [setup_intent_id]
+              properties:
+                setup_intent_id:
+                  type: string
+      responses:
+        '200':
+          description: Saved (status `saved` with card metadata) or still `processing`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        enum: [saved, processing]
+                      card:
+                        type: object
+                        properties:
+                          brand:
+                            type: string
+                          last4:
+                            type: string
+                          exp_month:
+                            type: integer
+                          exp_year:
+                            type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: Self-serve card update isn't available on this deployment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /portal/api/payment-method/mandate:
+    post:
+      operationId: portalStartMandateReauth
+      tags: [Customer Portal]
+      summary: Re-authorize a UPI Autopay mandate
+      description: >
+        Creates a fresh UPI mandate for the authenticated portal customer and
+        returns Razorpay's hosted authorization URL. The cap is sized from the
+        customer's billing history (2× the largest recent non-void invoice);
+        activation happens only when Razorpay confirms the token via the
+        `token.confirmed` webhook. Requires a phone number on the customer
+        (Razorpay rejects recurring registration links without one) and real
+        Razorpay keys on the deployment.
+      security:
+        - portalSession: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                vpa:
+                  type: string
+                  description: Optional UPI id — Razorpay's hosted page collects it when omitted.
+      responses:
+        '200':
+          description: Mandate created; redirect the customer to auth_url.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      auth_url:
+                        type: string
+                        format: uri
+                      mandate_id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        example: created
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: No billing history to size a mandate against.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: The customer has no phone number (required for UPI Autopay).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Mandate re-authorization isn't available on this deployment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /portal/api/disputes:
+    get:
+      operationId: getPortalDisputes
+      tags: [Customer Portal]
+      summary: List the logged-in customer's invoice disputes
+      security:
+        - portalSession: []
+      responses:
+        '200':
+          description: The customer's disputes.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InvoiceDispute'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /portal/api/invoices/{id}/dispute:
+    post:
+      operationId: portalRaiseDispute
+      tags: [Customer Portal]
+      summary: Raise a dispute/query on one of the customer's own invoices
+      description: >
+        Opens a dispute on the given invoice. The invoice must belong to the
+        authenticated portal customer, otherwise a 404 is returned (existence is
+        not leaked). At most one open dispute exists per invoice: re-raising
+        updates the reason of the existing open dispute.
+      security:
+        - portalSession: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Invoice ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  example: I was charged twice for this invoice.
+      responses:
+        '200':
+          description: The open dispute.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/InvoiceDispute'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/disputes:
+    get:
+      operationId: listDisputes
+      tags: [Disputes]
+      summary: List invoice disputes (tenant-scoped)
+      description: >
+        Lists disputes for the authenticated tenant. There is no admin dashboard
+        UI for disputes yet; this API is the current surface.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [open, resolved]
+          description: Filter by dispute status.
+      responses:
+        '200':
+          description: The tenant's disputes.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InvoiceDispute'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/disputes/{id}/resolve:
+    post:
+      operationId: resolveDispute
+      tags: [Disputes]
+      summary: Resolve an open dispute (tenant-scoped)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Dispute ID.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+                  description: Optional admin resolution note.
+      responses:
+        '200':
+          description: Dispute resolved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: resolved
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /v1/analytics/usage:
     get:
@@ -2240,6 +3086,60 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /v1/settings/tax/nexus:
+    get:
+      operationId: getTaxNexus
+      tags: [Settings]
+      summary: List US sales-tax nexus states
+      description: Returns the US states the tenant has declared sales-tax nexus in. Once any state is declared, US sales tax is collected only in those states.
+      responses:
+        '200':
+          description: Declared nexus states.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/TaxNexus' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      operationId: setTaxNexus
+      tags: [Settings]
+      summary: Set US sales-tax nexus states
+      description: Replaces the tenant's entire nexus set. Owner/admin only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                states:
+                  type: array
+                  items:
+                    type: object
+                    required: [state_code]
+                    properties:
+                      state_code: { type: string, example: "CA" }
+                      nexus_type: { type: string, enum: [physical, voluntary, economic], default: physical }
+      responses:
+        '200':
+          description: Updated nexus states.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/TaxNexus' }
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/settings/irp:
     get:
       operationId: getIRPConfig
@@ -4147,6 +5047,456 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  # --- Phase 2 auth: password reset, TOTP MFA, session management ---
+
+  /auth/login/mfa:
+    post:
+      operationId: loginMFA
+      tags: [Auth]
+      summary: Complete a two-step (MFA) login
+      description: >
+        Second step of login for MFA-enabled users. Exchanges the short-lived
+        single-use `mfa_token` returned by `/auth/login` (plus a TOTP code or an
+        unused backup code) for a session (sets the httpOnly `recurso_session`
+        cookie). The mfa_token and any backup code used are consumed. Errors are
+        deliberately generic.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mfa_token, code]
+              properties:
+                mfa_token:
+                  type: string
+                  description: The single-use challenge token from /auth/login.
+                code:
+                  type: string
+                  description: A current TOTP code or an unused backup code.
+      responses:
+        '200':
+          description: Authenticated. Sets recurso_session cookie.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  tenant:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      name: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [Auth]
+      summary: Request a password reset link
+      description: >
+        Always returns 200 with a generic message, whether or not the account
+        exists (no enumeration). If the account exists, a single-use reset token
+        is created and a reset link emailed to the user.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Generic acknowledgement (sent regardless of account existence).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [Auth]
+      summary: Reset a password with a token
+      description: >
+        Consumes a valid (unused, unexpired) reset token, sets the new bcrypt
+        password, and revokes ALL of that user's sessions (forces re-login
+        everywhere). Invalid/expired/used tokens return a generic 400.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token: { type: string }
+                password: { type: string, format: password, minLength: 8 }
+      responses:
+        '200':
+          description: Password reset; all sessions revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /v1/auth/mfa/setup:
+    post:
+      operationId: mfaSetup
+      tags: [Auth]
+      summary: Begin TOTP MFA setup
+      description: >
+        Generates a TOTP secret for the logged-in user and returns the
+        otpauth:// URI (for QR display) plus the raw secret (for manual entry).
+        MFA is NOT enabled until a code is confirmed via /v1/auth/mfa/verify.
+        Requires a logged-in user session (API-key callers are rejected).
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Provisioning data for the authenticator app.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  secret: { type: string }
+                  otpauth_url: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /v1/auth/mfa/verify:
+    post:
+      operationId: mfaVerify
+      tags: [Auth]
+      summary: Confirm and enable TOTP MFA
+      description: >
+        Validates a TOTP code against the pending secret, enables MFA, and
+        returns a fresh set of one-time backup codes. The backup codes are shown
+        exactly once — only their hashes are stored.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string }
+      responses:
+        '200':
+          description: MFA enabled; one-time backup codes returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mfa_enabled: { type: boolean }
+                  backup_codes:
+                    type: array
+                    items: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /v1/auth/mfa/disable:
+    post:
+      operationId: mfaDisable
+      tags: [Auth]
+      summary: Disable TOTP MFA
+      description: >
+        Verifies a TOTP or unused backup code, then disables MFA and wipes the
+        stored secret and all backup codes.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string }
+      responses:
+        '200':
+          description: MFA disabled.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mfa_enabled: { type: boolean }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /v1/auth/sessions:
+    get:
+      operationId: listSessions
+      tags: [Auth]
+      summary: List active sessions
+      description: >
+        Lists the logged-in user's unexpired sessions, flagging the request's own
+        session with `current: true`. Requires a logged-in user session.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: The user's active sessions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string, format: uuid }
+                        user_agent: { type: string }
+                        created_at: { type: string, format: date-time }
+                        expires_at: { type: string, format: date-time }
+                        current: { type: boolean }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      operationId: revokeOtherSessions
+      tags: [Auth]
+      summary: Revoke all other sessions
+      description: >
+        Revokes every session belonging to the user except the current one
+        ("log out everywhere else"). Requires a live session cookie.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Other sessions revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/auth/sessions/{id}:
+    delete:
+      operationId: revokeSession
+      tags: [Auth]
+      summary: Revoke a single session
+      description: >
+        Revokes one of the user's OWN sessions. A session that does not exist or
+        belongs to another user returns 404 (no ownership leak).
+      security:
+        - sessionCookie: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Session revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # --- Phase 3 auth: OAuth social login (Google + GitHub) ---
+  /auth/oauth/providers:
+    get:
+      tags: [Auth]
+      summary: List social-login providers and whether each is enabled
+      description: >
+        Returns every provider this build understands with an `enabled` flag. A
+        provider is enabled only when its client id AND secret env vars are set
+        (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET).
+        The dashboard uses this to show/hide the social buttons.
+      responses:
+        '200':
+          description: Provider list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  providers:
+                    type: array
+                    items: { $ref: '#/components/schemas/OAuthProviderStatus' }
+  /auth/oauth/{provider}/start:
+    get:
+      tags: [Auth]
+      summary: Begin an OAuth login (redirect to the provider)
+      description: >
+        Generates a CSRF `state` and a PKCE verifier, binds them into a
+        short-lived signed httpOnly cookie (`recurso_oauth_state`, scoped to
+        /auth/oauth), and 302-redirects to the provider's authorize URL. Unknown
+        or disabled providers return 404.
+      parameters:
+        - { name: provider, in: path, required: true, schema: { type: string, enum: [google, github] } }
+      responses:
+        '302':
+          description: Redirect to the provider's authorize URL. Sets the state cookie.
+        '404': { $ref: '#/components/responses/NotFound' }
+  /auth/oauth/{provider}/callback:
+    get:
+      tags: [Auth]
+      summary: OAuth callback (provider redirects here)
+      description: >
+        Validates `state` against the cookie (constant-time), exchanges the code
+        with PKCE, fetches userinfo and requires a verified email (Google:
+        email_verified==true; GitHub: a primary verified email). Then
+        find-or-create: (1) an existing identity logs in; (2) a matching verified
+        email links a new identity and logs in; (3) a brand-new email creates a
+        tenant + owner user. On success sets the `recurso_session` cookie and
+        302s to `{DASHBOARD_URL}/`. On failure 302s to
+        `{DASHBOARD_URL}/login?error=oauth` (never an open redirect). A state
+        mismatch returns 403.
+      parameters:
+        - { name: provider, in: path, required: true, schema: { type: string, enum: [google, github] } }
+        - { name: code, in: query, required: false, schema: { type: string } }
+        - { name: state, in: query, required: false, schema: { type: string } }
+      responses:
+        '302':
+          description: Redirect to the dashboard on success, or to the login error page on failure. Sets the session cookie on success.
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # --- Phase 3 auth: SAML SSO (per-tenant admin config + SP endpoints) ---
+  /v1/sso/connection:
+    get:
+      tags: [Auth]
+      summary: Get the caller tenant's SAML SSO connection
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The tenant's SSO connection.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/SSOConnection' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Auth]
+      summary: Create or update the tenant's SAML IdP configuration (owner/admin only)
+      description: >
+        Upserts the tenant's IdP config. Provide either `idp_metadata_xml`, or
+        all of `idp_entity_id` + `idp_sso_url` + `idp_certificate`. Enabling a
+        connection that is not fully configured is rejected. Members get 403.
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SSOConnectionUpsertRequest' }
+      responses:
+        '200':
+          description: The upserted connection.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/SSOConnection' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Auth]
+      summary: Delete the tenant's SAML SSO connection (owner/admin only)
+      security:
+        - sessionCookie: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Connection removed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /auth/saml/{tenantID}/metadata:
+    get:
+      tags: [Auth]
+      summary: SP metadata XML for a tenant
+      description: Returns the Service Provider metadata document (application/samlmetadata+xml). 404 when the tenant has no SSO connection.
+      parameters:
+        - { name: tenantID, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: SP metadata XML.
+          content:
+            application/samlmetadata+xml:
+              schema: { type: string }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /auth/saml/{tenantID}/login:
+    get:
+      tags: [Auth]
+      summary: SP-initiated SAML login (redirect to the IdP)
+      description: 302-redirects to the IdP with a SAML AuthnRequest when the tenant's connection is enabled; 404 otherwise.
+      parameters:
+        - { name: tenantID, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '302':
+          description: Redirect to the IdP.
+        '404': { $ref: '#/components/responses/NotFound' }
+  /auth/saml/{tenantID}/acs:
+    post:
+      tags: [Auth]
+      summary: Assertion Consumer Service (IdP posts the SAMLResponse here)
+      description: >
+        Validates the SAMLResponse against the tenant's IdP certificate, extracts
+        the email, and maps it to an EXISTING user in the tenant (no JIT
+        provisioning). On success sets the `recurso_session` cookie and 302s to
+        the dashboard. Unknown email → 403; disabled/unconfigured tenant → 404;
+        invalid assertion → 401.
+      parameters:
+        - { name: tenantID, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                SAMLResponse: { type: string }
+                RelayState: { type: string }
+      responses:
+        '302':
+          description: Redirect to the dashboard on success. Sets the session cookie.
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -4159,6 +5509,14 @@ components:
       in: cookie
       name: portal_session
       description: Customer-portal session cookie issued by `GET /portal/auth/verify`.
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: recurso_session
+      description: >
+        Dashboard user session cookie (httpOnly) issued by `POST /auth/register`
+        and `POST /auth/login`. v1 endpoints accept EITHER this cookie or the
+        tenant API key (`bearerAuth`).
 
   parameters:
     PathID:
@@ -4215,7 +5573,19 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
     Unauthorized:
-      description: Missing or invalid API key.
+      description: Missing or invalid credentials (API key or session cookie).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Authenticated but not permitted (insufficient role).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: The request conflicts with current state (e.g. duplicate email, last owner).
       content:
         application/json:
           schema:
@@ -4245,6 +5615,45 @@ components:
         kind: { type: string, enum: [boolean, limit] }
         bool_value: { type: boolean }
         limit_value: { type: integer, format: int64 }
+    PlanChangePreview:
+      type: object
+      description: >-
+        Read-only proration breakdown for a subscription plan change. Monetary
+        fields are in the currency's smallest unit (e.g. paise/cents).
+      properties:
+        subscription_id: { type: string, format: uuid }
+        current_plan_id: { type: string, format: uuid }
+        new_plan_id: { type: string, format: uuid }
+        currency: { type: string }
+        credit_amount:
+          type: integer
+          format: int64
+          description: Credit for unused time on the current plan.
+        charge_amount:
+          type: integer
+          format: int64
+          description: Prorated charge for the remaining period on the new plan.
+        net_amount:
+          type: integer
+          format: int64
+          description: charge_amount - credit_amount, before tax.
+        tax_amount:
+          type: integer
+          format: int64
+          description: Tax on a positive net (0 for credits).
+        total_amount:
+          type: integer
+          format: int64
+          description: net_amount + tax_amount; the immediate proration invoice total.
+        effective_date:
+          type: string
+          format: date-time
+        next_invoice_amount:
+          type: integer
+          format: int64
+          description: Full new-plan charge incl. tax at the next renewal.
+        is_upgrade:
+          type: boolean
     Error:
       type: object
       required: [error]
@@ -4330,6 +5739,12 @@ components:
           minLength: 3
           maxLength: 3
           description: ISO 4217 code.
+        hsn_code:
+          type: string
+          description: >-
+            Optional HSN/SAC code for this plan. Each invoice line for the plan
+            is taxed at this code's GST rate. Empty falls back to the tenant SAC
+            (then the 998314 default).
 
     Plan:
       type: object
@@ -4351,6 +5766,9 @@ components:
           type: integer
         active:
           type: boolean
+        hsn_code:
+          type: string
+          description: HSN/SAC code the plan's invoice lines are taxed at (empty = tenant SAC default).
         created_at:
           type: string
           format: date-time
@@ -4635,6 +6053,9 @@ components:
           type: string
         description:
           type: string
+        hsn_code:
+          type: string
+          description: HSN/SAC code the charge is taxed at on the invoice.
         status:
           type: string
           enum: [pending, invoiced, canceled]
@@ -4744,6 +6165,58 @@ components:
           type: integer
         payment_wall_active:
           type: boolean
+        line_items:
+          type: array
+          description: >-
+            Itemized invoice lines. Each line carries its own HSN/SAC code and
+            per-line GST breakdown; line amounts and per-line taxes reconcile
+            exactly to subtotal/tax_amount. Omitted for legacy invoices created
+            before itemization.
+          items:
+            $ref: '#/components/schemas/InvoiceItem'
+
+    InvoiceItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        invoice_id:
+          type: string
+          format: uuid
+        description:
+          type: string
+        hsn_code:
+          type: string
+          description: HSN/SAC code for the line (tenant SAC in Phase 1).
+        quantity:
+          type: integer
+        unit_amount:
+          type: integer
+          format: int64
+          description: Per-unit amount in the invoice's lowest currency unit.
+        amount:
+          type: integer
+          format: int64
+          description: Line total (quantity * unit_amount) in lowest currency unit.
+        tax_rate:
+          type: number
+          description: Effective GST rate for the line as a percent (e.g. 18.0).
+        cgst_amount:
+          type: integer
+          format: int64
+        sgst_amount:
+          type: integer
+          format: int64
+        igst_amount:
+          type: integer
+          format: int64
+        taxable_amount:
+          type: integer
+          format: int64
+        created_at:
+          type: string
+          format: date-time
 
     EInvoiceStatus:
       type: object
@@ -5360,6 +6833,13 @@ components:
         tb_skip_reason:
           type: string
 
+    TaxNexus:
+      type: object
+      properties:
+        state_code: { type: string, example: "CA" }
+        nexus_type: { type: string, enum: [physical, voluntary, economic] }
+        established_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
     GSTConfig:
       type: object
       properties:
@@ -6137,3 +7617,107 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SubscriptionDimensionUsage'
+
+    InvoiceDispute:
+      type: object
+      description: A customer-raised dispute/query against one of their invoices.
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        invoice_id:
+          type: string
+          format: uuid
+        customer_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [open, resolved]
+        note:
+          type: [string, 'null']
+          description: Admin resolution note; null while open.
+        created_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: [string, 'null']
+          format: date-time
+
+    SubscriptionAddon:
+      type: object
+      description: >
+        An existing plan attached to a subscription with a quantity
+        (Multi-product catalog v1). Billed as an extra line — add-on plan price ×
+        quantity, taxed independently — from the subscription's next recurring
+        invoice.
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        subscription_id:
+          type: string
+          format: uuid
+        plan_id:
+          type: string
+          format: uuid
+          description: The plan billed as an add-on.
+        quantity:
+          type: integer
+          description: Number of add-on units billed each period.
+        created_at:
+          type: string
+          format: date-time
+    User:
+      type: object
+      description: A dashboard user account within a tenant.
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          type: string
+          enum: [owner, admin, member]
+      required: [id, email, name, role]
+
+    # --- Phase 3 auth schemas ---
+    OAuthProviderStatus:
+      type: object
+      properties:
+        name: { type: string, enum: [google, github] }
+        enabled: { type: boolean }
+      required: [name, enabled]
+    SSOConnection:
+      type: object
+      properties:
+        tenant_id: { type: string, format: uuid }
+        idp_entity_id: { type: string }
+        idp_sso_url: { type: string }
+        idp_certificate: { type: string, description: Base64/PEM X.509 signing certificate. }
+        idp_metadata_xml: { type: string, description: Optional full IdP metadata; takes precedence over the discrete fields. }
+        enabled: { type: boolean }
+        configured: { type: boolean, description: Whether the connection has enough IdP detail to attempt a login. }
+        sp_metadata_url: { type: string, description: Public SP metadata URL to hand to the IdP. }
+        sp_acs_url: { type: string, description: Public SP Assertion Consumer Service URL. }
+      required: [tenant_id, enabled, configured]
+    SSOConnectionUpsertRequest:
+      type: object
+      properties:
+        idp_entity_id: { type: string }
+        idp_sso_url: { type: string }
+        idp_certificate: { type: string }
+        idp_metadata_xml: { type: string }
+        enabled: { type: boolean }

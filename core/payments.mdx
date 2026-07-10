@@ -20,20 +20,22 @@ Recurso integrates with payment gateways to handle:
 
 ## Payment Flow
 
+Recurso generates the invoice; the customer pays it on Recurso's **hosted checkout page** at `{your-recurso-origin}/checkout/{invoice_id}`. The checkout initiates a gateway order, drives the right client flow (Stripe Payment Element or Razorpay Checkout.js), and settlement is always **verified server-side** — the checkout confirms the payment with the gateway and binds it to the invoice before anything is marked paid. Gateway webhooks remain the authoritative backstop.
+
 ```mermaid
 sequenceDiagram
     participant C as Customer
-    participant A as Your App
-    participant R as Recurso
+    participant R as Recurso Checkout
     participant G as Payment Gateway
 
-    A->>R: Create Subscription
-    R->>G: Create Gateway Subscription
-    R-->>A: checkout_url
-    A-->>C: Redirect to checkout
-    C->>G: Complete Payment
-    G->>R: Webhook: payment.succeeded
-    R->>A: Webhook: subscription.activated
+    C->>R: Open /checkout/{invoice_id}
+    R->>G: POST /checkout/{id}/pay (create order/intent)
+    G-->>C: Payment Element / Checkout.js modal
+    C->>G: Complete payment
+    C->>R: Verify (success?payment_intent= or razorpay/verify)
+    R->>G: Confirm payment + invoice binding
+    R->>R: Settle through ledger (idempotent)
+    G->>R: Webhook backstop (payment_intent.succeeded / payment.captured)
 ```
 
 ## Configuration
@@ -47,8 +49,13 @@ RAZORPAY_KEY_SECRET=xxx
 
 # Stripe (Global)
 STRIPE_SECRET_KEY=sk_live_xxx
+STRIPE_PUBLISHABLE_KEY=pk_live_xxx   # required for hosted checkout & portal card update
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 ```
+
+<Warning>
+`STRIPE_PUBLISHABLE_KEY` (and `RAZORPAY_KEY_ID` for INR) are handed to the buyer's browser by the hosted checkout. If the browser-side key is missing, checkout initiation fails loudly with a `503` instead of dead-ending the buyer.
+</Warning>
 
 See the [Payment Gateways guide](/advanced/payment-gateways) for detailed setup instructions.
 
@@ -56,16 +63,21 @@ See the [Payment Gateways guide](/advanced/payment-gateways) for detailed setup 
 
 ### For Subscriptions
 
+Creating a subscription generates its first invoice. Send the customer to the hosted checkout for that invoice — the gateway is chosen automatically by currency (INR → Razorpay, others → Stripe):
+
 ```typescript
 const subscription = await recurso.subscriptions.create({
   customer_id: 'cust_abc123',
-  plan_id: 'plan_pro',
-  payment_gateway: 'razorpay'  // or 'stripe'
+  plan_id: 'plan_pro'
 });
 
-// Redirect customer to complete payment
-window.location.href = subscription.checkout_url;
+const [invoice] = await recurso.invoices.list({ subscription_id: subscription.id });
+
+// Redirect the customer to the hosted checkout
+window.location.href = `https://billing.yourdomain.com/checkout/${invoice.id}`;
 ```
+
+The checkout page handles everything from there: card + local methods via the Stripe Payment Element (with real failure states — a declined payment shows "Payment not completed" with retry, never a false success), or the Razorpay modal for INR (UPI, cards, netbanking).
 
 ### One-Time Charges
 
@@ -119,7 +131,7 @@ curl -X POST https://api.recurso.dev/v1/payments/order \
 ```
 </CodeGroup>
 
-Use the `gateway_order_id` to initialize the payment on the client side (e.g., Razorpay checkout or Stripe payment intent).
+For most integrations you won't call this directly — the hosted checkout's [`POST /checkout/{id}/pay`](/api-reference/checkout/pay) wraps order creation and returns everything the browser flow needs (`gateway`, Stripe `client_secret` + `publishable_key`, or `razorpay_key_id`). Settle only via the verify endpoints ([success](/api-reference/checkout/success) / [razorpay/verify](/api-reference/checkout/razorpay-verify)); never mark invoices paid from the client.
 
 ## Payment Methods
 

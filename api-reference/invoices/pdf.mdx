@@ -1,43 +1,33 @@
 ---
-title: "Download Invoice PDF"
+title: "Download Invoice Document"
 openapi: "GET /v1/invoices/{id}/pdf"
-description: "Download invoice as PDF"
+description: "Download a print-ready invoice (authenticated, tenant-scoped)"
 ---
+
+<Warning>
+This endpoint **requires authentication** (API key or dashboard session) and is tenant-scoped — the rendered document carries the buyer's legal name, address, and GSTIN, so invoices are never publicly fetchable by UUID.
+</Warning>
+
+Returns a print-ready HTML rendering of the invoice. The layout is jurisdiction-aware: India-GST sellers get a full **TAX INVOICE** (GSTIN, per-line HSN, CGST/SGST or IGST split, Place of Supply, e-invoice IRN/QR when present); other sellers get a plain invoice with a single tax line and the seller's tax id. Amounts render with the invoice currency's own symbol.
 
 ## Path Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `id` | string | The invoice ID |
+| `id` | string (UUID) | The invoice ID |
 
 ## Example Request
 
 ```bash
-curl https://api.recurso.dev/v1/invoices/inv_001/pdf \
+curl https://api.recurso.dev/v1/invoices/9b2f6c1e-.../pdf \
   -H "Authorization: Bearer $API_KEY" \
-  -o invoice.pdf
+  -o invoice.html
 ```
 
 ## Response
 
-Returns the PDF file with content type `application/pdf`.
-
-## Get Signed URL
-
-For frontend access, get a temporary signed URL:
-
-```bash
-curl https://api.recurso.dev/v1/invoices/inv_001/pdf-url \
-  -H "Authorization: Bearer $API_KEY"
-```
-
-```json
-{
-  "url": "https://cdn.recurso.dev/invoices/inv_001.pdf?token=xxx",
-  "expires_at": "2024-01-15T11:30:00Z"
-}
-```
+`200` with `Content-Type: text/html` — a self-contained, print-ready document (use the browser's print-to-PDF for a PDF file). `401` without valid credentials; `404` when the invoice doesn't exist in your tenant.
 
 <Note>
-Signed URLs expire after 1 hour.
+`GET /v1/invoices/{id}/preview` returns the identical rendering and exists for dashboard preview use.
 </Note>

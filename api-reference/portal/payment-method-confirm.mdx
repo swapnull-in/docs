@@ -1,0 +1,35 @@
+---
+title: "Confirm Card Update"
+openapi: "POST /portal/api/payment-method/confirm"
+description: "Finalize a confirmed SetupIntent and save the card as default"
+---
+
+<Note>
+Requires a portal session. Call after `stripe.confirmSetup` succeeds — inline, or on return from a 3DS/bank redirect (Stripe appends `?setup_intent=` to the return URL; the portal dashboard forwards it here).
+</Note>
+
+Verifies with Stripe that the SetupIntent succeeded **and** that its metadata `customer_id` matches the authenticated customer — a SetupIntent for someone else can never update this customer's card — then records the saved method as the default used by dunning retries and off-session charges.
+
+## Request Body
+
+| Parameter | Type | Required |
+|-----------|------|----------|
+| `setup_intent_id` | string (`seti_*`) | Yes |
+
+## Example
+
+```bash
+curl -X POST https://api.recurso.dev/portal/api/payment-method/confirm \
+  -H "X-Portal-Session: <session token>" \
+  -H "Content-Type: application/json" \
+  -d '{"setup_intent_id": "seti_1Tra..."}'
+```
+
+```json
+{
+  "data": {
+    "status": "saved",
+    "card": { "brand": "visa", "last4": "4242", "exp_month": 12, "exp_year": 2029 }
+  }
+}
+```

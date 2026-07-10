@@ -95,25 +95,25 @@ await recurso.settings.portal.update({
 
 ## Payment Method Update
 
-### Add New Card
+The portal's **Update payment method** flow is gateway-hosted end to end — card numbers never touch Recurso (PCI SAQ-A preserved).
 
-1. Customer clicks "Add Payment Method"
-2. Razorpay/Stripe checkout opens
-3. Customer enters new card
-4. Card saved, optionally set as default
+### Card update (Stripe)
 
-### Remove Card
+1. Customer clicks **Update payment method**; the portal requests a SetupIntent ([`POST /portal/api/payment-method/setup-intent`](/api-reference/portal/payment-method-setup-intent)) and mounts the Stripe Payment Element in a dialog.
+2. The customer enters the card; it goes browser → Stripe directly. Banks that require 3DS redirect and return to the portal, which finalizes automatically via the `?setup_intent=` return parameter.
+3. The portal confirms server-side ([`POST /portal/api/payment-method/confirm`](/api-reference/portal/payment-method-confirm)) — verifying the SetupIntent succeeded **and** belongs to this customer — and saves the card as the default used by dunning retries and off-session charges.
 
-```typescript
-await recurso.settings.portal.update({
-  payment_methods: {
-    allow_add: true,
-    allow_remove: true,
-    require_default: true,  // Must have at least one
-    show_last_charged: true
-  }
-});
-```
+### UPI Autopay re-authorization (Razorpay)
+
+On INR/Razorpay deployments, the same dialog offers **Re-authorize UPI Autopay** instead: [`POST /portal/api/payment-method/mandate`](/api-reference/portal/payment-method-mandate) creates a fresh mandate (cap auto-sized at 2× the customer's largest recent invoice) and redirects to Razorpay's hosted approval page. Activation lands via the `token.confirmed` webhook.
+
+<Warning>
+Razorpay requires a **phone number** on the customer for recurring registration links — customers without one get a clear error asking the merchant to add it.
+</Warning>
+
+### Recovery deep links
+
+Dunning, payment-failed, and card-expiring emails deep-link their **Update Payment Method** button to `{BASE_URL}/portal/login`, so a failed payment can be self-served end to end: email → magic-link login → portal → new card or re-authorized mandate.
 
 ## Usage Dashboard
 

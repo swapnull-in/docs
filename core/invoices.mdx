@@ -119,25 +119,19 @@ Generate and download invoice PDFs:
 
 <CodeGroup>
 ```typescript TypeScript
-// Get PDF as buffer
-const pdf = await recurso.invoices.pdf('inv_001');
-
-// Or get a signed URL
-const { url } = await recurso.invoices.pdfUrl('inv_001');
-// URL valid for 1 hour
+// Fetch the print-ready document (HTML; print-to-PDF in the browser)
+const doc = await recurso.invoices.pdf('9b2f6c1e-...');
 ```
 
 ```bash cURL
-# Download PDF directly
-curl https://api.recurso.dev/v1/invoices/inv_001/pdf \
+# Authenticated + tenant-scoped — invoices are never publicly fetchable by UUID
+curl https://api.recurso.dev/v1/invoices/9b2f6c1e-.../pdf \
   -H "Authorization: Bearer $API_KEY" \
-  -o invoice.pdf
-
-# Or get a signed URL
-curl https://api.recurso.dev/v1/invoices/inv_001/pdf?url_only=true \
-  -H "Authorization: Bearer $API_KEY"
+  -o invoice.html
 ```
 </CodeGroup>
+
+The rendering is jurisdiction-aware (India-GST tax invoice vs. plain invoice) and requires authentication — see the [endpoint reference](/api-reference/invoices/pdf).
 
 ## Invoice Preview
 
