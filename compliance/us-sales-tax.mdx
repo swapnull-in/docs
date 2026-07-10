@@ -68,6 +68,7 @@ Every US invoice records how its tax was computed in `tax_type`:
 | `tax_type` | When | Rate applied | What it means |
 |------------|------|--------------|----------------|
 | `sales_tax` | TaxJar configured, lookup succeeded | Live jurisdiction rate | The note names the provider and jurisdiction (e.g. `US sales tax via taxjar (CA)`). If TaxJar reports you have no nexus in the buyer's state, tax is 0 and the note flags it honestly: `no nexus in buyer state per provider — nothing to collect`. |
+| `no_nexus` | Buyer is in a US state you have **not** declared nexus in (and you've declared at least one) | 0% | The **native** nexus gate: `No sales-tax nexus in <ST> — not collected`. Not an error — you're correctly not collecting where you have no obligation. See [Nexus Configuration](#nexus-configuration). |
 | `sales_tax_error` | TaxJar configured, lookup **failed** after the retry | 0% | The invoice ships anyway — a tax lookup outage must never block billing. The note says `invoiced at 0% (needs review)` and a warning is logged. **Treat these invoices as an audit queue**: find them, recompute, and issue corrections. |
 | `sales_tax_stub` | `TAXJAR_API_KEY` not set | 0% | The historical placeholder behavior, honestly labeled. Fine for development; not for production US billing. |
 | `export` | Buyer's billing country is outside the US | — | No US sales tax on the sale. |
@@ -79,16 +80,68 @@ billing run". Monitor for it (the API logs a warning per occurrence) and
 review flagged invoices promptly.
 </Warning>
 
-## Nexus Caveat
+## Nexus Configuration
 
-Recurso does **not** model nexus-state configuration yet — there is no
-per-state "we are registered to collect here" setting in Recurso itself.
-Nexus is determined by your **TaxJar account configuration**: TaxJar
-returns zero tax for states where you have no nexus, and Recurso records
-that honestly in the invoice note.
+Recurso models nexus **natively**: you declare the US states where you're
+registered to collect sales tax, and Recurso collects **only** there. A sale to
+a buyer in a state you haven't declared is invoiced at 0% with an auditable note
+— `No sales-tax nexus in <ST> — not collected` (`tax_type: no_nexus`).
 
-Keep your nexus states up to date in TaxJar. Native nexus configuration is
-on the [roadmap](https://github.com/swapnull-in/recur-so/blob/main/ROADMAP.md).
+Manage your nexus states with the settings endpoints (owner/admin for dashboard
+users; API keys always pass):
+
+```bash
+# List your declared nexus states
+GET /v1/settings/tax/nexus
+
+# Replace the full set (this is a full replacement, not a merge)
+PUT /v1/settings/tax/nexus
+{
+  "states": [
+    { "state_code": "CA", "nexus_type": "physical" },
+    { "state_code": "NY", "nexus_type": "voluntary" }
+  ]
+}
+```
+
+`nexus_type` is `physical` (office / employees / inventory), `voluntary`
+(registered by choice), or `economic` (a threshold was crossed — see below);
+it defaults to `physical`.
+
+### How the native gate interacts with TaxJar
+
+Native nexus and the provider are **both** gates — a sale is taxed only where
+**both** allow it:
+
+- **You've declared at least one nexus state:** Recurso collects only in your
+  declared states; buyers elsewhere get `no_nexus` (0%). Where you *do* have
+  nexus, TaxJar (if configured) computes the exact rate — and can still
+  independently return 0% for a specific exempt address (`no nexus in buyer
+  state per provider`).
+- **You've declared no nexus states:** the native gate is **off** for backward
+  compatibility — tax falls through to TaxJar's own nexus configuration (or the
+  0% `sales_tax_stub` if TaxJar isn't configured). This is the pre-nexus
+  behavior.
+
+So a declared state is *necessary* to collect, and the provider can still exempt
+a specific address — Recurso never collects where you haven't declared nexus.
+
+<Info>
+Beyond manually declared `physical` / `voluntary` nexus, Recurso **tracks
+economic-nexus thresholds** ($100k / 200 transactions, varying by state) from
+your year-to-date sales and transaction counts, and auto-establishes `economic`
+nexus when you cross one. Monitor per-state proximity with
+`GET /v1/settings/tax/nexus/status` — see the
+[US sales tax setup tutorial](/tutorials/us-sales-tax-setup) and the
+[nexus status endpoint](/api-reference/settings/nexus-status).
+</Info>
+
+<Warning>
+The seeded threshold dataset self-reports `dataset_certified: false` until it
+passes professional review. While it's `false`, treat threshold crossings as
+**indicative** — confirm each state's current rule with a tax professional before
+relying on it for a filing or registration decision.
+</Warning>
 
 ## Testing
 
