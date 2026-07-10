@@ -1,43 +1,39 @@
-# Mintlify Starter Kit
+# Recurso Documentation
 
-Use the starter kit to get your docs deployed and ready to customize.
+The documentation for [Recurso](https://github.com/swapnull-in/recur-so), the
+open-source billing engine for SaaS — subscriptions, invoicing, multi-currency
+payments (Stripe + Razorpay), tax (India GST, EU VAT, US sales tax), smart
+dunning, a double-entry ledger, and a self-service customer portal.
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+Published at **[docs.recurso.dev](https://docs.recurso.dev)** (Mintlify).
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+## Structure
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+- `index.mdx`, `quickstart.mdx` — landing and getting started
+- `core/` — customers, plans, subscriptions, invoices, payments
+- `portal/` — hosted checkout and the customer self-service portal
+- `advanced/` — payment gateways, multi-currency, and deeper topics
+- `compliance/` — India GST/e-invoicing, US sales tax, VAT
+- `api-reference/` — endpoint reference generated from `openapi.yaml`
+- `docs.json` — navigation and site config
 
-## Development
+The `openapi.yaml` here is a copy of the spec served by the API
+(`cmd/api/openapi.yaml` in the main repo); re-copy it when the API surface
+changes. A CI test in the main repo (`TestOpenAPISpecCoversRegisteredRoutes`)
+fails if a served route is missing from the spec, so the documented surface
+can't silently drift.
 
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
+## Local preview
 
+```bash
+npm i -g mint      # Mintlify CLI
+mint dev           # serves at http://localhost:3000
 ```
-npm i -g mint
-```
 
-Run the following command at the root of your documentation, where your `docs.json` is located:
+Run from the directory containing `docs.json`. Changes merged to the default
+branch deploy to production automatically via the Mintlify GitHub app.
 
-```
-mint dev
-```
+## Contributing
 
-View your local preview at `http://localhost:3000`.
-
-## Publishing changes
-
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
-
-## Need help?
-
-### Troubleshooting
-
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
-
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+Docs live alongside the product. If you change API behavior in the main repo,
+update the matching page here (and re-copy `openapi.yaml` if the spec moved).
