@@ -1,0 +1,145 @@
+---
+title: "Quickstart for US SaaS"
+description: "Bill US customers in USD end-to-end: a USD plan, a US customer with a billing address, a Stripe subscription, and automatic sales tax."
+icon: "flag-usa"
+---
+
+This is the US-first path through Recurso: everything in USD, payments routed to
+Stripe, and jurisdiction-level sales tax applied automatically. If you're billing
+Indian customers, start with the [main Quickstart](/quickstart) and
+[India GST setup](/tutorials/india-gst-setup) instead.
+
+<Info>
+New to Recurso? Get a local instance running first — clone the repo and run
+`make demo`, or see the [Quickstart](/quickstart) installation options. Then come
+back here. Prefer not to self-host? [Recurso Cloud](/pricing) is in early access.
+</Info>
+
+## What you'll build
+
+A working US subscription: a USD Pro plan, a customer in California, a Stripe-paid
+subscription, and an invoice that carries the correct combined state + local sales
+tax. Set `$API_KEY` to your key (the demo key is `sk_test_12345`) and, for a
+self-hosted instance, `$BASE` to `http://localhost:8080`.
+
+## Step 1: Point the seller jurisdiction at the US
+
+Sales tax only engages when the seller is US-based. Set this in your environment
+before billing US customers (full detail in the
+[US sales tax tutorial](/tutorials/us-sales-tax-setup)):
+
+```bash .env
+COMPANY_COUNTRY=US
+COMPANY_STATE=CA
+TAXJAR_API_KEY=your_taxjar_api_token   # omit to invoice at an honest 0% while testing
+```
+
+## Step 2: Create a USD plan
+
+```bash
+curl -X POST $BASE/v1/plans \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Pro Plan",
+    "description": "For growing teams",
+    "interval": "month",
+    "prices": [
+      { "amount": 4900, "currency": "USD" }
+    ]
+  }'
+```
+
+Amounts are in the smallest currency unit — `4900` is $49.00. Because the price is
+in USD, Recurso routes payment to **Stripe** automatically.
+
+## Step 3: Add a US customer with a billing address
+
+The billing `state` and `zip` are what drive the sales-tax lookup — always
+populate them for US buyers.
+
+```bash
+curl -X POST $BASE/v1/customers \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme Corp",
+    "email": "billing@acme.com",
+    "address": {
+      "line1": "500 Market St",
+      "city": "San Francisco",
+      "state": "CA",
+      "zip": "94105",
+      "country": "US"
+    }
+  }'
+```
+
+## Step 4: Start a Stripe subscription
+
+```bash
+curl -X POST $BASE/v1/subscriptions \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "cust_abc",
+    "plan_id": "plan_pro",
+    "payment_gateway": "stripe"
+  }'
+```
+
+Your customer pays through the hosted Stripe Payment Element. In development with
+no gateway keys, the mock gateway simulates the charge — see
+[Testing & Sandbox](/testing).
+
+## Step 5: Read the taxed invoice
+
+Invoices generate automatically at each period end. With TaxJar configured and
+nexus declared in the buyer's state, the invoice carries the live combined rate:
+
+```json
+{
+  "invoice_number": "REC/2026/0007",
+  "currency": "USD",
+  "lines": [
+    { "description": "Pro Plan Subscription", "amount": 4900 }
+  ],
+  "subtotal": 4900,
+  "tax_amount": 429,
+  "tax_type": "sales_tax",
+  "tax_note": "US sales tax via taxjar (CA)",
+  "total": 5329
+}
+```
+
+The `tax_type` field tells you exactly how tax was computed on every invoice:
+
+| `tax_type` | Meaning |
+| --- | --- |
+| `sales_tax` | Live TaxJar rate applied |
+| `no_nexus` | Buyer is in a state you haven't declared nexus in — 0%, correctly not collected |
+| `sales_tax_error` | TaxJar lookup failed; invoiced at 0% and flagged for review (billing is never blocked) |
+| `sales_tax_stub` | No TaxJar key — 0% placeholder, fine for dev |
+
+<Warning>
+Getting tax *right* needs one more step: declaring the US states where you have
+nexus. Do that next — an invoice at `sales_tax_stub` or `no_nexus` is 0%, which
+is not what you want in production.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="US Sales Tax Setup" icon="landmark" href="/tutorials/us-sales-tax-setup">
+    Declare nexus, connect TaxJar, and monitor economic-nexus thresholds
+  </Card>
+  <Card title="Testing & Sandbox" icon="flask" href="/testing">
+    Simulate payments, failures, and dunning before going live
+  </Card>
+  <Card title="Revenue Recognition" icon="chart-line" href="/advanced/revenue-recognition">
+    ASC 606 deferred → recognized schedules
+  </Card>
+  <Card title="Going to Production" icon="rocket" href="/going-to-production">
+    Switch to live Stripe keys deliberately
+  </Card>
+</CardGroup>

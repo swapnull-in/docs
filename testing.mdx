@@ -1,0 +1,220 @@
+---
+title: "Testing & Sandbox"
+description: "Build and test your Recurso integration end-to-end without moving real money — mock gateways, test keys, webhooks, and resetting data."
+icon: "flask"
+---
+
+Recurso is designed to be integrated against safely before a single real rupee or
+dollar moves. This page covers the three payment modes, how to confirm which one
+you're in, how to simulate successes and failures, and how to test webhooks and
+dunning.
+
+## The three payment modes
+
+Whether you're moving real money is decided by your **payment-gateway keys**, not
+by your Recurso API key. Recurso surfaces the current mode as `gateway_mode`:
+
+| `gateway_mode` | When | What happens |
+| --- | --- | --- |
+| `none` | No Stripe or Razorpay keys configured | The built-in **mock gateway** simulates every payment — nothing leaves your server |
+| `test` | Stripe `sk_test…` or Razorpay `rzp_test…` keys | Real gateway **test mode** — use the provider's test cards/UPI |
+| `live` | Real gateway keys | Real money. Don't point tests here |
+
+<Warning>
+Recurso does not currently issue separate test vs. live API keys — a generated
+key works against whatever `gateway_mode` the server is running in. Treat the
+running server's `gateway_mode` as the source of truth, and keep a separate
+Recurso instance (or database) for anything that talks to `live` gateways.
+</Warning>
+
+## Which mode am I in?
+
+Ask the server. `GET /version` is unauthenticated and returns the mode:
+
+```bash
+curl https://api.recurso.dev/version
+```
+
+```json
+{ "version": "v0.3.0", "gateway_mode": "none" }
+```
+
+If you see `none`, you're fully sandboxed on the mock gateway. If you see `live`,
+stop and point your tests at a non-production instance. The dashboard shows a
+**Test mode** chip driven by this same value.
+
+## Sandbox mode (mock gateway)
+
+Run Recurso with **no** `STRIPE_SECRET_KEY` or `RAZORPAY_KEY_ID` set and every
+payment path is served by the mock gateway. This is the fastest way to wire up
+your integration — create plans, subscribe customers, generate invoices, and
+drive the full lifecycle without any provider account.
+
+What the mock gateway does:
+
+<CardGroup cols={2}>
+  <Card title="Orders & checkout" icon="cart-shopping">
+    `CreateOrder` returns a mock `order_…` id. Checkout verification **succeeds**.
+  </Card>
+  <Card title="Mandates (UPI)" icon="mobile">
+    `CreateMandate` returns a mock token and a mock authorization URL; mandate
+    debits succeed.
+  </Card>
+  <Card title="Refunds" icon="rotate-left">
+    Refunds return status `processed` immediately.
+  </Card>
+  <Card title="Retries" icon="arrows-rotate">
+    Retry attempts succeed **~40% of the time** with random decline codes — see
+    [Testing dunning](#testing-dunning-and-retries).
+  </Card>
+</CardGroup>
+
+### Forcing a payment failure
+
+To exercise your failure handling on the checkout verify path, pass the literal
+signature `fail` — the mock gateway will reject it:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/checkout/razorpay-verify \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{ "order_id": "order_x", "payment_id": "pay_x", "signature": "fail" }'
+```
+
+Any other signature verifies successfully, so you can toggle between the happy and
+unhappy paths deterministically.
+
+## Gateway test mode
+
+When you're ready to test real gateway behavior (3-D Secure, actual UPI collect
+requests, provider webhooks), configure **test** keys and the mode flips to
+`test`:
+
+```bash
+export STRIPE_SECRET_KEY=sk_test_...      # Stripe test secret
+export RAZORPAY_KEY_ID=rzp_test_...        # Razorpay test key id
+export RAZORPAY_KEY_SECRET=...
+```
+
+Then pay with the providers' documented test instruments:
+
+<Tabs>
+  <Tab title="Stripe (cards)">
+    | Scenario | Card |
+    | --- | --- |
+    | Success | `4242 4242 4242 4242` |
+    | Declined | `4000 0000 0000 0002` |
+    | Requires 3DS | `4000 0027 6000 3184` |
+
+    Any future expiry and any CVC. Full list in Stripe's testing docs.
+  </Tab>
+  <Tab title="Razorpay (UPI & cards)">
+    | Scenario | Instrument |
+    | --- | --- |
+    | UPI success | `success@razorpay` |
+    | UPI failure | `failure@razorpay` |
+    | Card success | `4111 1111 1111 1111` |
+
+    Razorpay test mode never charges a real account.
+  </Tab>
+</Tabs>
+
+Because routing is currency-based (INR → Razorpay, else → Stripe), test an INR
+invoice to hit Razorpay and a USD invoice to hit Stripe.
+
+## Testing webhooks
+
+Two directions of webhooks are worth testing:
+
+**Inbound (gateway → Recurso).** Stripe and Razorpay call back to
+`/webhooks/stripe` and `/webhooks/razorpay`; Recurso verifies the signature on
+every event. To receive them on a local instance, use the Stripe CLI
+(`stripe listen --forward-to localhost:8080/webhooks/stripe`) or a tunnel such as
+ngrok for Razorpay, and set the matching webhook secret in your env.
+
+**Outbound (Recurso → your app).** Register an endpoint, then use the delivery
+log to inspect and replay:
+
+```bash
+# Register a webhook endpoint
+curl -X POST https://api.recurso.dev/v1/webhooks \
+  -H "Authorization: Bearer <your_api_key>" \
+  -d '{ "url": "https://your-app.example.com/hooks", "events": ["invoice.paid"] }'
+
+# Inspect deliveries, then redeliver a specific event to debug your handler
+curl https://api.recurso.dev/v1/webhooks/deliveries \
+  -H "Authorization: Bearer <your_api_key>"
+```
+
+See [Webhooks](/advanced/webhooks) for signature verification code and the full
+event catalog.
+
+## Testing dunning and retries
+
+On the mock gateway, retry attempts succeed **~40% of the time** and otherwise
+return a random decline code (`insufficient_funds`, `card_expired`,
+`card_declined`, `processing_error`). That's enough randomness to watch the smart
+retry engine schedule attempts, escalate a dunning campaign, and eventually mark
+an invoice recovered or exhausted. Create a subscription, let an invoice go past
+due, and observe the retry schedule and
+[recovered-revenue attribution](/advanced/analytics). See
+[Smart Retry](/advanced/smart-retry) for how the bandit picks retry timing.
+
+## Idempotency in tests
+
+Every mutating request accepts an `X-Idempotency-Key` header. Reusing the same key
+returns the original result instead of creating a duplicate — so a test that
+retries a flaky network call won't double-charge or double-create:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/subscriptions \
+  -H "Authorization: Bearer <your_api_key>" \
+  -H "X-Idempotency-Key: test-sub-0001" \
+  -d '{ "customer_id": "cust_123", "plan_id": "plan_pro" }'
+```
+
+Give each logical test operation a stable key. See [Idempotency](/advanced/idempotency).
+
+## Loading and resetting test data
+
+The demo dataset gives you a tenant with plans, customers, subscriptions, and
+invoices to poke at:
+
+```bash
+make demo   # builds & starts the full stack, then loads demo data
+make seed   # reload demo data into an already-running stack
+```
+
+<Warning>
+`make seed` **wipes all data** in the target database before loading — only run
+it against a development database.
+</Warning>
+
+After seeding, sign in to the dashboard and use the API with the demo key
+`sk_test_12345`. Emails the system "sends" land in Mailhog at
+`http://localhost:8025` instead of real inboxes.
+
+## A pre-launch testing checklist
+
+<Steps>
+  <Step title="Sandbox the happy path">
+    On `gateway_mode: none`, drive plan → customer → subscription → invoice →
+    payment end-to-end.
+  </Step>
+  <Step title="Exercise failures">
+    Force a verify failure (`signature: fail`), let a retry cycle run, and confirm
+    your app handles declines and past-due states.
+  </Step>
+  <Step title="Switch to gateway test mode">
+    Add `sk_test`/`rzp_test` keys and repeat with real test cards and UPI, in both
+    INR and a non-INR currency.
+  </Step>
+  <Step title="Verify webhooks both ways">
+    Confirm inbound gateway events are accepted and your outbound endpoint
+    receives and can replay events.
+  </Step>
+  <Step title="Go live deliberately">
+    Only then follow [Going to Production](/going-to-production) to switch to live
+    keys.
+  </Step>
+</Steps>

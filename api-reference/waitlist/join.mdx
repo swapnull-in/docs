@@ -1,0 +1,37 @@
+---
+title: "Join the Cloud Waitlist"
+openapi: "POST /waitlist"
+description: "Public demand capture for Recurso Cloud early access"
+---
+
+A public, rate-limited endpoint used by the marketing site to capture Recurso
+Cloud early-access signups. No authentication required.
+
+<Note>
+Duplicate emails are deduplicated silently — the response never reveals whether
+an email was already on the list. The `website` field is a honeypot; leave it
+out of legitimate requests.
+</Note>
+
+## Example Request
+
+```bash
+curl https://api.recurso.dev/waitlist \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "founder@acme.com",
+    "name": "Dana Founder",
+    "company": "Acme",
+    "source": "website-cta"
+  }'
+```
+
+## Response
+
+```json
+{
+  "data": {
+    "message": "You're on the list — we'll be in touch."
+  }
+}
+```

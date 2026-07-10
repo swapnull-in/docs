@@ -1,0 +1,195 @@
+---
+title: "Set Up US Sales Tax End-to-End"
+description: "A task-oriented walkthrough: point the engine at the US, connect TaxJar, declare your nexus states, monitor economic-nexus thresholds, and generate a correctly taxed invoice."
+---
+
+## Overview
+
+This tutorial takes a US-based SaaS seller from zero to a correctly taxed invoice.
+You'll set your seller jurisdiction, connect TaxJar for real jurisdiction-level
+rates, declare the states where you have nexus, watch economic-nexus thresholds,
+and generate an invoice that collects the right combined state + local rate — and
+0% where you have no obligation.
+
+<Info>
+US sales tax only engages when the **seller** is US-based and the buyer's billing
+country is `US` (or unset). Buyers outside the US are invoiced with no US sales
+tax (`tax_type: export`).
+</Info>
+
+## Step 1: Set your seller jurisdiction and connect TaxJar
+
+US rates depend on the buyer's state, county, city, and special districts, so
+accurate rates come from a provider. Recurso integrates **TaxJar**.
+
+```bash .env
+# Seller jurisdiction used by the tax engine
+COMPANY_COUNTRY=US
+COMPANY_STATE=CA
+
+# TaxJar — real US sales-tax rates. Leave unset to keep an honest 0% stub.
+TAXJAR_API_KEY=your_taxjar_api_token
+# Point at the sandbox while testing; default is https://api.taxjar.com
+# TAXJAR_API_URL=https://api.sandbox.taxjar.com
+```
+
+On startup the API logs which mode it's in:
+
+```text
+US sales tax: TaxJar provider enabled
+# or
+US sales tax: 0% stub (TAXJAR_API_KEY not set)
+```
+
+<Info>
+Without TaxJar, Recurso does **not** guess — US invoices carry 0% marked
+`sales_tax_stub`. There are no silently wrong rates. Fine for development; not for
+production billing.
+</Info>
+
+## Step 2: Declare your nexus states
+
+Nexus is your obligation to collect in a state. Recurso collects **only** in the
+states you declare — a sale to a buyer anywhere else is invoiced at 0% with an
+auditable note (`tax_type: no_nexus`).
+
+```bash
+# Replace the full set (this is a full replacement, not a merge)
+curl -X PUT http://localhost:8080/v1/settings/tax/nexus \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "states": [
+      { "state_code": "CA", "nexus_type": "physical" },
+      { "state_code": "NY", "nexus_type": "voluntary" }
+    ]
+  }'
+```
+
+| `nexus_type` | Meaning |
+|--------------|---------|
+| `physical` | Office, employees, or inventory in the state (the default) |
+| `voluntary` | Registered to collect by choice |
+| `economic` | A sales/transaction threshold was crossed — usually established automatically (Step 3) |
+
+Read your declared states back any time with `GET /v1/settings/tax/nexus`.
+
+<Warning>
+If you declare **no** nexus states, the native gate is off for backward
+compatibility and tax falls through to TaxJar's own nexus settings (or the 0%
+stub). Declare at least your home state to turn the gate on.
+</Warning>
+
+## Step 3: Monitor economic-nexus thresholds
+
+Beyond physical presence, most states establish **economic** nexus once your
+sales or transaction count into that state crosses a threshold (commonly
+$100k or 200 transactions, but it varies). Recurso tracks year-to-date sales and
+transactions per state and tells you how close you are:
+
+```bash
+curl "http://localhost:8080/v1/settings/tax/nexus/status?year=2026" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+```json
+{
+  "data": {
+    "year": 2026,
+    "dataset_certified": false,
+    "states": [
+      {
+        "state_code": "TX",
+        "nexus_type": null,
+        "taxable_sales": 84200000,
+        "transaction_count": 168,
+        "threshold": { "sales_threshold": 50000000, "txn_threshold": null, "combinator": "or" },
+        "proximity_percent": 168.4,
+        "crossed": true
+      }
+    ]
+  }
+}
+```
+
+A `crossed: true` state is auto-established as `economic` nexus during the read
+(idempotent), so Recurso starts collecting there — you should then register with
+that state. Monetary fields are in USD cents.
+
+<Warning>
+`dataset_certified` is `false` until the seeded threshold dataset passes
+professional review. While it's `false`, treat thresholds and crossings as
+**indicative** — confirm each state's current rule with a tax professional before
+relying on it for a filing or registration decision.
+</Warning>
+
+See the [nexus status endpoint](/api-reference/settings/nexus-status) for the full
+response shape.
+
+## Step 4: Generate a correctly taxed invoice
+
+Create a US customer with a full billing address — `state` and `zip` drive the
+lookup — then let invoicing run automatically at period end.
+
+```bash
+curl -X POST http://localhost:8080/v1/customers \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Customer Corp",
+    "email": "ap@customer.com",
+    "address": { "line1": "1 Congress Ave", "city": "Austin", "state": "TX", "zip": "78701", "country": "US" }
+  }'
+```
+
+Every invoice records how tax was computed in `tax_type`:
+
+| `tax_type` | When | Rate |
+|------------|------|------|
+| `sales_tax` | TaxJar configured, buyer in a nexus state, lookup succeeded | Live combined rate |
+| `no_nexus` | Buyer in a state you haven't declared nexus in | 0% (correctly not collected) |
+| `sales_tax_error` | TaxJar lookup failed after one retry | 0%, invoice ships anyway and is flagged for review |
+| `sales_tax_stub` | No TaxJar key | 0% placeholder |
+| `export` | Buyer outside the US | — |
+
+<Warning>
+`sales_tax_error` is deliberate: a tax-lookup outage never blocks billing.
+Recurso invoices at 0%, marks it `needs review`, and logs a warning. **Treat these
+as an audit queue** — recompute and issue corrections.
+</Warning>
+
+## Verify your setup
+
+<Steps>
+  <Step title="Provider enabled">
+    Startup logs show `TaxJar provider enabled` (not the 0% stub).
+  </Step>
+  <Step title="Nexus declared">
+    `GET /v1/settings/tax/nexus` returns your states; the gate is on.
+  </Step>
+  <Step title="Thresholds visible">
+    `GET /v1/settings/tax/nexus/status` returns per-state proximity; note the
+    `dataset_certified` caveat.
+  </Step>
+  <Step title="Invoice taxed correctly">
+    A buyer in a nexus state shows `tax_type: sales_tax` with a real rate; a buyer
+    elsewhere shows `no_nexus` at 0%.
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="US Sales Tax Reference" icon="scale-balanced" href="/compliance/us-sales-tax">
+    The full behavior matrix and provider details
+  </Card>
+  <Card title="Nexus Status API" icon="code" href="/api-reference/settings/nexus-status">
+    Endpoint reference for economic-nexus monitoring
+  </Card>
+  <Card title="Quickstart for US SaaS" icon="flag-usa" href="/us-quickstart">
+    The end-to-end USD + Stripe billing path
+  </Card>
+  <Card title="Testing & Sandbox" icon="flask" href="/testing">
+    Point TaxJar at its sandbox and test the full path
+  </Card>
+</CardGroup>

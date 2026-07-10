@@ -18,8 +18,10 @@
             "pages": [
               "index",
               "quickstart",
+              "us-quickstart",
               "concepts",
               "sdk",
+              "testing",
               "end-to-end"
             ],
             "icon": "rocket"
@@ -37,7 +39,8 @@
             "pages": [
               "tutorials/usage-based-saas",
               "tutorials/feature-gating",
-              "tutorials/india-gst-setup"
+              "tutorials/india-gst-setup",
+              "tutorials/us-sales-tax-setup"
             ],
             "icon": "graduation-cap"
           },
@@ -516,6 +519,18 @@
                   "api-reference/events/deliveries",
                   "api-reference/events/redeliver"
                 ]
+              },
+              {
+                "group": "Tax Settings",
+                "pages": [
+                  "api-reference/settings/nexus-status"
+                ]
+              },
+              {
+                "group": "Waitlist",
+                "pages": [
+                  "api-reference/waitlist/join"
+                ]
               }
             ],
             "icon": "plug"
@@ -534,9 +549,7 @@
                   "api-reference/portal/payment-method-mandate",
                   "api-reference/portal/invoices",
                   "api-reference/portal/redeem",
-                  "api-reference/portal/logout",
-                  "api-reference/portal/dashboard",
-                  "api-reference/portal/data"
+                  "api-reference/portal/logout"
                 ]
               }
             ],

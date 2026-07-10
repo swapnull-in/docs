@@ -1,0 +1,63 @@
+---
+title: "US Economic-Nexus Status"
+openapi: "GET /v1/settings/tax/nexus/status"
+description: "Per-state US sales-tax nexus status for a calendar year"
+---
+
+Returns every US state where your tenant has declared nexus or any sales activity
+for the given year, with year-to-date taxable sales, transaction counts, the
+state's economic-nexus threshold, how close you are to it, and whether it has
+been crossed. States crossed during the read are auto-established as economic
+nexus (idempotent), so this endpoint is safe to poll.
+
+<Warning>
+`dataset_certified` is `false` until the seeded threshold dataset passes
+professional review. While it is `false`, treat thresholds and crossings as
+indicative only — do not rely on them for a filing decision. Surface this caveat
+to whoever reads the numbers.
+</Warning>
+
+## Example Request
+
+```bash
+curl "https://api.recurso.dev/v1/settings/tax/nexus/status?year=2026" \
+  -H "Authorization: Bearer rsk_live_your_api_key"
+```
+
+## Response
+
+```json
+{
+  "data": {
+    "year": 2026,
+    "dataset_certified": false,
+    "states": [
+      {
+        "state_code": "CA",
+        "nexus_type": "economic",
+        "established_at": "2026-04-18T00:00:00Z",
+        "taxable_sales": 62450000,
+        "transaction_count": 214,
+        "threshold": { "sales_threshold": 50000000, "txn_threshold": null, "combinator": "or" },
+        "proximity_percent": 124.9,
+        "crossed": true
+      },
+      {
+        "state_code": "TX",
+        "nexus_type": null,
+        "established_at": null,
+        "taxable_sales": 31200000,
+        "transaction_count": 88,
+        "threshold": { "sales_threshold": 50000000, "txn_threshold": null, "combinator": "or" },
+        "proximity_percent": 62.4,
+        "crossed": false
+      }
+    ]
+  }
+}
+```
+
+Monetary fields are in the smallest currency unit (USD cents). A `crossed: true`
+state means you have likely established economic nexus there and should register
+to collect sales tax — confirm with a tax professional. See
+[US Sales Tax](/compliance/us-sales-tax) for setup.

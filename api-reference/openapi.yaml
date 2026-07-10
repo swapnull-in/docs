@@ -122,6 +122,10 @@ paths:
                 properties:
                   version:
                     type: string
+                  gateway_mode:
+                    type: string
+                    enum: [test, live, none]
+                    description: Whether the configured payment gateways use test or live keys.
                     examples: [dev, v0.1.0]
 
   /openapi.yaml:
@@ -1976,6 +1980,54 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /waitlist:
+    post:
+      operationId: joinWaitlist
+      tags: [Platform]
+      summary: Join the Recurso Cloud waitlist
+      description: >
+        Public, rate-limited demand capture used by the marketing site.
+        Duplicate emails are deduplicated silently; the response never reveals
+        whether an email was already on the list. The `website` field is a
+        honeypot — leave it out.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                name:
+                  type: string
+                  maxLength: 200
+                company:
+                  type: string
+                  maxLength: 200
+                source:
+                  type: string
+                  maxLength: 100
+                  description: Where the signup came from (e.g. website-cta, website-footer).
+      responses:
+        '200':
+          description: Signed up (or already on the list).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
   /webhooks/razorpay:
     post:
       operationId: handleRazorpayWebhook
@@ -2082,92 +2134,6 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /portal/{customer_id}:
-    get:
-      operationId: showPortalDashboard
-      tags: [Customer Portal]
-      summary: Legacy HTML customer dashboard
-      description: Server-rendered HTML dashboard listing the customer's invoices. Public, rate-limited.
-      security: []
-      parameters:
-        - name: customer_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: HTML dashboard.
-          content:
-            text/html:
-              schema:
-                type: string
-        '400':
-          description: Invalid customer ID (plain text).
-          content:
-            text/plain:
-              schema:
-                type: string
-        '404':
-          description: Customer not found (plain text).
-          content:
-            text/plain:
-              schema:
-                type: string
-
-  /v1/portal/{tenant_id}/{customer_id}:
-    get:
-      operationId: getPortalData
-      tags: [Customer Portal]
-      summary: Read-only portal data (JSON)
-      description: Unauthenticated, rate-limited JSON payload consumed by the React portal — customer profile, subscriptions, and invoices.
-      security: []
-      parameters:
-        - name: tenant_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: customer_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Portal payload.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  customer:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                      name:
-                        type: [string, 'null']
-                      email:
-                        type: string
-                        format: email
-                  subscriptions:
-                    type: [array, 'null']
-                    items:
-                      $ref: '#/components/schemas/Subscription'
-                  invoices:
-                    type: [array, 'null']
-                    items:
-                      $ref: '#/components/schemas/Invoice'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -3140,6 +3106,88 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/settings/tax/nexus/status:
+    get:
+      operationId: getTaxNexusStatus
+      tags: [Settings]
+      summary: Per-state US economic-nexus status
+      description: >
+        Returns, for the given calendar year (default current), every US state
+        where the tenant has declared or economic nexus or any US sales
+        activity: year-to-date taxable sales and transaction counts, the
+        state's economic-nexus threshold, proximity to it (percent), and
+        whether it is crossed. Crossings detected during the read are
+        auto-established as economic nexus (idempotent). dataset_certified is
+        false until the seeded threshold dataset passes professional review —
+        callers must surface that caveat before the data is relied on for
+        filing.
+      parameters:
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 2018
+      responses:
+        '200':
+          description: Per-state nexus status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      year:
+                        type: integer
+                      dataset_certified:
+                        type: boolean
+                      states:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            state_code:
+                              type: string
+                            nexus_type:
+                              type: string
+                              enum: [physical, voluntary, economic]
+                            established_at:
+                              type: string
+                              format: date-time
+                            taxable_sales:
+                              type: integer
+                              format: int64
+                              description: USD cents, calendar-year sum of invoice subtotals.
+                            txn_count:
+                              type: integer
+                            threshold:
+                              type: object
+                              properties:
+                                state_code:
+                                  type: string
+                                sales_threshold:
+                                  type: integer
+                                  format: int64
+                                txn_threshold:
+                                  type: integer
+                                combinator:
+                                  type: string
+                                  enum: [or, and]
+                                measurement_period:
+                                  type: string
+                                certified:
+                                  type: boolean
+                            proximity_pct:
+                              type: integer
+                            crossed:
+                              type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /v1/settings/irp:
     get:
       operationId: getIRPConfig
