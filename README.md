@@ -1,6 +1,6 @@
 # Recurso Documentation
 
-The documentation for [Recurso](https://github.com/swapnull-in/recur-so), the
+The documentation for [Recurso](https://github.com/recurso-dev/recurso), the
 open-source billing engine for SaaS — subscriptions, invoicing, multi-currency
 payments (Stripe + Razorpay), tax (India GST, EU VAT, US sales tax), smart
 dunning, a double-entry ledger, and a self-service customer portal.

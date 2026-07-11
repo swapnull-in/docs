@@ -573,12 +573,12 @@
         },
         {
           "anchor": "GitHub",
-          "href": "https://github.com/swapnull-in/recur-so",
+          "href": "https://github.com/recurso-dev/recurso",
           "icon": "github"
         },
         {
           "anchor": "Changelog",
-          "href": "https://github.com/swapnull-in/recur-so/releases/latest",
+          "href": "https://github.com/recurso-dev/recurso/releases/latest",
           "icon": "clock-rotate-left"
         },
         {
@@ -625,7 +625,7 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/swapnull-in/recur-so"
+      "github": "https://github.com/recurso-dev/recurso"
     },
     "links": [
       {
@@ -675,11 +675,11 @@
         "items": [
           {
             "label": "GitHub",
-            "href": "https://github.com/swapnull-in/recur-so"
+            "href": "https://github.com/recurso-dev/recurso"
           },
           {
             "label": "Changelog",
-            "href": "https://github.com/swapnull-in/recur-so/releases/latest"
+            "href": "https://github.com/recurso-dev/recurso/releases/latest"
           },
           {
             "label": "Support",

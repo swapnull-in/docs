@@ -1,112 +1,87 @@
 ---
-title: "Introduction"
-description: "Open-source billing infrastructure for SaaS and subscription businesses"
+title: "The open-source billing engine for SaaS"
+sidebarTitle: "Introduction"
+description: "Subscriptions, invoicing, usage, and India-first compliance on a real double-entry ledger — MIT-licensed and self-hostable."
 ---
 
-## The open-source billing engine for serious SaaS
+Recurso is a production-grade billing engine you can **actually own**. Plans,
+subscriptions, usage, invoicing, and payments sit on a **real double-entry
+ledger** — not a table of balances — with **India-first compliance** (GST,
+e-invoicing, RBI e-mandates) built in, not bolted on. Self-host it under MIT, or
+run it on Recurso Cloud.
 
-Recurso is a production-grade billing engine you can actually own. Subscriptions, usage, invoicing, and payments sit on top of a **real double-entry ledger** — not a table of balances — with **India-first compliance** (GST, e-invoicing, RBI e-mandates, DPDP) built in rather than bolted on. It is **MIT-licensed**: self-host it on your own infrastructure, or run it on Recurso Cloud.
-
-- **Own your billing** — full source, no black box, no per-transaction lock-in
-- **Books that balance** — every invoice, payment, and refund posts balanced debits and credits
-- **India-first, global-ready** — native GST and RBI compliance, plus TaxJar-backed US sales tax
-
-<CardGroup cols={3}>
-  <Card title="Quick Start" icon="rocket" href="/quickstart">
-    Get up and running in under 5 minutes
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    From clone to a seeded dashboard in under five minutes.
   </Card>
-  <Card title="Core Concepts" icon="book" href="/concepts">
-    Understand the building blocks
+  <Card title="Core concepts" icon="book-open" href="/concepts">
+    Plans, subscriptions, the ledger, and how they fit together.
   </Card>
-  <Card title="API Reference" icon="code" href="/api-reference/introduction">
-    Complete API documentation
-  </Card>
-  <Card title="Self-Host" icon="server" href="/quickstart#self-hosting">
-    Deploy on your own infrastructure
+  <Card title="API reference" icon="code" href="/api-reference/introduction">
+    Every endpoint, typed — with an interactive playground.
   </Card>
   <Card title="Recurso Cloud" icon="cloud" href="/pricing">
-    Managed hosting, scaling, and backups — $299/mo + usage
+    Managed hosting, scaling, and backups from $299/mo.
   </Card>
 </CardGroup>
 
-## Key Features
+## Why Recurso
 
-<AccordionGroup>
-  <Accordion title="Flexible Subscription Billing" icon="repeat">
-    Create plans with any pricing model: flat-rate, per-seat, usage-based, or hybrid. Support for trials, billing anchors, and proration.
-  </Accordion>
-  <Accordion title="Multi-Gateway Payments" icon="credit-card">
-    Integrate with Razorpay (India) and Stripe (Global). Smart routing based on customer currency.
-  </Accordion>
-  <Accordion title="GST-Compliant Invoicing" icon="file-invoice">
-    Generate invoices with GSTIN, SAC codes, CGST/SGST/IGST breakup, and e-invoice support.
-  </Accordion>
-  <Accordion title="Customer Portal" icon="user">
-    White-label portal with magic link authentication. Customers can manage subscriptions, view invoices, and update payment methods.
-  </Accordion>
-  <Accordion title="Entitlements & Feature Gating" icon="key">
-    Attach boolean and limit feature grants to plans; resolve a customer's effective entitlements across their subscriptions and gate features with a single fast check endpoint.
-  </Accordion>
-  <Accordion title="Dunning & Payment Recovery" icon="rotate-right">
-    Smart retry engine and multi-step dunning campaigns recover failed payments — with recovered-revenue attribution so you can see exactly what the engine earned back.
-  </Accordion>
-  <Accordion title="Real-time Webhooks" icon="bell">
-    Get notified instantly about subscription changes, payment events, and invoice updates.
-  </Accordion>
-  <Accordion title="Developer-First" icon="terminal">
-    Clean REST API and comprehensive documentation. Self-host on your own infrastructure.
-  </Accordion>
-</AccordionGroup>
+<Columns cols={2}>
+  <Card title="Books that balance" icon="scale-balanced">
+    Every invoice, payment, and refund posts balanced debits and credits to an
+    immutable ledger. Revenue reconciles to the penny.
+  </Card>
+  <Card title="India-first, global-ready" icon="earth-asia">
+    Native GST (CGST/SGST/IGST, HSN, Place of Supply), e-invoicing, and RBI
+    e-mandates — plus multi-currency and EU VAT on the same engine.
+  </Card>
+  <Card title="Own your billing" icon="lock-open">
+    Full source under MIT. No black box, no per-transaction lock-in. Run it on
+    your own infrastructure, or on our cloud.
+  </Card>
+  <Card title="Developer-first" icon="terminal">
+    A clean REST API with an OpenAPI 3.1 spec, typed SDKs for Go, Node, and
+    Python, HMAC-signed webhooks, and idempotency built in.
+  </Card>
+</Columns>
 
-## Why Recurso?
+## How it compares
 
-| Feature | Recurso | Stripe Billing | Chargebee |
-|---------|---------|----------------|-----------|
-| **Open Source** | ✅ Yes | ❌ No | ❌ No |
-| **Self-Hosted** | ✅ Yes | ❌ No | ❌ No |
-| **GST Support** | ✅ Native | 🟡 Limited | ✅ Yes |
-| **Razorpay** | ✅ Yes | ❌ No | ✅ Yes |
-| **Usage Billing** | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Pricing** | Free / [$299+/mo Cloud](/pricing) | 0.5% + fees | $249+/mo |
+| Capability | Recurso | Stripe Billing | Chargebee |
+| --- | :---: | :---: | :---: |
+| Open source | **Yes** | No | No |
+| Self-hosted | **Yes** | No | No |
+| Double-entry ledger | **Yes** | No | No |
+| GST &amp; e-invoicing | **Native** | Limited | Yes |
+| Razorpay + UPI AutoPay | **Yes** | No | Yes |
+| Usage-based billing | Yes | Yes | Yes |
+| Pricing | Free · [$299/mo Cloud](/pricing) | 0.5% + fees | $249+/mo |
 
-## Architecture
-
-```mermaid
-graph LR
-    A[Your App] -->|API| B[Recurso Engine]
-    B --> C[Plans & Pricing]
-    B --> D[Customers]
-    B --> E[Subscriptions]
-    B --> F[Invoices]
-    B --> G[Payments]
-    G --> H[Razorpay]
-    G --> I[Stripe]
-    B --> J[Webhooks]
-    J --> A
-```
-
-## Get Started
+## Get started
 
 <Steps>
   <Step title="Clone and run">
     ```bash
-    git clone https://github.com/swapnull-in/recur-so.git
-    cd recur-so
-    docker compose up
+    git clone https://github.com/recurso-dev/recurso.git
+    cd recurso
+    make demo
     ```
+    Brings up Postgres and TigerBeetle, the API on `:8080`, and a seeded
+    dashboard on `:5173` — with a demo API key printed when it's ready.
   </Step>
   <Step title="Create a customer">
     ```bash
-    curl -X POST http://localhost:3000/v1/customers \
-      -H "Authorization: Bearer your-api-key" \
+    curl -X POST http://localhost:8080/v1/customers \
+      -H "Authorization: Bearer rsk_test_12345" \
       -H "Content-Type: application/json" \
       -d '{"name": "Acme Corp", "email": "billing@acme.com"}'
     ```
   </Step>
   <Step title="Start a subscription">
     ```bash
-    curl -X POST http://localhost:3000/v1/subscriptions \
-      -H "Authorization: Bearer your-api-key" \
+    curl -X POST http://localhost:8080/v1/subscriptions \
+      -H "Authorization: Bearer rsk_test_12345" \
       -H "Content-Type: application/json" \
       -d '{"customer_id": "cust_123", "plan_id": "plan_pro_monthly"}'
     ```
@@ -114,10 +89,10 @@ graph LR
 </Steps>
 
 <CardGroup cols={2}>
-  <Card title="Self-Host Recurso" icon="server" href="/quickstart">
-    Follow our quickstart guide to deploy on your own infrastructure
+  <Card title="Self-host Recurso" icon="server" href="/quickstart">
+    Deploy on your own infrastructure in minutes.
   </Card>
-  <Card title="Try Recurso Cloud" icon="cloud" href="/pricing">
-    Managed hosting with auto-scaling and backups — $299/mo + usage
+  <Card title="Migrate from Stripe or Chargebee" icon="right-left" href="/migrate-from-stripe">
+    Bring your plans, customers, and subscriptions across, without double-billing.
   </Card>
 </CardGroup>
