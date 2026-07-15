@@ -16,9 +16,9 @@ webhooks (with delivery tracking and redelivery), analytics, and more.
 | Go 1.22+ | `github.com/recurso-dev/recurso-go` | `go get github.com/recurso-dev/recurso-go` |
 
 <Info>
-The Node and Python packages aren't published to npm / PyPI yet — install them
-from the [main repository](https://github.com/recurso-dev/recurso/tree/main/sdk)
-for now. The Go module is `go get`-able directly from its import path.
+The packages aren't published to npm / PyPI / a dedicated Go module repo yet —
+install all three from the [main repository](https://github.com/recurso-dev/recurso/tree/main/sdk)
+for now (the Go client lives under `sdk/go`).
 </Info>
 
 All three authenticate the same way — your API key is sent as a bearer token
@@ -285,8 +285,8 @@ client = client.with_headers({"X-Idempotency-Key": "order-1234"})
 
 ## Go
 
-The Go SDK (`recurso-go`) is hand-crafted from the same OpenAPI spec — 18
-resources / 68 methods, **standard library only** (no third-party deps).
+The Go SDK (`recurso-go`) is hand-crafted from the same OpenAPI spec — 17
+resources / 67 methods, **standard library only** (no third-party deps).
 Requires Go 1.22+. Monetary amounts are `int64` in the currency's smallest unit.
 
 ```bash
