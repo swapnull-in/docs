@@ -9,16 +9,16 @@ plans, customers, the subscription lifecycle, invoices, the usage platform
 (recording, windowed queries, per-period reports), quotes, entitlements,
 webhooks (with delivery tracking and redelivery), analytics, and more.
 
-| Language | Package | Install |
-| --- | --- | --- |
-| Node.js / TypeScript | `recurso-node` | from `sdk/node` (see below) |
-| Python 3.11+ | `recurso` | `pip install ./sdk/python` |
-| Go 1.22+ | `github.com/recurso-dev/recurso-go` | `go get github.com/recurso-dev/recurso-go` |
+| Language | Package | Repository | Install |
+| --- | --- | --- | --- |
+| Node.js / TypeScript | `recurso-node` | [recurso-node](https://github.com/recurso-dev/recurso-node) | from a checkout (see below) |
+| Python 3.11+ | `recurso` | [recurso-python](https://github.com/recurso-dev/recurso-python) | `pip install ./recurso-python` |
+| Go 1.22+ | `github.com/recurso-dev/recurso-go` | [recurso-go](https://github.com/recurso-dev/recurso-go) | `go get github.com/recurso-dev/recurso-go` |
 
 <Info>
-The packages aren't published to npm / PyPI / a dedicated Go module repo yet —
-install all three from the [main repository](https://github.com/recurso-dev/recurso/tree/main/sdk)
-for now (the Go client lives under `sdk/go`).
+Each SDK lives in its own repository. The Node and Python packages aren't
+published to npm / PyPI yet — install them from a checkout of their repo for
+now. The Go client installs directly with `go get`.
 </Info>
 
 All three authenticate the same way — your API key is sent as a bearer token
@@ -29,13 +29,13 @@ The worked examples in **Node.js** below are the fullest reference; the
 ## Node.js
 
 The Node SDK (`recurso-node`) is the fullest reference — 17 resources and 67
-methods. Install it from the repo:
+methods. Install it from its repo:
 
 ## Installation
 
 ```bash
-# From a checkout of the recurso repository
-cd sdk/node
+git clone https://github.com/recurso-dev/recurso-node.git
+cd recurso-node
 npm install && npm run build
 npm link          # or: npm pack and install the tarball in your project
 ```
@@ -221,9 +221,10 @@ the REST surface exactly, with typed request/response models and both **sync and
 async** call styles. Requires Python 3.11+.
 
 ```bash
-pip install ./sdk/python          # from the repo root
+git clone https://github.com/recurso-dev/recurso-python.git
+pip install ./recurso-python
 # or, editable, for development:
-pip install -e ./sdk/python
+pip install -e ./recurso-python
 ```
 
 ```python

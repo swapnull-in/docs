@@ -368,6 +368,51 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
+  /v1/users/invite:
+    post:
+      operationId: inviteUser
+      tags: [Team]
+      summary: Invite a team member by email
+      description: |
+        Adds a teammate WITHOUT the admin choosing a password: the account is
+        created unusable and the invitee is emailed a single-use link to set
+        their own password. Requires owner or admin. The accept page calls
+        POST /auth/reset-password with the emailed token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, name, role]
+              properties:
+                email:
+                  type: string
+                  format: email
+                name:
+                  type: string
+                role:
+                  type: string
+                  enum: [owner, admin, member]
+      responses:
+        '201':
+          description: Invitation created and emailed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
   /v1/users/{id}:
     patch:
       operationId: updateUserRole
@@ -1752,6 +1797,116 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /v1/analytics/mrr/waterfall:
+    get:
+      operationId: getMRRWaterfall
+      tags: [Analytics]
+      summary: MRR waterfall
+      description: >-
+        MRR movement between two dates — new, expansion, contraction, churned,
+        reactivation — plus Net and Gross Dollar Retention. Defaults to the
+        trailing month. Movement is only accurate for periods after MRR snapshots
+        began; has_start_history flags when the start is before that.
+      parameters:
+        - name: start
+          in: query
+          schema: { type: string, format: date }
+          description: Period start (YYYY-MM-DD). Defaults to one month before end.
+        - name: end
+          in: query
+          schema: { type: string, format: date }
+          description: Period end (YYYY-MM-DD). Defaults to today.
+      responses:
+        '200':
+          description: MRR waterfall for the period.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/analytics/invoice-aging:
+    get:
+      operationId: getInvoiceAging
+      tags: [Analytics]
+      summary: Invoice aging
+      description: >-
+        Outstanding receivables bucketed by how far past due each open invoice is
+        (current / 1-30 / 31-60 / 61-90 / 90+), normalized to the reporting currency.
+      responses:
+        '200':
+          description: Invoice aging report.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/analytics/unit-economics:
+    get:
+      operationId: getUnitEconomics
+      tags: [Analytics]
+      summary: Unit economics (ARPA / ARPU / LTV)
+      description: >-
+        Average revenue per account (customer) and per subscription, plus LTV
+        (ARPA ÷ monthly revenue churn). LTV is reported once MRR history exists
+        and churn is non-zero (has_ltv).
+      responses:
+        '200':
+          description: Unit economics.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/analytics/revenue-by-plan:
+    get:
+      operationId: getRevenueByPlan
+      tags: [Analytics]
+      summary: Revenue by plan
+      description: Current MRR broken down by plan, largest first, with each plan's share of total.
+      responses:
+        '200':
+          description: Revenue segmented by plan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/analytics/revenue-by-geography:
+    get:
+      operationId: getRevenueByGeography
+      tags: [Analytics]
+      summary: Revenue by geography
+      description: Current MRR broken down by the customer's billing country, largest first, with each country's share of total.
+      responses:
+        '200':
+          description: Revenue segmented by country.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /checkout/{id}:
     get:
       operationId: showCheckout
@@ -2239,6 +2394,33 @@ paths:
                       $ref: '#/components/schemas/Invoice'
         '401':
           $ref: '#/components/responses/Unauthorized'
+
+  /portal/api/invoices/{id}/pdf:
+    get:
+      operationId: getPortalInvoicePDF
+      tags: [Customer Portal]
+      summary: Download the logged-in customer's own invoice PDF
+      description: >
+        Returns a print-ready HTML rendering of an invoice belonging to the
+        authenticated portal customer. Scoped to the customer's own invoices —
+        another customer's invoice id returns 404 (never confirmed to exist).
+      security:
+        - portalSession: []
+      parameters:
+        - $ref: '#/components/parameters/PathID'
+      responses:
+        '200':
+          description: Print-ready invoice document.
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /portal/api/redeem:
     post:
@@ -2919,6 +3101,83 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /v1/ledger/trial-balance:
+    get:
+      operationId: getTrialBalance
+      tags: [Finance]
+      summary: Trial balance
+      description: |
+        Every account with its posted debit/credit totals, its balance on the
+        account's normal side, an abnormal-sign flag, and the double-entry
+        invariant (total debits == total credits). Read-only.
+      responses:
+        '200':
+          description: Trial balance.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/ledger/export:
+    get:
+      operationId: exportGeneralLedger
+      tags: [Finance]
+      summary: Export the general ledger (CSV)
+      description: |
+        Every posted transaction for the tenant, flattened with both account
+        codes/names, amount, and provenance, as a CSV download. Read-only.
+      responses:
+        '200':
+          description: General ledger as CSV.
+          content:
+            text/csv:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/ledger/deferred-rollforward:
+    get:
+      operationId: getDeferredRollforward
+      tags: [Finance]
+      summary: Deferred-revenue rollforward
+      description: |
+        The Deferred Revenue account's movement for a calendar month: opening
+        balance, deferrals added, amounts released, and the derived closing
+        (opening + added - released). Read-only.
+      parameters:
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Deferred-revenue rollforward.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /v1/finance/reconciliation:
     get:
       operationId: runReconciliation
@@ -2975,6 +3234,70 @@ paths:
                   data:
                     type: object
                     description: Report payload (recognized/deferred totals and breakdown rows).
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/finance/revrec/waterfall:
+    get:
+      operationId: getRevenueWaterfall
+      tags: [Finance]
+      summary: Revenue recognition waterfall
+      description: |
+        The recognition curve — revenue already recognized and revenue still
+        scheduled — bucketed by month, with totals. Read-only.
+      responses:
+        '200':
+          description: Revenue waterfall.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/india/gstr1:
+    get:
+      operationId: getGSTR1
+      tags: [Settings]
+      summary: GSTR-1 outward-supply return for a tax period
+      description: >
+        Assembles the GSTR-1 return from the tenant's finalized invoices and
+        refund credit notes for the given month: B2B (registered buyers,
+        invoice-level), B2CS (unregistered, rate-wise), CDNR (credit notes to
+        registered buyers), an HSN rollup, and control totals. Returns the
+        readable sections plus a `gov_schema` object in the GSTN GSTR-1 JSON
+        shape (official field names, amounts in rupees) ready to validate
+        against the government offline tool before filing.
+      parameters:
+        - name: month
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 12 }
+          description: Calendar month of the tax period.
+        - name: year
+          in: query
+          required: true
+          schema: { type: integer, minimum: 2017, maximum: 2100 }
+          description: Year of the tax period.
+      responses:
+        '200':
+          description: The GSTR-1 return, readable and in government JSON shape.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    description: Readable GSTR-1 sections and control totals (amounts in minor units).
+                  gov_schema:
+                    type: object
+                    description: GSTN GSTR-1 upload JSON (official field names, amounts in rupees).
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':

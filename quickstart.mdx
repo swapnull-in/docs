@@ -20,7 +20,7 @@ Choose your preferred setup method:
     ```bash
     # Clone the repository
     git clone https://github.com/recurso-dev/recurso.git
-    cd recur-so
+    cd recurso
 
     # Start with Docker Compose
     docker-compose up -d
@@ -32,7 +32,7 @@ Choose your preferred setup method:
     ```bash
     # Clone the repository
     git clone https://github.com/recurso-dev/recurso.git
-    cd recur-so
+    cd recurso
 
     # Install dependencies
     go mod download
@@ -143,12 +143,12 @@ are captured by Mailhog — view them at `http://localhost:8025`.
       -H "Content-Type: application/json" \
       -d '{
         "name": "Pro Plan",
+        "code": "PRO-INR",
         "description": "For growing teams",
-        "interval": "month",
-        "prices": [
-          { "amount": 4999, "currency": "INR" },
-          { "amount": 999, "currency": "USD" }
-        ]
+        "interval_unit": "month",
+        "interval_count": 1,
+        "amount": 4999,
+        "currency": "INR"
       }'
     ```
   </Step>
@@ -173,8 +173,7 @@ are captured by Mailhog — view them at `http://localhost:8025`.
       -H "Content-Type: application/json" \
       -d '{
         "customer_id": "cust_abc",
-        "plan_id": "plan_pro",
-        "payment_gateway": "razorpay"
+        "plan_id": "plan_pro"
       }'
     ```
   </Step>
@@ -187,7 +186,7 @@ are captured by Mailhog — view them at `http://localhost:8025`.
     const app = express();
 
     app.post('/webhooks/recurso', express.json(), (req, res) => {
-      const signature = req.headers['recurso-signature'];
+      const signature = req.headers['x-recurso-signature'];
       const expected = crypto
         .createHmac('sha256', process.env.WEBHOOK_SECRET)
         .update(JSON.stringify(req.body))
@@ -198,13 +197,13 @@ are captured by Mailhog — view them at `http://localhost:8025`.
       }
 
       switch (req.body.type) {
-        case 'subscription.activated':
+        case 'subscription.created':
           // Grant access to your product
           break;
         case 'payment.succeeded':
           // Payment received
           break;
-        case 'subscription.cancelled':
+        case 'subscription.canceled':
           // Revoke access
           break;
       }

@@ -73,7 +73,7 @@ run it on Recurso Cloud.
   <Step title="Create a customer">
     ```bash
     curl -X POST http://localhost:8080/v1/customers \
-      -H "Authorization: Bearer rsk_test_12345" \
+      -H "Authorization: Bearer sk_test_12345" \
       -H "Content-Type: application/json" \
       -d '{"name": "Acme Corp", "email": "billing@acme.com"}'
     ```
@@ -81,7 +81,7 @@ run it on Recurso Cloud.
   <Step title="Start a subscription">
     ```bash
     curl -X POST http://localhost:8080/v1/subscriptions \
-      -H "Authorization: Bearer rsk_test_12345" \
+      -H "Authorization: Bearer sk_test_12345" \
       -H "Content-Type: application/json" \
       -d '{"customer_id": "cust_123", "plan_id": "plan_pro_monthly"}'
     ```
