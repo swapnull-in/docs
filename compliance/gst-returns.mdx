@@ -1,0 +1,65 @@
+---
+title: "GST Returns (GSTR-1 & GSTR-3B)"
+description: "Return-ready GSTR-1 and GSTR-3B exports in the government JSON schema, assembled from your invoices"
+---
+
+Recurso assembles **return-ready GSTR-1 and GSTR-3B data** for any tax period,
+directly from your finalized invoices and refund credit notes — so the returns
+always reconcile to what you actually billed. Both endpoints return the
+readable sections plus a `gov_schema` object in the official GSTN JSON shape
+(government field names, amounts in rupees), ready to validate with the GSTN
+Returns Offline Tool and hand to your CA.
+
+<Info>
+Recurso generates **return-ready exports** — it does not file on your behalf.
+You (or your CA) review and file through your usual channel.
+</Info>
+
+## GSTR-1 — outward supplies, in detail
+
+```bash
+curl "http://localhost:8080/v1/india/gstr1?month=6&year=2026" \
+  -H "Authorization: Bearer $RECURSO_API_KEY"
+```
+
+The return covers:
+
+- **B2B** — invoice-level detail for registered buyers, grouped by GSTIN
+- **B2CS** — rate-wise summaries per place of supply for unregistered buyers
+- **CDNR** — credit notes issued to registered buyers
+- **HSN summary** — the per-HSN rollup with taxable value and the tax split
+- Control totals so you can tie the return to your ledger before filing
+
+## GSTR-3B — the monthly summary
+
+```bash
+curl "http://localhost:8080/v1/india/gstr3b?month=6&year=2026" \
+  -H "Authorization: Bearer $RECURSO_API_KEY"
+```
+
+GSTR-3B is built from the **same period inputs as GSTR-1**, so the two returns
+are consistent by construction:
+
+- **Table 3.1(a)** — outward taxable supplies, **net of the period's credit
+  notes** (3B is a net summary, unlike GSTR-1's separate CDNR section)
+- **Table 3.2** — inter-state supplies to unregistered persons, per place of
+  supply
+- Purchase-side sections (inward reverse charge, ITC Table 4) are emitted as
+  **explicit zeros** — Recurso holds no purchase-side data; your CA completes
+  those before filing
+
+## How the figures stay trustworthy
+
+Amounts come straight from finalized invoices (int64 minor units, the same
+CGST/SGST/IGST split posted to the [double-entry ledger](/concepts)) — never
+recomputed from floats. That means the GSTR totals tie to the trial balance
+for the period.
+
+## Related
+
+- [GST invoicing](/compliance/gst-invoicing) — Place of Supply, HSN codes, the tax split
+- [e-Invoicing (IRN)](/compliance/e-invoicing) — government registration via your GSP
+- Self-hosted **data residency**: with `RESIDENCY_MODE=self_hosted`, financial
+  data leaves your deployment only through the gateways, GSP, SMTP, and
+  webhooks you configure — see `docs/india-data-residency.md` in the main
+  repository for the security-review statement.

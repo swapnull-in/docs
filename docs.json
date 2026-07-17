@@ -155,6 +155,7 @@
               "compliance/overview",
               "compliance/gst-invoicing",
               "compliance/e-invoicing",
+              "compliance/gst-returns",
               "compliance/upi-mandates",
               "compliance/consent-tracking",
               "compliance/dunning"
