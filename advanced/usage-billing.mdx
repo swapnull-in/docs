@@ -28,36 +28,87 @@ sequenceDiagram
     R->>C: Generate invoice
 ```
 
-## Create a Metered Plan
+Metered billing is three pieces:
 
-```typescript
-const plan = await recurso.plans.create({
-  name: 'API Access',
-  interval: 'month',
-  billing_scheme: 'metered',
-  unit_label: 'API call',
-  prices: [{
-    currency: 'INR',
-    tiers_mode: 'graduated',
-    tiers: [
-      { up_to: 10000, unit_amount: 0 },        // First 10k free
-      { up_to: 100000, unit_amount: 0.05 },    // Next 90k: ₹0.05/call
-      { up_to: 'inf', unit_amount: 0.01 }      // Beyond: ₹0.01/call
-    ]
-  }]
-});
+1. A **billable metric** — a named meter that reduces raw usage events to
+   one quantity per period (`count`, `sum`, `max`, or `unique`).
+2. A **charge** — a pricing model (`per_unit`, `graduated`, `volume`,
+   `package`) attaching that metric to a plan.
+3. **Rating** — at period close, Recurso aggregates the elapsed period's
+   events per metric, prices them, and adds the result to the renewal
+   invoice as its own tax-resolved line item (billed **in arrears**).
+
+Flat plan prices are untouched: a plan holding both a price and charges is
+*hybrid* — flat fee billed in advance, usage billed in arrears, on the same
+invoice.
+
+## 1. Define a Billable Metric
+
+The metric's `code` doubles as the event `dimension` it aggregates, so any
+events you already report keep working.
+
+```bash
+curl -X POST https://api.recurso.dev/v1/billable-metrics \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "API calls",
+    "code": "api_calls",
+    "aggregation_type": "sum"
+  }'
+```
+
+| Aggregation | Reduces a period's events to |
+|---|---|
+| `count` | the number of events (quantity ignored) |
+| `sum` | the sum of `quantity` |
+| `max` | the largest single-event `quantity` |
+| `unique` | distinct values of one event property (`field_name`), e.g. active users by `user_id` |
+
+A `unique` metric needs the property to count:
+
+```json
+{ "name": "Active users", "code": "active_users",
+  "aggregation_type": "unique", "field_name": "user_id" }
+```
+
+## 2. Attach Charges to a Plan
+
+`PUT /v1/plans/{id}/charges` replaces the plan's full charge set (same
+semantics as entitlements). Rates are decimal strings in **major** currency
+units — sub-paise pricing like ₹0.0035/call is first-class — while flat and
+package amounts are integers in minor units.
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/plans/$PLAN_ID/charges \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '[{
+    "metric_id": "'$METRIC_ID'",
+    "charge_model": "graduated",
+    "amounts": {
+      "INR": {
+        "tiers": [
+          { "up_to": 10000,  "unit_amount": "0" },
+          { "up_to": 100000, "unit_amount": "0.05" },
+          { "up_to": null,   "unit_amount": "0.01" }
+        ]
+      }
+    }
+  }]'
 ```
 
 ## Report Usage
 
-Report usage events throughout the billing period. The `POST /v1/usage/events` endpoint accepts the following fields (all required):
+Report usage events throughout the billing period. The `POST /v1/usage/events` endpoint accepts:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `subscription_id` | `string` | The subscription to report usage for |
 | `customer_id` | `string` | The subscription's customer |
-| `dimension` | `string` | Usage dimension/meter name, e.g. `api_calls` |
+| `dimension` | `string` | Usage dimension/meter name, e.g. `api_calls` — matches a billable metric's `code` |
 | `quantity` | `number` | Amount of usage to record |
+| `properties` | `object` | Optional string attributes (max 20) — `unique` metrics count distinct values of one of them |
 
 <CodeGroup>
 ```typescript TypeScript
@@ -89,81 +140,101 @@ Recording is ownership-checked: the subscription must belong to your tenant
 [Record Usage Event reference](/api-reference/usage/record-event).
 </Warning>
 
-## Pricing Models
+## Charge Models
 
-### Graduated Tiers
+### `per_unit`
 
-Each tier applies to its range:
+Every unit at one rate. `"unit_amount": "0.0035"` × 1,500 calls = ₹5.25.
 
-```typescript
-tiers: [
-  { up_to: 1000, unit_amount: 0.10 },   // 1-1000: ₹100
-  { up_to: 5000, unit_amount: 0.05 },   // 1001-5000: ₹200
-  { up_to: 'inf', unit_amount: 0.01 }   // 5001+: ₹0.01 each
-]
-// Example: 7000 calls = ₹100 + ₹200 + ₹20 = ₹320
-```
+### `graduated`
 
-### Volume Tiers
+Each tier prices only the units inside it:
 
-Final tier applies to ALL units:
-
-```typescript
-tiers_mode: 'volume',
-tiers: [
-  { up_to: 1000, unit_amount: 0.10 },
-  { up_to: 5000, unit_amount: 0.05 },
-  { up_to: 'inf', unit_amount: 0.01 }
-]
-// Example: 7000 calls = 7000 × ₹0.01 = ₹70
-```
-
-### Package Pricing
-
-Charge per bundle:
-
-```typescript
-tiers: [
-  { up_to: 1000, flat_amount: 999 },    // ₹999 for up to 1000
-  { up_to: 5000, flat_amount: 1999 },   // ₹1999 for up to 5000
-  { up_to: 'inf', flat_amount: 4999 }   // ₹4999 for unlimited
+```json
+"tiers": [
+  { "up_to": 1000, "unit_amount": "0.10" },
+  { "up_to": 5000, "unit_amount": "0.05" },
+  { "up_to": null, "unit_amount": "0.01" }
 ]
 ```
 
-## Hybrid Billing
+7,000 calls = 1,000×0.10 + 4,000×0.05 + 2,000×0.01 = **₹320**.
 
-Combine a flat base fee with metered usage charges. This is the most common model for SaaS products that want predictable revenue with a usage component.
+### `volume`
 
-```typescript
-const plan = await recurso.plans.create({
-  name: 'Pro + Usage',
-  interval: 'month',
-  prices: [
-    { amount: 4999, currency: 'INR' }  // Base fee: ₹49.99/mo
-  ],
-  usage_prices: [{
-    unit_label: 'API call',
-    currency: 'INR',
-    tiers_mode: 'graduated',
-    tiers: [
-      { up_to: 10000, unit_amount: 0 },      // 10k calls included
-      { up_to: 100000, unit_amount: 0.05 },   // Overage: ₹0.05/call
-      { up_to: 'inf', unit_amount: 0.01 }
-    ]
-  }]
-});
+The **whole** quantity is priced at the single tier it reaches. With the
+same tiers, 7,000 calls = 7,000 × 0.01 = **₹70**.
+
+### `package`
+
+Bundles, partial bundles round up:
+
+```json
+{ "package_amount": 500, "package_size": 1000 }
 ```
 
-At invoice time, the customer sees two line items:
+₹5.00 per 1,000 calls — 5,200 calls bills 6 bundles = **₹30**.
+
+Tier rules: bounds are strictly ascending; the last tier must leave
+`up_to` null (unbounded); a tier's optional `flat_amount` (minor units) is
+added once when any unit lands in it. Amounts are validated at `PUT` time
+with the same code path that rates invoices, so a config that saves cannot
+fail at billing time.
+
+## What the Invoice Looks Like
+
+At period close the renewal invoice carries the flat fee (in advance, as
+today) plus one line per charge with usage (in arrears). Zero-usage charges
+add no line. Each metered line is taxed through the normal per-line GST/HSN
+resolution — the charge's `hsn_code` wins, falling back to the plan's, then
+the tenant SAC.
 
 | Line Item | Amount |
 |-----------|--------|
-| Pro Plan - Base Fee | ₹4,999.00 |
-| API Calls - 45,000 calls (10,000 included, 35,000 overage) | ₹1,750.00 |
-| **Total** | **₹6,749.00** |
+| Pro Plan | ₹4,999.00 |
+| API calls — 45000 × usage (1 Jun 2026 to 1 Jul 2026) | ₹1,750.00 |
+| IGST (18%) | ₹1,214.82 |
+| **Total** | **₹7,963.82** |
+
+Rated windows are recorded in a `usage_ratings` claim keyed by
+`(subscription, charge, period_start)`, so a retried invoice generation can
+never bill the same window twice. Immediate cancellation generates a final
+usage-only invoice for the partial elapsed window.
+
+## Preview the Current Period
+
+`GET /v1/subscriptions/{id}/usage-amount` prices the running period as of
+now — what the customer would owe if invoiced this second:
+
+```bash
+curl https://api.recurso.dev/v1/subscriptions/$SUB_ID/usage-amount \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+```json
+{
+  "data": {
+    "subscription_id": "sub_xyz",
+    "currency": "INR",
+    "current_period_start": "2026-07-01T00:00:00Z",
+    "as_of": "2026-07-18T09:30:00Z",
+    "charges": [{
+      "metric_code": "api_calls",
+      "metric_name": "API calls",
+      "aggregation_type": "sum",
+      "charge_model": "graduated",
+      "quantity": 45231,
+      "amount": 176155
+    }],
+    "total_amount": 176155
+  }
+}
+```
 
 <Tip>
-Hybrid billing works well for plans where you want a minimum commitment (the base fee) while still charging for heavy usage. Customers who stay under the included usage only pay the flat fee.
+Hybrid billing works well for plans where you want a minimum commitment
+(the flat price) while still charging for heavy usage. Customers who stay
+inside a free first tier only pay the flat fee.
 </Tip>
 
 ## Query Usage Over Time
