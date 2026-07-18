@@ -1,0 +1,89 @@
+---
+title: "Prepaid Wallets"
+description: "Money-denominated credit that drains before any other payment method"
+---
+
+## Overview
+
+A wallet holds prepaid balance for one customer in one currency, in minor
+units (paise/cents). It is the first thing an invoice consumes: at
+generation time the payment order is always
+
+**wallet → adjustment credit notes → payment gateway**
+
+so prepaid customers burn their balance before a card or mandate is ever
+touched. Every movement is an append-only transaction with the balance
+after it, and posts balanced double-entry ledger legs (top-ups: DR Cash /
+CR Customer Credit; drains: DR Customer Credit / CR Customer AR).
+
+Typical uses: AI/API products selling prepaid usage credit, annual
+prepayment with monthly burn-down, and promotional credits with an expiry.
+
+## Create a wallet
+
+```bash
+curl -X POST https://api.recurso.dev/v1/wallets \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "customer_id": "'$CUSTOMER_ID'", "currency": "INR" }'
+```
+
+One wallet per customer+currency (`409` on duplicates).
+`GET /v1/customers/{id}/wallets` lists a customer's wallets.
+
+## Top up
+
+```bash
+curl -X POST https://api.recurso.dev/v1/wallets/$WALLET_ID/top-up \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "amount": 500000, "source": "manual" }'   # ₹5,000.00 received
+```
+
+- **`manual`** records money you already received (bank transfer, offline
+  payment) — it books DR Cash / CR Customer Credit.
+- **`promotional`** grants credit with no money movement (books a
+  Credits & Adjustments expense) and may carry `"expires_at"`. Expired
+  residue is written off automatically by the billing-cycle sweep with an
+  `expiry` transaction.
+
+Drains consume residues **oldest-expiring first**, so dated promotional
+credit is always spent before it can lapse.
+
+## Auto-recharge
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/wallets/$WALLET_ID/auto-recharge \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "auto_recharge_threshold": 100000, "auto_recharge_amount": 500000 }'
+```
+
+When the balance falls below the threshold, the billing-cycle sweep
+charges the customer's saved payment method for the recharge amount. No
+saved method (or a decline) notifies the customer and retries on later
+sweeps. Send both fields as `null` to disable.
+
+## How draining works
+
+Nothing to configure: when any invoice is generated (scheduler renewal,
+mandate debit path via credit preview, subscription creation), the wallet
+in the invoice currency drains up to the amount owed. If the wallet covers
+the whole invoice it is created **paid**; a partial drain lowers
+`amount_due` and the rest follows the normal collection path.
+
+```json
+// GET /v1/wallets/{id}/transactions
+{ "data": [
+  { "type": "drain",  "amount": 118000, "balance_after": 382000,
+    "invoice_id": "inv_..." },
+  { "type": "top_up", "amount": 500000, "balance_after": 500000,
+    "source": "manual" }
+] }
+```
+
+<Info>
+GST note: wallet top-ups are recorded as received advances with **no tax on
+the top-up receipt** — tax is charged on the consumption invoice as usual.
+Review this treatment with your CA if you rely on advance-tax provisions.
+</Info>
