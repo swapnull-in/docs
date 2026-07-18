@@ -11,14 +11,14 @@ webhooks (with delivery tracking and redelivery), analytics, and more.
 
 | Language | Package | Repository | Install |
 | --- | --- | --- | --- |
-| Node.js / TypeScript | `recurso-node` | [recurso-node](https://github.com/recurso-dev/recurso-node) | from a checkout (see below) |
+| Node.js / TypeScript | [`recurso`](https://www.npmjs.com/package/recurso) | [recurso-node](https://github.com/recurso-dev/recurso-node) | `npm install recurso` |
 | Python 3.11+ | `recurso` | [recurso-python](https://github.com/recurso-dev/recurso-python) | `pip install ./recurso-python` |
 | Go 1.22+ | `github.com/recurso-dev/recurso-go` | [recurso-go](https://github.com/recurso-dev/recurso-go) | `go get github.com/recurso-dev/recurso-go` |
 
 <Info>
-Each SDK lives in its own repository. The Node and Python packages aren't
-published to npm / PyPI yet — install them from a checkout of their repo for
-now. The Go client installs directly with `go get`.
+Each SDK lives in its own repository. The Python package isn't published to
+PyPI yet — install it from a checkout of its repo for now. Node installs from
+npm and Go directly with `go get`.
 </Info>
 
 All three authenticate the same way — your API key is sent as a bearer token
@@ -28,22 +28,20 @@ The worked examples in **Node.js** below are the fullest reference; the
 
 ## Node.js
 
-The Node SDK (`recurso-node`) is the fullest reference — 17 resources and 67
-methods. Install it from its repo:
+The Node SDK is the fullest reference — 17 resources and 67 methods. It's
+published on npm as [`recurso`](https://www.npmjs.com/package/recurso)
+(source repo: [recurso-node](https://github.com/recurso-dev/recurso-node)).
 
 ## Installation
 
 ```bash
-git clone https://github.com/recurso-dev/recurso-node.git
-cd recurso-node
-npm install && npm run build
-npm link          # or: npm pack and install the tarball in your project
+npm install recurso
 ```
 
 ## Setup
 
 ```typescript
-import { Recurso } from 'recurso-node';
+import { Recurso } from 'recurso';
 
 const recurso = new Recurso(
   'rsk_test_your_api_key',
