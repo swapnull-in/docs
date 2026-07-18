@@ -1,0 +1,63 @@
+---
+title: "Zapier, n8n & Automation"
+description: "Drive no-code workflows from Recurso's signed webhooks"
+---
+
+## Overview
+
+Every billing event in Recurso — invoices, payments, subscriptions,
+usage alerts — is published as a **signed webhook** with delivery tracking
+and redelivery. That is exactly the interface no-code tools consume, so
+Zapier, n8n, Make, and similar platforms work today with a generic
+webhook trigger: no dedicated app required.
+
+## n8n (self-hosted friendly)
+
+1. Add a **Webhook node** in n8n and copy its URL.
+2. Register it with Recurso, subscribed to the events you care about:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/webhooks \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://n8n.yourco.dev/webhook/recurso",
+    "event_types": ["invoice.paid", "usage.alert.triggered", "subscription.canceled"]
+  }'
+```
+
+3. Branch on `body.type` in n8n and wire whatever follows — Slack
+   notifications, CRM updates, spreadsheet rows.
+
+Because n8n self-hosts alongside Recurso, this combination keeps every
+byte on your infrastructure — it composes cleanly with
+[`RESIDENCY_MODE=self_hosted`](/compliance/data-residency).
+
+## Zapier
+
+Use **Webhooks by Zapier → Catch Hook** as the trigger, register the
+generated URL the same way, and filter on `type`. For actions back into
+Recurso, "Webhooks by Zapier → Custom Request" calls any
+[REST endpoint](/api-reference/introduction) with your API key.
+
+## Verifying signatures
+
+Every delivery is signed; verify before trusting the payload. See
+[Webhooks — signatures](/advanced/webhooks) for the exact scheme and code
+samples. In n8n, a small Function node before the branch does it; in
+Zapier, verify in a Code step.
+
+## Useful event recipes
+
+| Event | Automation |
+|---|---|
+| `invoice.paid` | Post to Slack, mark the deal in your CRM |
+| `usage.alert.triggered` | Open an upsell task, email the account owner |
+| `subscription.canceled` | Trigger an exit survey, notify CS |
+| `invoice.payment_failed` | Escalate to a human after dunning exhausts |
+
+<Tip>
+Webhook deliveries are tracked (`GET /v1/webhooks/{id}/deliveries`) and
+replayable (`POST /v1/events/{id}/redeliver`), so a Zap that was down
+never means lost events.
+</Tip>

@@ -101,6 +101,8 @@
             "pages": [
               "advanced/platform-overview",
               "advanced/webhooks",
+              "advanced/automation",
+              "advanced/okta-sso",
               "advanced/accounting",
               "advanced/payment-gateways",
               "advanced/organizations",

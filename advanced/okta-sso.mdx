@@ -1,0 +1,49 @@
+---
+title: "Okta & SAML SSO"
+description: "Sign your team in through Okta, Azure AD, or any SAML 2.0 IdP"
+---
+
+## Overview
+
+Recurso's dashboard supports **SAML 2.0 single sign-on per tenant**, which
+covers Okta, Azure AD / Entra, Google Workspace, OneLogin, JumpCloud, and
+any other standards-compliant IdP. This page walks the Okta recipe; other
+IdPs differ only in where the fields live.
+
+## 1. Create the Okta app
+
+In Okta Admin: **Applications → Create App Integration → SAML 2.0**, then:
+
+| Okta field | Value |
+|---|---|
+| Single sign-on URL (ACS) | `https://<your-recurso-host>/auth/saml/<tenant_id>/acs` |
+| Audience URI (SP Entity ID) | `https://<your-recurso-host>/auth/saml/<tenant_id>/metadata` |
+| Name ID format | EmailAddress |
+| Application username | Email |
+
+Recurso's SP metadata is served at the metadata URL above — most IdPs can
+import it directly instead of hand-filling the fields.
+
+## 2. Configure Recurso
+
+From the dashboard: **Security → Single Sign-On**, paste the IdP metadata
+URL (or XML) from Okta's *Sign On* tab. Via API:
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/settings/sso \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "idp_metadata_url": "https://yourco.okta.com/app/.../sso/saml/metadata" }'
+```
+
+## 3. Sign in
+
+Users pick "Sign in with SSO" on the login page (or start from the Okta
+tile). Assertions are replay-protected and sessions ride the same
+httpOnly-cookie auth as password logins; MFA policy stays with your IdP.
+
+<Info>
+SAML SSO composes with Recurso's own MFA and team roles: SSO decides
+*who* gets in, roles decide *what* they can do, and every config change
+they make lands in the [audit log](/api-reference/account/list-audit-logs).
+</Info>
