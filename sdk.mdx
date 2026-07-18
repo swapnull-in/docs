@@ -28,7 +28,7 @@ The worked examples in **Node.js** below are the fullest reference; the
 
 ## Node.js
 
-The Node SDK is the fullest reference — 18 resources and 75 methods. It's
+The Node SDK is the fullest reference — 21 resources and 87 methods. It's
 published on npm as [`recurso`](https://www.npmjs.com/package/recurso)
 (source repo: [recurso-node](https://github.com/recurso-dev/recurso-node)).
 
@@ -85,10 +85,10 @@ Every list method accepts optional server-side filter params
 | `account` | `get`, `update` |
 | `customers` | `create`, `list`, `updatePaymentMethod`, `churn`, `consents` |
 | `plans` | `create`, `list`, `setCharges`, `getCharges` |
-| `subscriptions` | `create`, `list`, `update`, `cancel`, `pause`, `resume`, `reactivate`, `advance`, `charges`, `addCharge`, `usage`, `usageAmount` |
+| `subscriptions` | `create`, `list`, `update`, `cancel`, `pause`, `resume`, `reactivate`, `advance`, `charges`, `addCharge`, `usage`, `usageAmount`, `setCommitment` |
 | `invoices` | `list`, `pdfUrl`, `eInvoiceStatus`, `retryEInvoice`, `cancelEInvoice` |
 | `coupons` | `create`, `list` |
-| `usage` | `record` (with `properties`), `query`, `dimensions` |
+| `usage` | `record` (with `properties` + `transaction_id`), `recordBatch`, `query`, `dimensions` |
 | `creditNotes` | `create`, `list` |
 | `quotes` | `create`, `list`, `get`, `update`, `send`, `accept`, `decline`, `convert`, `delete` |
 | `webhooks` | `create`, `list`, `delete`, `deliveries` |
@@ -97,6 +97,9 @@ Every list method accepts optional server-side filter params
 | `gifts` | `purchase`, `redeem`, `list` |
 | `referrals` | `create`, `list`, `generateCode`, `qualify` |
 | `billableMetrics` | `create`, `list`, `get`, `update`, `delete` |
+| `wallets` | `create`, `get`, `forCustomer`, `topUp`, `transactions`, `setAutoRecharge` |
+| `usageAlerts` | `create`, `list`, `delete` |
+| `auditLogs` | `list` |
 | `entitlements` | `setForPlan`, `getForPlan`, `forCustomer`, `check` |
 | `analytics` | `mrr` |
 | `ledger` | `accounts`, `entries` |
@@ -313,7 +316,7 @@ client = client.with_headers({"X-Idempotency-Key": "order-1234"})
 ## Go
 
 The Go SDK (`recurso-go`) is hand-crafted from the same OpenAPI spec — 17
-resources / 76 methods, **standard library only** (no third-party deps).
+resources / 90 methods, **standard library only** (no third-party deps).
 Requires Go 1.22+. Monetary amounts are `int64` in the currency's smallest unit.
 
 ```bash
