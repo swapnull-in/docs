@@ -1,0 +1,37 @@
+---
+title: "Integrations Overview"
+description: "Payments, accounting, tax, CRM, storage, and automation around Recurso"
+---
+
+## At a glance
+
+| Category | Integration | Status | Configure with |
+|---|---|---|---|
+| Payments | Stripe | Stable | `STRIPE_SECRET_KEY` |
+| Payments | Razorpay + UPI AutoPay | Stable | `RAZORPAY_KEY_ID`/`_SECRET` |
+| Payments | GoCardless (SEPA/BACS bank debit) | Experimental | `GOCARDLESS_ACCESS_TOKEN` + [currency overrides](/advanced/payment-gateways#gocardless--adyen-experimental) |
+| Payments | Adyen (cards/wallets) | Experimental | `ADYEN_API_KEY`, `ADYEN_MERCHANT_ACCOUNT` |
+| Accounting | QuickBooks Online | Stable | OAuth from the dashboard |
+| Accounting | Xero | Stable | OAuth from the dashboard |
+| Accounting | Tally (local export) | Stable | built in |
+| Accounting | NetSuite (SuiteTalk REST) | Experimental | connect provider `netsuite` |
+| Tax | GST / e-Invoicing (IRN) | Stable | built in ([guide](/compliance/gst-returns)) |
+| Tax | TaxJar (US sales tax) | Stable | `TAXJAR_API_KEY` |
+| Tax | Avalara AvaTax | Experimental | `AVALARA_ACCOUNT_ID`/`_LICENSE_KEY` |
+| Tax | VIES (EU VAT validation) | Stable | `VIES_ENABLED=true` |
+| CRM | HubSpot (contact sync) | Experimental | `HUBSPOT_ACCESS_TOKEN` |
+| Data | S3 / MinIO / R2 GL export | Experimental | `S3_EXPORT_BUCKET` (+ region/keys) |
+| Automation | Zapier, n8n, Make | Stable | [signed webhooks](/advanced/automation) |
+| Auth | Okta / Azure AD / any SAML IdP | Stable | [SSO guide](/advanced/okta-sso) |
+
+**Experimental** means the adapter is built and unit-verified against the
+provider's documented API but not yet certified against a live sandbox
+account. Experimental integrations log their status at boot.
+
+## Residency guarantees
+
+Under [`RESIDENCY_MODE=self_hosted`](/compliance/data-residency), SaaS
+egress — QuickBooks, Xero, NetSuite, TaxJar, Avalara, HubSpot — is hard
+disabled at construction. Payment gateways, your SMTP server, your S3
+bucket, and your webhook endpoints remain available: they are
+operator-configured destinations, not third-party data sharing.

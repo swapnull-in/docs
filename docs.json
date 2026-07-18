@@ -104,6 +104,7 @@
               "advanced/automation",
               "advanced/okta-sso",
               "advanced/accounting",
+              "advanced/integrations",
               "advanced/payment-gateways",
               "advanced/organizations",
               "advanced/virtual-accounts",
