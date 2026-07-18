@@ -5,21 +5,27 @@ description: "Understand the building blocks of Recurso"
 
 ## Overview
 
-Recurso uses a simple hierarchy of objects to manage billing. A **plan** priced
-offering and a **customer** meet in a **subscription**, which generates
-**invoices** each cycle; **payments** settle those invoices, and every financial
-movement lands in the **ledger**.
+Recurso uses a simple hierarchy of objects to manage billing. A **plan** (flat
+prices plus usage **charges**) and a **customer** meet in a **subscription**,
+which generates **invoices** each cycle — flat fees in advance, metered usage
+in arrears. **Payments** settle those invoices (draining any prepaid
+**wallet** first), and every financial movement lands in the **ledger**.
 
 ```mermaid
 graph TD
     A[Tenant] --> B[Plans]
     A --> C[Customers]
+    A --> M[Billable Metrics]
     B --> D[Subscriptions]
     C --> D
+    M --> K[Charges on Plans]
+    K --> B
     D --> E[Invoices]
     E --> F[Payments]
-    D --> G[Usage Records]
+    D --> G[Usage Events]
     G --> E
+    C --> W[Wallets]
+    W --> F
     E --> H[Ledger Entries]
     F --> H
 ```
@@ -88,33 +94,47 @@ const plan = {
 
 ### Pricing Models
 
+A plan combines **flat prices** (billed in advance) with optional **usage
+charges** (billed in arrears at period close). A plan holding both is
+*hybrid* — one invoice carries the flat fee and the metered lines.
+
 <AccordionGroup>
-  <Accordion title="Flat Rate" icon="dollar-sign">
-    Fixed price per billing period.
-    ```typescript
-    { amount: 4999, currency: 'INR' }
+  <Accordion title="Flat rate" icon="dollar-sign">
+    Fixed price per billing period, per currency, in minor units.
+    ```json
+    { "amount": 4999, "currency": "INR", "type": "recurring" }
     ```
   </Accordion>
-  <Accordion title="Per-Seat" icon="users">
-    Price based on number of users/seats.
-    ```typescript
-    { amount: 499, currency: 'INR', billing_scheme: 'per_unit' }
+  <Accordion title="Per-unit usage" icon="chart-line">
+    Every metered unit at one rate — decimal strings support sub-paise
+    pricing like ₹0.0035/call.
+    ```json
+    { "charge_model": "per_unit",
+      "amounts": { "INR": { "unit_amount": "0.0035" } } }
     ```
   </Accordion>
-  <Accordion title="Usage-Based" icon="chart-line">
-    Price based on consumption (API calls, storage, etc.)
-    ```typescript
-    { 
-      billing_scheme: 'tiered',
-      tiers: [
-        { up_to: 1000, unit_amount: 0.10 },
-        { up_to: 10000, unit_amount: 0.05 },
-        { up_to: 'inf', unit_amount: 0.01 }
-      ]
-    }
+  <Accordion title="Graduated & volume tiers" icon="layer-group">
+    Graduated prices each band's units at its own rate; volume prices the
+    whole quantity at the tier it reaches.
+    ```json
+    { "charge_model": "graduated",
+      "amounts": { "INR": { "tiers": [
+        { "up_to": 10000, "unit_amount": "0" },
+        { "up_to": null,  "unit_amount": "0.05" }
+      ]}}}
+    ```
+  </Accordion>
+  <Accordion title="Package" icon="box">
+    Bundles that round up: ₹5.00 per 1,000 calls.
+    ```json
+    { "charge_model": "package",
+      "amounts": { "INR": { "package_amount": 500, "package_size": 1000 } } }
     ```
   </Accordion>
 </AccordionGroup>
+
+See the [Usage-Based Billing guide](/advanced/usage-billing) for the full
+pipeline from event to invoice line.
 
 ## Customers
 
@@ -225,6 +245,28 @@ const payment = {
   gateway_payment_id: 'pay_AbCdEf123456'
 };
 ```
+
+## Billable Metrics & Usage
+
+A **billable metric** is a named meter over usage events — its `code`
+doubles as the event `dimension` it aggregates (`count`, `sum`, `max`, or
+`unique` property values). Events ingest one at a time or in batches of
+500, with optional `transaction_id` idempotency so retries never
+double-count. At period close, each charge on the plan aggregates the
+elapsed period's events and prices them onto the renewal invoice — exactly
+once, guarded by a rated-window claim.
+
+## Wallets, Commitments & Alerts
+
+- **Wallets** hold prepaid balance per customer and currency. Invoices
+  drain the wallet *before* credit notes and the payment gateway;
+  promotional credit can expire, and auto-recharge tops balances up from
+  the saved payment method. ([guide](/advanced/wallets))
+- **Commitments** set a per-period revenue floor: shortfalls bill an
+  automatic true-up line at period close. ([guide](/advanced/commitments))
+- **Usage alerts** watch a metric against a threshold — absolute or a
+  percent of the entitlement limit — and fire once per billing period via
+  webhook and email. ([guide](/advanced/usage-alerts))
 
 ## Webhooks
 
