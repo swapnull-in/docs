@@ -317,3 +317,26 @@ While Recurso does not automatically fail over between gateways (a Razorpay subs
 <Warning>
 Never expose your gateway secret keys (`RAZORPAY_KEY_SECRET`, `STRIPE_SECRET_KEY`) in client-side code or API responses. Use server-side calls only for payment operations.
 </Warning>
+
+## GoCardless & Adyen (experimental)
+
+Two additional gateways ship as **experimental** (API-verified against
+their documented request shapes; sandbox certification in progress):
+
+- **GoCardless** — mandate-first bank debit (SEPA, BACS, ACH): the
+  European/UK analog of UPI AutoPay. Configure
+  `GOCARDLESS_ACCESS_TOKEN` (+ `GOCARDLESS_ENV=sandbox` for testing).
+- **Adyen** — global card & wallet processing via Checkout Sessions, with
+  off-session charges on stored payment methods. Configure
+  `ADYEN_API_KEY`, `ADYEN_MERCHANT_ACCOUNT` (+ `ADYEN_ENV=test`, or
+  `ADYEN_LIVE_URL_PREFIX` for live).
+
+Route currencies to them explicitly — the built-in INR→Razorpay /
+default→Stripe rule is unchanged unless you say otherwise:
+
+```bash
+GATEWAY_CURRENCY_OVERRIDES="EUR=gocardless,GBP=gocardless,SGD=adyen"
+```
+
+Overrides are validated at boot: naming an unconfigured gateway refuses to
+start rather than misrouting a charge later.
