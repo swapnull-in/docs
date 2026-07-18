@@ -1,0 +1,64 @@
+---
+title: "Minimum Commitments"
+description: "A per-period revenue floor with automatic true-up"
+---
+
+## Overview
+
+A commitment is a per-period minimum, in minor units, on a subscription.
+At period close, if the invoice subtotal — flat fee + add-ons + metered
+usage — falls short of the floor, Recurso adds a **"Minimum commitment
+true-up"** line for exactly the difference, taxed at the plan's HSN like
+the base fee. Usage beyond the floor simply bills normally: overage needs
+no configuration.
+
+This is the standard shape for sales-led contracts: *"₹50,000/month
+minimum, usage-based above that."*
+
+## Set a commitment
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/subscriptions/$SUB_ID/commitment \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "amount": 5000000 }'   # ₹50,000.00 per period
+```
+
+Amount `0` clears the commitment.
+
+## What the invoice looks like
+
+With a ₹10,000 flat plan, ₹22,000 of metered usage, and a ₹50,000
+commitment:
+
+| Line Item | Amount |
+|-----------|--------|
+| Pro Plan | ₹10,000.00 |
+| API calls — usage | ₹22,000.00 |
+| Minimum commitment true-up | ₹18,000.00 |
+| IGST (18%) | ₹9,000.00 |
+| **Total** | **₹59,000.00** |
+
+At or above the commitment, no true-up line appears — an invoice never
+bills more than max(actual, commitment) plus tax.
+
+## Preview the projected true-up
+
+`GET /v1/subscriptions/{id}/usage-amount` includes the commitment fields
+mid-period:
+
+```json
+{ "data": {
+    "total_amount": 2200000,
+    "commitment_amount": 5000000,
+    "projected_true_up": 1800000
+} }
+```
+
+`projected_true_up` is what the true-up would be if the period closed now
+— it shrinks toward zero as usage grows.
+
+<Info>
+Boundary semantics are exact and covered by tests: a subtotal exactly at
+the commitment adds nothing; one paisa below adds a one-paisa true-up.
+</Info>

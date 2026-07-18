@@ -140,6 +140,38 @@ Recording is ownership-checked: the subscription must belong to your tenant
 [Record Usage Event reference](/api-reference/usage/record-event).
 </Warning>
 
+### Idempotent ingestion
+
+Add a `transaction_id` (your own unique key, ≤255 chars) and retries can
+never double-count: a duplicate `(subscription, transaction_id)` collapses
+to the original event — the API answers `200` with
+`"status": "duplicate"` and the original `event_id`.
+
+```json
+{ "subscription_id": "sub_x", "customer_id": "cus_y",
+  "dimension": "api_calls", "quantity": 100,
+  "transaction_id": "req_8f3ka92" }
+```
+
+### Batch ingestion
+
+`POST /v1/usage/events/batch` accepts up to **500 events** with per-item
+results — one bad event never fails the batch:
+
+```json
+// request
+{ "events": [ { "subscription_id": "...", "customer_id": "...",
+                "dimension": "api_calls", "quantity": 100,
+                "transaction_id": "evt-1" }, ... ] }
+
+// response — index-aligned with the request
+{ "data": [
+  { "index": 0, "status": "recorded",  "event_id": "..." },
+  { "index": 1, "status": "duplicate", "event_id": "..." },
+  { "index": 2, "status": "error", "error": "quantity must be greater than zero" }
+] }
+```
+
 ## Charge Models
 
 ### `per_unit`

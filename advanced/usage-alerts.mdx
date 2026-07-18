@@ -1,0 +1,73 @@
+---
+title: "Usage Alerts"
+description: "Threshold notifications on metered usage — once per period, via webhook and email"
+---
+
+## Overview
+
+A usage alert watches one billable metric on one subscription and fires
+when the current period's aggregated usage crosses a threshold. Each alert
+fires **at most once per billing period** (an atomic claim dedups
+concurrent evaluations), through two channels:
+
+- the **`usage.alert.triggered`** webhook event, to your endpoints
+- an **email** to the customer
+
+Typical uses: "warn at 80% of quota", "tell me when a customer crosses
+1M calls", auto-triggering top-ups or upsell flows from the webhook.
+
+## Create an alert
+
+```bash
+curl -X POST https://api.recurso.dev/v1/usage-alerts \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subscription_id": "'$SUB_ID'",
+    "metric_code": "api_calls",
+    "threshold_type": "quantity",
+    "threshold": 1000000
+  }'
+```
+
+Two threshold types:
+
+| `threshold_type` | Fires when |
+|---|---|
+| `quantity` | the period's aggregated quantity reaches an absolute value |
+| `percent_of_limit` | usage reaches N% of the customer's entitlement limit whose `feature_key` equals the metric code (N up to 1000 — values above 100 alert on overage) |
+
+Multiple thresholds on the same metric are allowed (e.g. 80% and 100%);
+each fires independently, once per period.
+
+## The webhook payload
+
+```json
+{
+  "type": "usage.alert.triggered",
+  "data": {
+    "subscription_id": "sub_...",
+    "customer_id": "cus_...",
+    "metric_code": "api_calls",
+    "threshold_type": "percent_of_limit",
+    "threshold": 80,
+    "quantity": 8021,
+    "period_start": "2026-07-01T00:00:00Z"
+  }
+}
+```
+
+Alerts re-arm automatically when the billing period rolls over.
+
+## Manage alerts
+
+```bash
+GET    /v1/usage-alerts?subscription_id=...   # list
+DELETE /v1/usage-alerts/{id}                  # remove
+```
+
+<Tip>
+Pair a `percent_of_limit: 80` alert with the
+[entitlements](/advanced/entitlements) limit that powers your "used X of
+Y" display — one configuration drives both the UI meter and the warning.
+</Tip>
