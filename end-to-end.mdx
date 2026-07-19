@@ -41,13 +41,11 @@ curl -X POST https://api.recurso.dev/v1/plans \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Pro Plan",
-    "description": "For growing teams",
-    "interval": "month",
-    "trial_days": 0,
-    "prices": [
-      { "amount": 4999, "currency": "INR" },
-      { "amount": 999, "currency": "USD" }
-    ]
+    "code": "pro-monthly-inr",
+    "interval_unit": "month",
+    "interval_count": 1,
+    "amount": 499900,
+    "currency": "INR"
   }'
 ```
 
@@ -58,10 +56,11 @@ curl -X POST https://api.recurso.dev/v1/plans \
   "data": {
     "id": "plan_pro01",
     "name": "Pro Plan",
-    "interval": "month",
+    "code": "pro-monthly-inr",
+    "interval_unit": "month",
+    "interval_count": 1,
     "prices": [
-      { "amount": 4999, "currency": "INR" },
-      { "amount": 999, "currency": "USD" }
+      { "amount": 499900, "currency": "INR", "type": "recurring" }
     ],
     "active": true
   }

@@ -80,16 +80,17 @@ A **Plan** defines what you're selling and how much it costs.
 const plan = {
   id: 'plan_pro',
   name: 'Pro Plan',
-  description: 'For growing teams',
-  interval: 'month',        // month, year, week, day
-  interval_count: 1,        // e.g., 2 for bimonthly
+  code: 'pro-monthly-inr',   // unique per tenant
+  interval_unit: 'month',    // day, week, month, year
+  interval_count: 1,         // e.g. 3 for quarterly
+  active: true,
+  hsn_code: '998314',        // GST rate source for this plan's lines
   prices: [
-    { amount: 4999, currency: 'INR' },
-    { amount: 999, currency: 'USD' }
+    { amount: 499900, currency: 'INR', type: 'recurring' }
   ],
-  trial_days: 14,
-  features: ['Unlimited users', 'Priority support']
 };
+// Trials are per-subscription (`trial_days` on subscription create);
+// usage pricing attaches as charges — PUT /v1/plans/{id}/charges.
 ```
 
 ### Pricing Models

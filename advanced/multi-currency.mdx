@@ -57,41 +57,50 @@ Changing your base currency after you have active subscriptions and ledger entri
 
 Plans can include prices in multiple currencies. When a subscription is created, Recurso selects the appropriate price based on the customer's currency.
 
+A plan's flat price is **one currency**. Sell a tier in several currencies
+with per-currency plan codes — the smart router then picks the gateway per
+currency (₹ → Razorpay, $/€/£ → Stripe by default):
+
 <CodeGroup>
-```typescript TypeScript
-const plan = await recurso.plans.create({
-  name: "Pro Plan",
-  description: "For growing teams",
-  interval: "month",
-  prices: [
-    { amount: 499900, currency: "INR" },
-    { amount: 5999, currency: "USD" },
-    { amount: 4999, currency: "EUR" },
-    { amount: 4999, currency: "GBP" }
-  ]
-});
+```bash cURL
+for cur_amount in "INR 499900" "USD 5999" "EUR 4999" "GBP 4999"; do
+  set -- $cur_amount
+  curl -X POST https://api.recurso.dev/v1/plans \
+    -H "Authorization: Bearer $API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"name\": \"Pro Plan\",
+      \"code\": \"pro-monthly-$(echo $1 | tr A-Z a-z)\",
+      \"interval_unit\": \"month\",
+      \"interval_count\": 1,
+      \"amount\": $2,
+      \"currency\": \"$1\"
+    }"
+done
 ```
 
-```bash cURL
-curl -X POST https://api.recurso.dev/v1/plans \
-  -H "Authorization: Bearer $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Pro Plan",
-    "description": "For growing teams",
-    "interval": "month",
-    "prices": [
-      { "amount": 499900, "currency": "INR" },
-      { "amount": 5999, "currency": "USD" },
-      { "amount": 4999, "currency": "EUR" },
-      { "amount": 4999, "currency": "GBP" }
-    ]
-  }'
+```typescript Node
+const currencies = [
+  { code: 'pro-monthly-inr', amount: 499900, currency: 'INR' },
+  { code: 'pro-monthly-usd', amount: 5999,   currency: 'USD' },
+  { code: 'pro-monthly-eur', amount: 4999,   currency: 'EUR' },
+];
+for (const c of currencies) {
+  await recurso.plans.create({
+    name: 'Pro Plan',
+    interval_unit: 'month',
+    interval_count: 1,
+    ...c,
+  });
+}
 ```
 </CodeGroup>
 
 <Tip>
-You do not need to define prices in every currency. If a customer's currency is not listed, the subscription creation will return an error prompting you to add the missing currency or specify a fallback.
+Usage charges don't need per-currency plans — one charge carries a
+per-currency `amounts` map, so a metered plan rates in whatever currency
+the subscription bills in. See
+[usage-based billing](/advanced/usage-billing).
 </Tip>
 
 ## Currency on Subscriptions
