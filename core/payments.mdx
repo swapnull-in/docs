@@ -232,15 +232,22 @@ For intelligent retry timing based on payment success patterns, see the [Smart R
 
 ## Refunds
 
-Issue refunds through the gateway:
+Refunds are issued as **credit notes of type `refund`** — this calls the
+real Stripe/Razorpay refund API and posts a Refunds-vs-Cash ledger reversal:
 
 ```typescript
-const refund = await recurso.refunds.create({
-  payment_id: 'pay_123',
-  amount: 2500,  // Partial refund
-  reason: 'Customer requested'
+const refund = await recurso.creditNotes.create({
+  type: 'refund',            // vs. 'adjustment' (account credit)
+  customer_id: 'cust_abc123',
+  invoice_id: 'inv_001',
+  amount: 250000,            // minor units — partial refund
+  currency: 'INR',
+  reason: 'Customer requested',
 });
 ```
+
+The gateway refund settles asynchronously; the credit note tracks its
+`refund_status` (`pending` → `processed`, or `failed` / `manual_required`).
 
 ## Webhooks
 

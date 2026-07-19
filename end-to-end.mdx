@@ -22,7 +22,7 @@ sequenceDiagram
     You-->>C: Redirect to checkout
     C->>G: Complete payment
     G->>R: payment.succeeded webhook
-    R->>You: subscription.activated webhook
+    R->>You: subscription.created webhook
     Note over R: Billing cycle begins
     R->>R: 4. Invoice auto-generated at period end
     R->>G: 5. Charge saved payment method
@@ -144,11 +144,11 @@ curl -X POST https://api.recurso.dev/v1/subscriptions \
 
 Redirect the customer to `checkout_url` to complete payment. After payment succeeds, Recurso fires these webhooks:
 
-### Webhook: `subscription.activated`
+### Webhook: `subscription.created`
 
 ```json
 {
-  "type": "subscription.activated",
+  "type": "subscription.created",
   "data": {
     "id": "sub_xyz789",
     "customer_id": "cust_acme01",
@@ -176,7 +176,7 @@ Redirect the customer to `checkout_url` to complete payment. After payment succe
 ```
 
 <Info>
-Grant access to your product when you receive `subscription.activated`. See the [Webhooks guide](/advanced/webhooks) for signature verification.
+Grant access to your product when you receive `subscription.created`. See the [Webhooks guide](/advanced/webhooks) for signature verification.
 </Info>
 
 ## Step 4: Invoice Auto-Generated

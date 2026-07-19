@@ -30,7 +30,7 @@ From the dashboard: **Security → Single Sign-On**, paste the IdP metadata
 URL (or XML) from Okta's *Sign On* tab. Via API:
 
 ```bash
-curl -X PUT https://api.recurso.dev/v1/settings/sso \
+curl -X PUT https://api.recurso.dev/v1/sso/connection \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "idp_metadata_url": "https://yourco.okta.com/app/.../sso/saml/metadata" }'

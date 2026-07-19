@@ -275,6 +275,7 @@ curl -X POST https://api.recurso.dev/v1/credit-notes \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
+    "type": "adjustment",
     "customer_id": "…",
     "invoice_id": "…",
     "amount": 250000,

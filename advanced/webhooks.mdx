@@ -18,7 +18,7 @@ Webhooks notify your application when events happen in Recurso:
 const webhook = await recurso.webhooks.create({
   url: 'https://yourapp.com/webhooks/recurso',
   events: [
-    'subscription.activated',
+    'subscription.created',
     'payment.succeeded',
     'payment.failed',
     'invoice.paid'
@@ -32,7 +32,7 @@ const webhook = await recurso.webhooks.create({
 ```json
 {
   "id": "evt_abc123",
-  "type": "subscription.activated",
+  "type": "subscription.created",
   "created_at": "2024-01-15T10:30:00Z",
   "data": {
     "id": "sub_xyz",
@@ -66,7 +66,7 @@ app.post('/webhooks/recurso',
       
       // Handle the event
       switch (event.type) {
-        case 'subscription.activated':
+        case 'subscription.created':
           handleSubscriptionActivated(event.data);
           break;
         case 'payment.failed':
@@ -97,7 +97,7 @@ def webhook():
             os.environ['WEBHOOK_SECRET']
         )
         
-        if event['type'] == 'subscription.activated':
+        if event['type'] == 'subscription.created':
             handle_activation(event['data'])
             
         return '', 200
@@ -113,11 +113,11 @@ def webhook():
 | Event | Description |
 |-------|-------------|
 | `subscription.created` | New subscription |
-| `subscription.activated` | First payment succeeded |
+| `subscription.created` | First payment succeeded |
 | `subscription.updated` | Plan/quantity changed |
 | `subscription.paused` | Subscription paused |
 | `subscription.resumed` | Subscription resumed |
-| `subscription.cancelled` | Subscription cancelled |
+| `subscription.canceled` | Subscription cancelled |
 | `subscription.past_due` | Payment failed |
 
 ### Payment Events
@@ -214,7 +214,7 @@ Send test events to verify your integration:
 
 ```typescript
 await recurso.webhooks.test('wh_xyz', {
-  type: 'subscription.activated'
+  type: 'subscription.created'
 });
 ```
 

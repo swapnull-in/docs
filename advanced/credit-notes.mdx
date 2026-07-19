@@ -204,12 +204,13 @@ Cancel a credit note that was issued in error. Only credit notes with no applica
 
 <CodeGroup>
 ```typescript TypeScript
-await recurso.creditNotes.void('cn_xyz');
+// There is no void endpoint. To reverse a credit note issued in error,
+// offset it (e.g. an adjustment on the next invoice) and record the reason.
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/credit-notes/cn_xyz/void \
-  -H "Authorization: Bearer $API_KEY"
+# No void endpoint — credit notes are immutable once issued (accounting
+# integrity). Offset a mistaken credit note rather than deleting it.
 ```
 </CodeGroup>
 

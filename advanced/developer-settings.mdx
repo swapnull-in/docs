@@ -37,73 +37,37 @@ Live API keys (`rsk_live_`) process real payments. Never use live keys in develo
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/api-keys \
+curl -X POST https://api.recurso.dev/v1/developer/keys \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Backend Server — Production",
-    "environment": "live",
-    "scopes": [
-      "subscriptions:read",
-      "subscriptions:write",
-      "invoices:read",
-      "customers:read",
-      "customers:write"
-    ]
+    "mode": "live"
   }'
 ```
 </CodeGroup>
+
+<Note>
+Keys grant **full tenant API access** — there is no per-scope model today.
+`mode` is `test` (default, `rsk_test_`) or `live` (`rsk_live_`). Isolate
+blast radius by minting separate keys per service, not by scoping.
+</Note>
 
 <Warning>
 The full API key secret is returned **only once** at creation time. Store it securely in your secrets manager immediately. Recurso cannot retrieve it later.
 </Warning>
 
-### Available Scopes
-
-| Scope | Description |
-|-------|-------------|
-| `customers:read` | List and retrieve customers |
-| `customers:write` | Create, update, and delete customers |
-| `subscriptions:read` | List and retrieve subscriptions |
-| `subscriptions:write` | Create, update, cancel subscriptions |
-| `invoices:read` | List and retrieve invoices |
-| `invoices:write` | Create and finalize invoices |
-| `plans:read` | List and retrieve plans |
-| `plans:write` | Create and update plans |
-| `payments:read` | List and retrieve payments |
-| `payments:write` | Record offline payments, issue refunds |
-| `webhooks:read` | List webhook endpoints |
-| `webhooks:write` | Create and update webhook endpoints |
-| `usage:read` | Retrieve usage records |
-| `usage:write` | Report usage events |
-
-<Tip>
-Follow the principle of least privilege. A service that only reads invoice data should not have `subscriptions:write` access. Create separate keys for separate services.
-</Tip>
-
-### Revoke an API Key
-
-<CodeGroup>
-
-```bash cURL
-curl -X DELETE https://api.recurso.dev/v1/api-keys/key_Mn4xR7kp \
-  -H "Authorization: Bearer $API_KEY"
-```
-</CodeGroup>
-
-<Info>
-Revoking a key is permanent and takes effect immediately. All active sessions and pending requests using the revoked key will fail with a `401 Unauthorized` response.
-</Info>
-
 ### List API Keys
 
-<CodeGroup>
-
-```bash cURL
-curl -X GET "https://api.recurso.dev/v1/api-keys?environment=live" \
+```bash
+curl https://api.recurso.dev/v1/developer/keys \
   -H "Authorization: Bearer $API_KEY"
 ```
-</CodeGroup>
+
+<Note>
+Key **revocation** is a dashboard operation (Developers → API keys →
+Revoke) — there is no delete endpoint in the API yet.
+</Note>
 
 ## Environment Management
 
@@ -159,7 +123,7 @@ Configure tenant-level settings that apply across your account:
 <CodeGroup>
 
 ```bash cURL
-curl -X PUT https://api.recurso.dev/v1/settings \
+curl -X PUT https://api.recurso.dev/v1/account \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -187,6 +151,12 @@ curl -X PUT https://api.recurso.dev/v1/settings \
 | `auto_finalize_invoices` | boolean | Automatically finalize invoices when generated |
 | `payment_terms_days` | integer | Default payment terms in days (e.g., 30 = Net 30) |
 
+<Note>
+`PUT /v1/account` currently updates **name and email** only; the remaining
+options above are configured in the dashboard (Settings). Payment terms are
+set per subscription (`payment_terms: net0|net15|net30|net60`), not globally.
+</Note>
+
 ## Webhook Endpoint Configuration
 
 Register endpoints to receive real-time event notifications:
@@ -196,13 +166,12 @@ Register endpoints to receive real-time event notifications:
 const endpoint = await recurso.webhooks.create({
   url: "https://api.acme.com/webhooks/recurso",
   events: [
-    "subscription.activated",
-    "subscription.cancelled",
+    "subscription.created",
+    "subscription.canceled",
     "payment.succeeded",
     "payment.failed",
     "invoice.paid"
-  ],
-  environment: "live"
+  ]
 });
 ```
 
@@ -213,8 +182,8 @@ curl -X POST https://api.recurso.dev/v1/webhooks \
   -d '{
     "url": "https://api.acme.com/webhooks/recurso",
     "events": [
-      "subscription.activated",
-      "subscription.cancelled",
+      "subscription.created",
+      "subscription.canceled",
       "payment.succeeded",
       "payment.failed",
       "invoice.paid"

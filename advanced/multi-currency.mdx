@@ -35,12 +35,9 @@ Configure your base currency during tenant setup. This is the currency used for 
 <CodeGroup>
 
 ```bash cURL
-curl -X PATCH https://api.recurso.dev/v1/tenant \
-  -H "Authorization: Bearer $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "base_currency": "INR"
-  }'
+# The reporting/base currency is fixed when the tenant is created and is a
+# dashboard/registration setting — there is no runtime API to change it.
+# The account endpoint (PUT /v1/account) updates name and email only.
 ```
 </CodeGroup>
 
@@ -176,20 +173,11 @@ Recurso supports multiple approaches for exchange rates:
 
 <CodeGroup>
 
-```bash cURL
-curl -X PATCH https://api.recurso.dev/v1/tenant \
-  -H "Authorization: Bearer $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "fx_rate_source": "fixed",
-    "fixed_rates": {
-      "USD_INR": 83.50,
-      "EUR_INR": 90.75,
-      "GBP_INR": 106.20
-    }
-  }'
-```
-</CodeGroup>
+The FX rate source (live provider vs. fixed rates) is a **deployment
+setting**, not a runtime API — configure it via environment / dashboard,
+not a `/v1` call. FX affects reporting only: invoices always bill in the
+subscription's own currency, and MRR/revenue normalize to your reporting
+currency at read time.
 
 ## Currency Conversion in the Ledger
 

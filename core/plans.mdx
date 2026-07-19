@@ -242,12 +242,13 @@ Archived plans can't be used for new subscriptions but existing subscriptions co
 
 <CodeGroup>
 ```typescript TypeScript
-await recurso.plans.archive('plan_old');
+// Archiving is a dashboard operation (Plans → ⋯ → Archive). There is no
+// archive API endpoint today — the /v1/plans surface is create + list only.
 ```
 
 ```bash cURL
-curl -X POST https://api.recurso.dev/v1/plans/plan_old/archive \
-  -H "Authorization: Bearer $API_KEY"
+# No archive endpoint — archive from the dashboard, or simply stop
+# subscribing customers to the old plan. Existing subscribers bill on.
 ```
 </CodeGroup>
 
@@ -277,8 +278,7 @@ const v1 = await recurso.plans.create({
   currency: 'INR',
 });
 
-// v2 — price increase, archive v1
-await recurso.plans.archive(v1.id);
+// v2 — price increase (archive v1 from the dashboard)
 const v2 = await recurso.plans.create({
   name: 'Pro Plan',
   code: 'pro-monthly-v2',
