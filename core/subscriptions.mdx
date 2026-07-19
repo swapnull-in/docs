@@ -107,23 +107,27 @@ const subscription = await recurso.subscriptions.create({
 During trial, no invoice is generated. The first invoice is created when trial ends.
 </Info>
 
-## Quantity (Per-Seat)
+## Per-Seat Quantities (Add-ons)
 
-For per-seat plans, specify quantity:
+Subscriptions don't carry a bare `quantity` — seats are modeled as an
+**add-on**: an existing plan attached to the subscription with a quantity,
+billed as its own line (add-on price × quantity, taxed independently) from
+the next recurring invoice:
 
-```typescript
-const subscription = await recurso.subscriptions.create({
-  customer_id: 'cust_abc123',
-  plan_id: 'plan_team',
-  quantity: 10  // 10 seats
-});
-
-// Update seats
-await recurso.subscriptions.update('sub_xyz', {
-  quantity: 15  // Upgrade to 15 seats
-});
-// Invoice prorated automatically
+```bash
+# 10 seats of the per-seat plan on top of the base plan
+curl -X POST https://api.recurso.dev/v1/subscriptions/{sub_id}/addons \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "plan_id": "plan_seat", "quantity": 10 }'
 ```
+
+<Tip>
+Seats that fluctuate mid-period are often better metered: a billable
+metric with `max(seats)` aggregation bills the period's high-water mark
+with no proration bookkeeping — see
+[usage-based billing](/advanced/usage-billing).
+</Tip>
 
 ## Upgrade / Downgrade
 

@@ -22,59 +22,75 @@ time is your application's job — see [feature gating](/tutorials/feature-gatin
 
 ## Step 1: Create a metered plan
 
-Combine a flat base fee with a metered usage component (the most common SaaS
-model — predictable revenue plus a usage upside).
+A metered plan is three calls: the **plan** (flat base fee), a **billable
+metric** (the meter), and the **charges** that price the metric on the plan
+— the most common SaaS model: predictable revenue plus a usage upside.
 
-<CodeGroup>
-```bash cURL
-curl -X POST http://localhost:8080/v1/plans \
-  -H "Authorization: Bearer $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "API Pro",
-    "description": "Base plan with metered API calls",
-    "interval": "month",
-    "prices": [
-      { "amount": 4999, "currency": "INR" }
-    ],
-    "usage_prices": [{
-      "unit_label": "API call",
-      "currency": "INR",
-      "tiers_mode": "graduated",
-      "tiers": [
-        { "up_to": 10000, "unit_amount": 0 },
-        { "up_to": 100000, "unit_amount": 0.05 },
-        { "up_to": "inf", "unit_amount": 0.01 }
-      ]
-    }]
-  }'
-```
+<Steps>
+  <Step title="Create the base plan">
+    <CodeGroup>
+    ```bash cURL
+    curl -X POST http://localhost:8080/v1/plans \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "API Pro",
+        "code": "api-pro-monthly",
+        "interval_unit": "month",
+        "interval_count": 1,
+        "amount": 499900,
+        "currency": "INR"
+      }'
+    ```
 
-```typescript Node
-const plan = await recurso.plans.create({
-  name: 'API Pro',
-  description: 'Base plan with metered API calls',
-  interval: 'month',
-  prices: [{ amount: 4999, currency: 'INR' }],
-  usage_prices: [{
-    unit_label: 'API call',
-    currency: 'INR',
-    tiers_mode: 'graduated',
-    tiers: [
-      { up_to: 10000, unit_amount: 0 },       // first 10k included
-      { up_to: 100000, unit_amount: 0.05 },   // overage: ₹0.05/call
-      { up_to: 'inf', unit_amount: 0.01 },
-    ],
-  }],
-});
-```
-</CodeGroup>
+    ```typescript Node
+    const plan = await recurso.plans.create({
+      name: 'API Pro',
+      code: 'api-pro-monthly',
+      interval_unit: 'month',
+      interval_count: 1,
+      amount: 499900,      // ₹4,999.00 in paise
+      currency: 'INR',
+    });
+    ```
+    </CodeGroup>
+  </Step>
+  <Step title="Define the billable metric">
+    The metric's `code` doubles as the usage event `dimension` it aggregates:
+
+    ```bash
+    curl -X POST http://localhost:8080/v1/billable-metrics \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{ "name": "API calls", "code": "api_calls", "aggregation_type": "count" }'
+    ```
+  </Step>
+  <Step title="Attach graduated charges to the plan">
+    ```bash
+    curl -X PUT http://localhost:8080/v1/plans/{plan_id}/charges \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '[{
+        "metric_code": "api_calls",
+        "charge_model": "graduated",
+        "amounts": { "INR": { "tiers": [
+          { "up_to": 10000, "unit_amount": "0" },
+          { "up_to": 100000, "unit_amount": "0.05" },
+          { "up_to": null, "unit_amount": "0.01" }
+        ] } }
+      }]'
+    ```
+
+    First 10k calls included, overage at ₹0.05 then ₹0.01 — rates are
+    decimal strings, so sub-paise pricing is exact.
+  </Step>
+</Steps>
 
 <Note>
 `graduated` tiers charge each tier's rate across its own range; `volume` tiers
 apply the final tier's rate to *all* units. See
-[Usage-Based Billing](/advanced/usage-billing#pricing-models) for the difference
-with worked examples.
+[Usage-Based Billing](/advanced/usage-billing#charge-models) for all four
+models priced against the same month.
 </Note>
 
 Then create a customer and subscribe them to this plan — see the

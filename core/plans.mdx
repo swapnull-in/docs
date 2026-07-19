@@ -52,66 +52,85 @@ curl -X POST https://api.recurso.dev/v1/plans \
 
 ## Pricing Models
 
-### Flat Rate
+A plan always carries a **flat recurring price** (`amount` + `currency`).
+Everything else — seats, tiers, metered usage — composes on top of it.
 
-Simple fixed price per period:
+<Tabs>
+  <Tab title="Flat rate">
+    One fixed price per period. This is the plan itself:
 
-```typescript
-{
-  name: 'Starter',
-  interval: 'month',
-  prices: [{ amount: 999, currency: 'INR' }]
-}
-```
+    ```bash
+    curl -X POST https://api.recurso.dev/v1/plans \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Starter",
+        "code": "starter-monthly",
+        "interval_unit": "month",
+        "interval_count": 1,
+        "amount": 99900,
+        "currency": "INR"
+      }'
+    ```
 
-### Per-Seat Pricing
+    `amount` is in minor units — `99900` is ₹999.00.
+  </Tab>
+  <Tab title="Per-seat">
+    Two ways to bill seats:
 
-Charge based on number of users:
+    **Add-ons** — attach a per-seat plan to the subscription with a
+    quantity. The add-on bills as its own line (price × quantity) from the
+    next recurring invoice:
 
-```typescript
-{
-  name: 'Team Plan',
-  interval: 'month',
-  billing_scheme: 'per_unit',
-  prices: [{ amount: 299, currency: 'INR' }],
-  unit_label: 'user'
-}
+    ```bash
+    curl -X POST https://api.recurso.dev/v1/subscriptions/{sub_id}/addons \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{ "plan_id": "plan_seat", "quantity": 10 }'
+    ```
 
-// When creating subscription
-const subscription = await recurso.subscriptions.create({
-  plan_id: 'plan_team',
-  customer_id: customer.id,
-  quantity: 5  // 5 users × ₹299 = ₹1495/month
-});
-```
+    **Seat metering** — define a billable metric with `max(seats)`
+    aggregation and report seat counts as usage events. The period bills
+    the high-water mark; no proration bookkeeping needed. See
+    [usage-based billing](/advanced/usage-billing).
+  </Tab>
+  <Tab title="Tiered / metered">
+    Usage pricing lives in **plan charges**, not on the plan price. Attach
+    charges that reference billable metrics, one of four charge models:
 
-### Tiered Pricing
+    ```bash
+    curl -X PUT https://api.recurso.dev/v1/plans/{plan_id}/charges \
+      -H "Authorization: Bearer $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '[{
+        "metric_code": "api_calls",
+        "charge_model": "graduated",
+        "amounts": { "INR": { "tiers": [
+          { "up_to": 100000, "unit_amount": "0" },
+          { "up_to": 1000000, "unit_amount": "0.05" },
+          { "up_to": null, "unit_amount": "0.0035" }
+        ] } }
+      }]'
+    ```
 
-Volume discounts based on quantity:
+    The `PUT` is a full replacement — charges absent from the request are
+    removed. Models: `per_unit`, `graduated`, `volume`, `package` —
+    [compared side by side here](/advanced/usage-billing#charge-models).
+  </Tab>
+  <Tab title="Hybrid">
+    A plan holding **both** a flat price and charges is hybrid: the flat
+    fee bills in advance (as always), usage bills in arrears on the same
+    renewal invoice at period close — each as its own tax-resolved line.
 
-```typescript
-{
-  name: 'API Access',
-  interval: 'month',
-  billing_scheme: 'tiered',
-  tiers_mode: 'graduated',  // or 'volume'
-  tiers: [
-    { up_to: 1000, unit_amount: 0.10 },    // First 1000: ₹0.10 each
-    { up_to: 10000, unit_amount: 0.05 },   // Next 9000: ₹0.05 each
-    { up_to: 'inf', unit_amount: 0.01 }    // Beyond: ₹0.01 each
-  ]
-}
-```
-
-<Note>
-**Tiered vs Volume**:
-- `graduated` applies each tier to its own range
-- `volume` applies the final tier rate to all units
-</Note>
-
-### Usage-Based Pricing
-
-For metered plans, define tiers with `billing_scheme: 'metered'`. Usage is reported via the Usage API and invoiced at the end of each billing period. See the [Usage-Based Billing guide](/advanced/usage-billing) for setup and reporting.
+    ```text
+    Pro Plan (advance)                 ₹4,999.00
+    API calls — 45,000 × usage         ₹1,750.00
+    IGST (18%)                         ₹1,214.82
+    ─────────────────────────────────────────────
+    Total                              ₹7,963.82
+    ```
+  </Tab>
+</Tabs>
 
 ## Plan Intervals
 
