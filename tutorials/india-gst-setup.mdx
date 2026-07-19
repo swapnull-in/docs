@@ -37,13 +37,21 @@ curl -X PUT http://localhost:8080/v1/settings/gst \
 ```
 
 ```typescript Node
-await recurso.settings.update({
-  gstin: '29AABCT1332L1ZM',
-  legal_name: 'Recurso Technologies Pvt Ltd',
-  trade_name: 'Recurso',
-  state_code: '29',       // Karnataka
-  sac_code: '998314',
-  gst_rate: 18.0,
+// The SDK has no settings wrapper yet — call the endpoint directly.
+await fetch(`${BASE_URL}/v1/settings/gst`, {
+  method: 'PUT',
+  headers: {
+    Authorization: `Bearer ${API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    gstin: '29AABCT1332L1ZM',
+    legal_name: 'Recurso Technologies Pvt Ltd',
+    trade_name: 'Recurso',
+    state_code: '29',       // Karnataka
+    sac_code: '998314',
+    gst_rate: 18.0,
+  }),
 });
 ```
 </CodeGroup>
@@ -166,8 +174,8 @@ interstate example above:
 When e-invoicing is enabled and the invoice is above the threshold, Recurso
 submits it to the IRP and attaches the **IRN**, acknowledgement number, and
 signed **QR code**. Check status with
-`GET /v1/invoices/{id}/einvoice-status`, and download the PDF via
-`recurso.invoices.pdfUrl(invoiceId)`.
+`GET /v1/invoices/{id}/einvoice`, and download the print-ready document via
+`GET /v1/invoices/{id}/pdf`.
 
 ## Verify Your Setup
 
