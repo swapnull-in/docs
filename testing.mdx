@@ -76,10 +76,9 @@ To exercise your failure handling on the checkout verify path, pass the literal
 signature `fail` — the mock gateway will reject it:
 
 ```bash
-curl -X POST https://api.recurso.dev/v1/checkout/razorpay-verify \
-  -H "Authorization: Bearer <your_api_key>" \
+curl -X POST https://api.recurso.dev/checkout/{invoice_id}/razorpay/verify \
   -H "Content-Type: application/json" \
-  -d '{ "order_id": "order_x", "payment_id": "pay_x", "signature": "fail" }'
+  -d '{ "razorpay_order_id": "order_x", "razorpay_payment_id": "pay_x", "razorpay_signature": "fail" }'
 ```
 
 Any other signature verifies successfully, so you can toggle between the happy and
@@ -143,7 +142,7 @@ curl -X POST https://api.recurso.dev/v1/webhooks \
   -d '{ "url": "https://your-app.example.com/hooks", "events": ["invoice.paid"] }'
 
 # Inspect deliveries, then redeliver a specific event to debug your handler
-curl https://api.recurso.dev/v1/webhooks/deliveries \
+curl https://api.recurso.dev/v1/webhooks/{endpoint_id}/deliveries \
   -H "Authorization: Bearer <your_api_key>"
 ```
 

@@ -1,158 +1,104 @@
 ---
 title: "Customer Portal Overview"
-description: "White-label self-service portal for your customers"
+description: "The passwordless, customer-facing self-service portal"
 ---
 
 ## Overview
 
-The Customer Portal is a white-label interface where your customers can:
+The Customer Portal is a **customer-facing** surface: your customers sign
+in passwordlessly with a magic link and manage their own billing. It is a
+separate API from the merchant `/v1` API — portal endpoints live under
+`/portal` and authenticate with a session cookie, not your API key. Your
+backend never proxies these calls; you only kick off the magic link.
 
-- View and pay invoices
-- Manage subscriptions
-- Update payment methods
-- Download invoices as PDF
-- Cancel subscriptions
-
-## Features
+What a signed-in customer can do today:
 
 <CardGroup cols={2}>
-  <Card title="Magic Links" icon="wand-magic-sparkles">
-    Passwordless authentication via email
+  <Card title="View & pay invoices" icon="file-invoice">
+    List invoices, open the hosted checkout, download a PDF.
   </Card>
-  <Card title="Invoice Management" icon="file-invoice">
-    View, pay, and download invoices
+  <Card title="Update the card on file" icon="credit-card">
+    Stripe SetupIntent for cards, or re-authorize a UPI AutoPay mandate.
   </Card>
-  <Card title="Subscription Control" icon="sliders">
-    Upgrade, downgrade, or cancel
+  <Card title="Raise a dispute" icon="circle-question">
+    Query or dispute one of their own invoices.
   </Card>
-  <Card title="Payment Methods" icon="credit-card">
-    Add or update payment methods
+  <Card title="Redeem a gift code" icon="gift">
+    Apply a [gift](/advanced/gifts) code to their account.
   </Card>
 </CardGroup>
 
-## Access Portal
+<Note>
+Subscription **cancellation** is handled by the separate
+[cancel-flows](/portal/cancel-self-service) feature (surveys, retention
+offers, confirmation) rather than a raw portal endpoint.
+</Note>
 
-### Generate Magic Link
-
-```typescript
-const session = await recurso.portal.createSession({
-  customer_id: 'cust_abc',
-  return_url: 'https://yourapp.com/account'
-});
-
-// Redirect customer or email the link
-console.log(session.url);
-// https://portal.yourapp.com/verify?token=xxx
-```
-
-### Embed in Your App
-
-```typescript
-// Create embedded session
-const embedded = await recurso.portal.createEmbeddedSession({
-  customer_id: 'cust_abc'
-});
-
-// Use in iframe
-<iframe src={embedded.url} />
-```
-
-## Portal URLs
-
-| URL | Purpose |
-|-----|---------|
-| `/portal` | Dashboard home |
-| `/portal/invoices` | Invoice list |
-| `/portal/subscriptions` | Subscription management |
-| `/portal/payment-methods` | Payment methods |
-| `/portal/pay/:invoice_id` | Pay specific invoice |
-
-## Customization
-
-### Branding
-
-```typescript
-await recurso.settings.portal.update({
-  logo_url: 'https://yourapp.com/logo.png',
-  primary_color: '#10B981',
-  company_name: 'YourBrand',
-  support_email: 'support@yourapp.com'
-});
-```
-
-### Enable/Disable Features
-
-```typescript
-await recurso.settings.portal.update({
-  allow_cancel: true,
-  allow_upgrade: true,
-  allow_downgrade: false,  // Require contacting support
-  show_invoices: true,
-  show_usage: true
-});
-```
-
-## Self-Service Actions
-
-### Cancel Subscription
-
-Customers can cancel from the portal:
-
-1. Go to Subscriptions
-2. Click "Cancel Subscription"
-3. Select reason
-4. Confirm cancellation
-
-<Info>
-Configure cancellation behavior in settings: immediate vs end of period.
-</Info>
-
-### Update Payment Method
-
-1. Go to Payment Methods
-2. Add new card via Razorpay/Stripe
-3. Set as default
-4. Remove old methods
-
-### Pay Invoice
-
-1. Click "Pay Now" on invoice
-2. Complete payment via gateway
-3. Receive confirmation email
-
-## Architecture
+## How authentication works
 
 ```mermaid
 sequenceDiagram
     participant C as Customer
     participant A as Your App
-    participant R as Recurso
-    participant P as Portal
-    
-    C->>A: Request billing access
-    A->>R: Create portal session
-    R-->>A: Magic link URL
-    A-->>C: Email magic link
-    C->>P: Click magic link
-    P->>R: Verify token
-    R-->>P: Session authenticated
-    P-->>C: Show portal dashboard
+    participant R as Recurso Portal
+    C->>A: "Manage my billing"
+    A->>R: POST /portal/auth/request { email }
+    R-->>C: Emails a magic link
+    C->>R: Clicks link → POST /portal/auth/verify { token }
+    R-->>C: 7-day session (portal_session cookie)
+    C->>R: GET /portal/api/invoices (cookie auth)
 ```
+
+There is **no merchant-side "create session" call**. Your app (or the
+customer) posts the email; Recurso emails the link; clicking it starts the
+session. Full flow in [Magic Links](/portal/magic-links).
+
+## Portal API surface
+
+All data endpoints require the `portal_session` cookie set by
+`/portal/auth/verify`.
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /portal/auth/request` | Email a magic login link (public) |
+| `POST /portal/auth/verify` | Exchange the token for a 7-day session |
+| `GET /portal/api/profile` | The signed-in customer's profile |
+| `GET /portal/api/invoices` | Their invoices |
+| `GET /portal/api/invoices/{id}/pdf` | Download an invoice PDF |
+| `POST /portal/api/payment-method/setup-intent` | Start a card update (Stripe) |
+| `POST /portal/api/payment-method/mandate` | Re-authorize a UPI AutoPay mandate |
+| `POST /portal/api/invoices/{id}/dispute` | Raise a dispute on an invoice |
+| `POST /portal/api/redeem` | Redeem a gift code |
+| `POST /portal/api/logout` | End the session |
+
+## Branding & configuration
+
+Portal branding (logo, colors, support email) and which self-service
+actions are exposed are **dashboard settings**, not API calls — configure
+them under **Settings → Portal** in the Recurso dashboard. There is no
+`/v1/settings/portal` endpoint.
 
 ## Security
 
-- **Time-limited tokens**: Magic links expire in 15 minutes
-- **Session duration**: Portal sessions last 24 hours
-- **IP validation**: Optional IP restriction
-- **Audit logs**: All actions logged
+- **Time-limited magic links** — single-use tokens, short expiry.
+- **Session cookie** — `portal_session`, valid 7 days.
+- **Email-enumeration safe** — `/portal/auth/request` always responds
+  positively, whether or not the email exists.
+- **Audit trail** — portal actions land in the append-only audit log.
 
 ## Next Steps
 
 <CardGroup cols={2}>
   <Card title="Magic Links" icon="wand-magic-sparkles" href="/portal/magic-links">
-    Configure passwordless auth
+    The passwordless auth flow, end to end.
   </Card>
   <Card title="Self-Service" icon="user-gear" href="/portal/self-service">
-    Enable customer actions
+    Invoices, card updates, mandates, disputes.
+  </Card>
+  <Card title="Cancellation Flows" icon="door-open" href="/portal/cancel-self-service">
+    Surveys, retention offers, and confirmation.
+  </Card>
+  <Card title="Gifts" icon="gift" href="/advanced/gifts">
+    How gift codes are purchased and redeemed.
   </Card>
 </CardGroup>

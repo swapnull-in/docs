@@ -1,164 +1,108 @@
 ---
 title: "Self-Service Actions"
-description: "Enable customers to manage their own subscriptions"
+description: "What a signed-in customer can do in the portal"
 ---
 
 ## Overview
 
-Self-service allows customers to manage their billing without contacting support:
+Once a customer has a portal session ([magic link](/portal/magic-links)),
+these `/portal/api/*` actions are available — all authenticated by the
+`portal_session` cookie. This is the real, shipped surface; which of these
+you expose is configured in the dashboard under **Settings → Portal**.
 
-- Cancel subscriptions
-- Upgrade/downgrade plans
-- Update payment methods
-- View usage and invoices
+## View & pay invoices
 
-## Configure Self-Service
+```bash
+# List the customer's invoices
+curl https://billing.example.com/portal/api/invoices -b cookies.txt
 
-Enable or disable features:
-
-```typescript
-await recurso.settings.portal.update({
-  self_service: {
-    allow_cancel: true,
-    allow_upgrade: true,
-    allow_downgrade: true,
-    allow_pause: false,
-    allow_payment_method_update: true,
-    require_cancellation_reason: true
-  }
-});
+# Download one as a PDF
+curl https://billing.example.com/portal/api/invoices/{invoice_id}/pdf \
+  -b cookies.txt -o invoice.pdf
 ```
 
-## Cancellation Flow
+To pay, send the customer to the hosted checkout for the open invoice
+(`/checkout/{invoice_id}`) — see [Payments](/core/payments).
 
-### Portal Experience
+## Update the card on file (Stripe)
 
-1. Customer clicks "Cancel Subscription"
-2. (Optional) Shown retention offers
-3. Asked for cancellation reason
-4. Confirms cancellation
-5. Receives confirmation email
+Card updates use a Stripe **SetupIntent** so the card never touches your
+servers. Start it, collect the card with Stripe Elements using the returned
+`client_secret`, then confirm:
 
-### Cancellation Reasons
+```bash
+# 1. Start — returns a client_secret for Stripe Elements
+curl -X POST https://billing.example.com/portal/api/payment-method/setup-intent \
+  -b cookies.txt
 
-```typescript
-// Configure available reasons
-await recurso.settings.portal.update({
-  cancellation_reasons: [
-    { id: 'too_expensive', label: 'Too expensive' },
-    { id: 'not_using', label: 'Not using enough' },
-    { id: 'switching', label: 'Switching to competitor' },
-    { id: 'missing_features', label: 'Missing features' },
-    { id: 'other', label: 'Other', allows_comment: true }
-  ]
-});
+# 2. (browser) confirm the SetupIntent with Stripe.js using client_secret
+
+# 3. Finalize — saves the card metadata on the customer
+curl -X POST https://billing.example.com/portal/api/payment-method/confirm \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{ "setup_intent_id": "seti_..." }'
 ```
 
-### Cancellation Behavior
+The confirm call returns `status: "saved"` with the new card's brand and
+last four, or `status: "processing"` for methods that settle asynchronously.
 
-```typescript
-await recurso.settings.portal.update({
-  cancellation: {
-    behavior: 'end_of_period',  // or 'immediate'
-    prorate_refund: false,  // Refund remaining time
-    allow_reactivate: true,
-    grace_period_days: 0
-  }
-});
+<Note>
+If the deployment isn't configured for self-serve card updates, these
+endpoints return a clear "not available on this deployment" error rather
+than failing silently.
+</Note>
+
+## Re-authorize a UPI AutoPay mandate
+
+For Indian customers on UPI AutoPay, the portal issues a fresh mandate and
+returns a hosted authorization URL to redirect to:
+
+```bash
+curl -X POST https://billing.example.com/portal/api/payment-method/mandate \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{ "vpa": "customer@upi" }'    # vpa optional — Razorpay collects it if omitted
 ```
 
-## Upgrade/Downgrade
-
-### Available Plans
-
-Control which plans are visible:
-
-```typescript
-await recurso.settings.portal.update({
-  available_plans: ['plan_starter', 'plan_pro', 'plan_enterprise'],
-  show_plan_comparison: true
-});
+```json
+{ "data": { "auth_url": "https://razorpay.com/..." } }
 ```
 
-### Proration
+Redirect the customer to `auth_url` to approve the mandate in their UPI app.
 
-Configure how mid-cycle changes are handled:
+## Raise a dispute
 
-```typescript
-await recurso.settings.portal.update({
-  plan_changes: {
-    proration: 'create_prorations',  // Prorate immediately
-    effective: 'immediately'  // or 'next_billing_cycle'
-  }
-});
+A customer can query or dispute one of their own invoices:
+
+```bash
+curl -X POST https://billing.example.com/portal/api/invoices/{invoice_id}/dispute \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{ "reason": "I was charged twice for this invoice." }'
 ```
 
-## Payment Method Update
+Open disputes are listed at `GET /portal/api/disputes`.
 
-The portal's **Update payment method** flow is gateway-hosted end to end — card numbers never touch Recurso (PCI SAQ-A preserved).
+## Redeem a gift code
 
-### Card update (Stripe)
-
-1. Customer clicks **Update payment method**; the portal requests a SetupIntent ([`POST /portal/api/payment-method/setup-intent`](/api-reference/portal/payment-method-setup-intent)) and mounts the Stripe Payment Element in a dialog.
-2. The customer enters the card; it goes browser → Stripe directly. Banks that require 3DS redirect and return to the portal, which finalizes automatically via the `?setup_intent=` return parameter.
-3. The portal confirms server-side ([`POST /portal/api/payment-method/confirm`](/api-reference/portal/payment-method-confirm)) — verifying the SetupIntent succeeded **and** belongs to this customer — and saves the card as the default used by dunning retries and off-session charges.
-
-### UPI Autopay re-authorization (Razorpay)
-
-On INR/Razorpay deployments, the same dialog offers **Re-authorize UPI Autopay** instead: [`POST /portal/api/payment-method/mandate`](/api-reference/portal/payment-method-mandate) creates a fresh mandate (cap auto-sized at 2× the customer's largest recent invoice) and redirects to Razorpay's hosted approval page. Activation lands via the `token.confirmed` webhook.
-
-<Warning>
-Razorpay requires a **phone number** on the customer for recurring registration links — customers without one get a clear error asking the merchant to add it.
-</Warning>
-
-### Recovery deep links
-
-Dunning, payment-failed, and card-expiring emails deep-link their **Update Payment Method** button to `{BASE_URL}/portal/login`, so a failed payment can be self-served end to end: email → magic-link login → portal → new card or re-authorized mandate.
-
-## Usage Dashboard
-
-Show customers their usage:
-
-```typescript
-await recurso.settings.portal.update({
-  usage: {
-    show_current_usage: true,
-    show_historical: true,
-    show_estimates: true,
-    alert_threshold: 80  // Alert at 80% of limit
-  }
-});
+```bash
+curl -X POST https://billing.example.com/portal/api/redeem \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{ "code": "GIFT-XXXX" }'
 ```
 
-## Audit Logging
+See [Gifts](/advanced/gifts) for how codes are purchased.
 
-All self-service actions are logged:
+## Cancellation
 
-```typescript
-const logs = await recurso.portal.auditLogs({
-  customer_id: 'cust_abc',
-  limit: 50
-});
+Subscription cancellation runs through the dedicated
+[cancellation flow](/portal/cancel-self-service) — surveys, retention
+offers, and confirmation — rather than a single portal endpoint.
 
-// Returns
-{
-  data: [
-    {
-      action: 'subscription.cancelled',
-      actor: 'customer',
-      reason: 'too_expensive',
-      timestamp: '2024-01-15T10:30:00Z',
-      ip_address: '203.0.113.42'
-    }
-  ]
-}
+## Log out
+
+```bash
+curl -X POST https://billing.example.com/portal/api/logout -b cookies.txt
 ```
-
-## Webhooks
-
-| Event | Description |
-|-------|-------------|
-| `portal.session_created` | Customer accessed portal |
-| `portal.subscription_cancelled` | Self-service cancellation |
-| `portal.plan_changed` | Upgrade/downgrade |
-| `portal.payment_method_added` | New payment method |
