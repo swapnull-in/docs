@@ -1,62 +1,76 @@
 ---
-title: "The open-source billing engine for SaaS"
+title: "The open-source billing engine for SaaS & AI"
 sidebarTitle: "Introduction"
-description: "Subscriptions, invoicing, usage, and India-first compliance on a real double-entry ledger — MIT-licensed and self-hostable."
+description: "Subscriptions, usage-based billing, prepaid wallets, and India-first compliance on a real double-entry ledger — MIT-licensed and self-hostable."
 ---
 
-Recurso is a production-grade billing engine you can **actually own**. Plans,
-subscriptions, usage, invoicing, and payments sit on a **real double-entry
-ledger** — not a table of balances — with **India-first compliance** (GST,
-e-invoicing, RBI e-mandates) built in, not bolted on. Self-host it under MIT, or
-run it on Recurso Cloud.
+Recurso is a production-grade billing engine you can **actually own**. Meter
+usage, price it with tiered charges, drain prepaid wallets before cards are
+touched, and issue GST-correct e-invoices — all posting balanced debits and
+credits to a **real double-entry ledger**, not a table of balances.
+Self-host it under MIT, or run it on Recurso Cloud.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    From clone to a seeded dashboard in under five minutes.
+    From clone to a seeded dashboard in under five minutes with `make demo`.
   </Card>
-  <Card title="Core concepts" icon="book-open" href="/concepts">
-    Plans, subscriptions, the ledger, and how they fit together.
+  <Card title="Usage-based billing" icon="gauge" href="/advanced/usage-billing">
+    Billable metrics, four charge models, batch ingestion, arrears rating.
   </Card>
   <Card title="API reference" icon="code" href="/api-reference/introduction">
     Every endpoint, typed — with an interactive playground.
   </Card>
-  <Card title="Recurso Cloud" icon="cloud" href="/pricing">
-    Managed hosting, scaling, and backups from $299/mo.
+  <Card title="SDKs" icon="cube" href="/sdk">
+    Official Go, Node, and Python clients, versioned with the API.
   </Card>
 </CardGroup>
 
-## Why Recurso
+## What's in the engine
 
 <Columns cols={2}>
-  <Card title="Books that balance" icon="scale-balanced">
-    Every invoice, payment, and refund posts balanced debits and credits to an
-    immutable ledger. Revenue reconciles to the penny.
+  <Card title="Meter anything, price it your way" icon="gauge-high" href="/advanced/usage-billing">
+    Metrics aggregate events by count, sum, max, or unique value. Charges
+    price them per-unit, graduated, volume, or package — with sub-paise
+    rates computed exactly and billed in arrears on the renewal invoice.
   </Card>
-  <Card title="India-first, global-ready" icon="earth-asia">
-    Native GST (CGST/SGST/IGST, HSN, Place of Supply), e-invoicing, and RBI
-    e-mandates — plus multi-currency and EU VAT on the same engine.
+  <Card title="Wallets, commitments & alerts" icon="wallet" href="/advanced/wallets">
+    Customers prepay into money wallets that settle invoices before any
+    gateway is charged. Contract minimums true-up automatically; usage
+    alerts fire once per period before a customer is surprised.
   </Card>
-  <Card title="Own your billing" icon="lock-open">
-    Full source under MIT. No black box, no per-transaction lock-in. Run it on
-    your own infrastructure, or on our cloud.
+  <Card title="Books that balance" icon="scale-balanced" href="/advanced/ledger">
+    Every invoice, payment, refund, and wallet drain posts balanced debits
+    and credits to an immutable ledger — with revenue recognition, trial
+    balance, and daily reconciliation on top.
   </Card>
-  <Card title="Developer-first" icon="terminal">
-    A clean REST API with an OpenAPI 3.1 spec, typed SDKs for Go, Node, and
-    Python, HMAC-signed webhooks, and idempotency built in.
+  <Card title="India-first, global-ready" icon="earth-asia" href="/compliance/overview">
+    Native GST (CGST/SGST/IGST, HSN, Place of Supply), IRP e-invoicing,
+    GSTR exports, RBI-compliant UPI AutoPay — plus multi-currency, EU VAT,
+    and US sales tax on the same engine.
+  </Card>
+  <Card title="Recover revenue before it churns" icon="heart-pulse" href="/advanced/growth-overview">
+    Dunning campaigns, smart retries, cancel flows, churn scoring, and a
+    self-service portal — recovered revenue is attributed and reported.
+  </Card>
+  <Card title="Developer-first" icon="terminal" href="/api-reference/introduction">
+    REST API with OpenAPI 3.1 served from your instance, typed SDKs,
+    HMAC-signed webhooks with redelivery, and idempotency keys on every
+    money-moving call.
   </Card>
 </Columns>
 
 ## How it compares
 
-| Capability | Recurso | Stripe Billing | Chargebee |
-| --- | :---: | :---: | :---: |
-| Open source | **Yes** | No | No |
-| Self-hosted | **Yes** | No | No |
-| Double-entry ledger | **Yes** | No | No |
-| GST &amp; e-invoicing | **Native** | Limited | Yes |
-| Razorpay + UPI AutoPay | **Yes** | No | Yes |
-| Usage-based billing | Yes | Yes | Yes |
-| Pricing | Free · [$299/mo Cloud](/pricing) | 0.5% + fees | $249+/mo |
+| Capability | Recurso | Lago | Stripe Billing | Chargebee |
+| --- | :---: | :---: | :---: | :---: |
+| Open source | **MIT** | AGPLv3 | No | No |
+| Self-hosted | **Yes** | Yes | No | No |
+| Double-entry ledger | **Yes** | No | No | No |
+| Usage-based billing | **Yes** | Yes | Yes | Yes |
+| Prepaid wallets | **Yes** | Yes | Limited | No |
+| GST &amp; e-invoicing | **Native** | No | Limited | Yes |
+| Razorpay + UPI AutoPay | **Yes** | No | No | Yes |
+| Pricing | Free · [$299/mo Cloud](/pricing) | Free / cloud | 0.5%+ of revenue | $599+/mo |
 
 ## Get started
 
@@ -68,7 +82,8 @@ run it on Recurso Cloud.
     make demo
     ```
     Brings up Postgres and TigerBeetle, the API on `:8080`, and a seeded
-    dashboard on `:5173` — with a demo API key printed when it's ready.
+    dashboard on `:5173` — with the demo API key `sk_test_12345` printed
+    when it's ready.
   </Step>
   <Step title="Create a customer">
     ```bash
@@ -86,13 +101,32 @@ run it on Recurso Cloud.
       -d '{"customer_id": "cust_123", "plan_id": "plan_pro_monthly"}'
     ```
   </Step>
+  <Step title="Record usage">
+    ```bash
+    curl -X POST http://localhost:8080/v1/usage/events \
+      -H "Authorization: Bearer sk_test_12345" \
+      -H "Content-Type: application/json" \
+      -d '{"subscription_id": "sub_123", "customer_id": "cust_123",
+           "dimension": "api_calls", "quantity": 1200}'
+    ```
+    Usage is aggregated by your billable metrics and rated onto the next
+    renewal invoice — [see how rating works](/advanced/usage-billing).
+  </Step>
 </Steps>
 
 <CardGroup cols={2}>
-  <Card title="Self-host Recurso" icon="server" href="/quickstart">
-    Deploy on your own infrastructure in minutes.
+  <Card title="Run the public demo yourself" icon="flask" href="/advanced/demo-mode">
+    One compose file serves a safe, hourly-resetting sandbox — mock
+    gateways, guard middleware, auto-login.
+  </Card>
+  <Card title="Go to production" icon="server" href="/going-to-production">
+    Hardening, backups, HA guidance, and the production checklist.
   </Card>
   <Card title="Migrate from Stripe or Chargebee" icon="right-left" href="/migrate-from-stripe">
-    Bring your plans, customers, and subscriptions across, without double-billing.
+    Bring plans, customers, and subscriptions across without double-billing.
+  </Card>
+  <Card title="Integrations" icon="plug" href="/advanced/integrations">
+    QuickBooks, Xero, Tally, TaxJar, HubSpot, S3 — and what "experimental"
+    means for GoCardless, Adyen, NetSuite, and Avalara.
   </Card>
 </CardGroup>

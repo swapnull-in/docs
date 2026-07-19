@@ -133,28 +133,65 @@ or register your own tenant.
 In dev, any emails the system sends (invoices, dunning notices, and so on)
 are captured by Mailhog — view them at `http://localhost:8025`.
 
+<Info>
+Want a **public, safe-to-share sandbox** instead of a local dev stack?
+`docker compose -f docker-compose.demo.yml up -d` runs Recurso in
+[demo mode](/advanced/demo-mode) — mock gateways, blocked destructive
+settings, auto-login, and an hourly reset.
+</Info>
+
 ## Create Your First Plan
 
 <Steps>
   <Step title="Create a pricing plan">
-    ```bash
+    <CodeGroup>
+    ```bash cURL
     curl -X POST http://localhost:8080/v1/plans \
       -H "Authorization: Bearer your-api-key" \
       -H "Content-Type: application/json" \
       -d '{
         "name": "Pro Plan",
         "code": "PRO-INR",
-        "description": "For growing teams",
         "interval_unit": "month",
         "interval_count": 1,
         "amount": 4999,
         "currency": "INR"
       }'
     ```
+
+    ```typescript Node
+    import { Recurso } from 'recurso';
+    const recurso = new Recurso('your-api-key', 'http://localhost:8080');
+
+    const plan = await recurso.plans.create({
+      name: 'Pro Plan',
+      code: 'PRO-INR',
+      interval_unit: 'month',
+      interval_count: 1,
+      amount: 4999,      // minor units
+      currency: 'INR',
+    });
+    ```
+
+    ```go Go
+    client := recurso.NewClient("your-api-key")
+
+    plan, _ := client.Plans.Create(ctx, &recurso.PlanCreateParams{
+      Name:         "Pro Plan",
+      Code:         "PRO-INR",
+      IntervalUnit: "month",
+      Amount:       4999, // minor units
+      Currency:     "INR",
+    })
+    ```
+    </CodeGroup>
+
+    <Note>Amounts are always **minor units** — `4999` is ₹49.99.</Note>
   </Step>
 
   <Step title="Add a customer">
-    ```bash
+    <CodeGroup>
+    ```bash cURL
     curl -X POST http://localhost:8080/v1/customers \
       -H "Authorization: Bearer your-api-key" \
       -H "Content-Type: application/json" \
@@ -164,10 +201,27 @@ are captured by Mailhog — view them at `http://localhost:8025`.
         "metadata": { "company_size": "mid-market" }
       }'
     ```
+
+    ```typescript Node
+    const customer = await recurso.customers.create({
+      name: 'Acme Corp',
+      email: 'billing@acme.com',
+      metadata: { company_size: 'mid-market' },
+    });
+    ```
+
+    ```go Go
+    customer, _ := client.Customers.Create(ctx, &recurso.CustomerCreateParams{
+      Name:  "Acme Corp",
+      Email: "billing@acme.com",
+    })
+    ```
+    </CodeGroup>
   </Step>
 
   <Step title="Start a subscription">
-    ```bash
+    <CodeGroup>
+    ```bash cURL
     curl -X POST http://localhost:8080/v1/subscriptions \
       -H "Authorization: Bearer your-api-key" \
       -H "Content-Type: application/json" \
@@ -176,6 +230,48 @@ are captured by Mailhog — view them at `http://localhost:8025`.
         "plan_id": "plan_pro"
       }'
     ```
+
+    ```typescript Node
+    const subscription = await recurso.subscriptions.create({
+      customer_id: customer.id,
+      plan_id: plan.id,
+    });
+    ```
+
+    ```go Go
+    sub, _ := client.Subscriptions.Create(ctx, &recurso.SubscriptionCreateParams{
+      CustomerID: customer.ID,
+      PlanID:     plan.ID,
+    })
+    ```
+    </CodeGroup>
+
+    <Check>
+    That's a running billing stack: the subscription invoices itself every
+    period, usage rates onto the same invoice, and every posting lands on
+    the ledger.
+    </Check>
+  </Step>
+
+  <Step title="Record usage (metered pricing)">
+    If the plan carries usage charges, report events as they happen — they
+    aggregate into billable metrics and rate onto the next renewal invoice:
+
+    ```bash
+    curl -X POST http://localhost:8080/v1/usage/events \
+      -H "Authorization: Bearer your-api-key" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "subscription_id": "sub_abc",
+        "customer_id": "cust_abc",
+        "dimension": "api_calls",
+        "quantity": 1200
+      }'
+    ```
+
+    Batch up to 500 events per call at `/v1/usage/events/batch` with a
+    `transaction_id` per event for idempotent retries — see
+    [usage-based billing](/advanced/usage-billing).
   </Step>
 
   <Step title="Handle webhooks">
@@ -220,6 +316,18 @@ For production deployments, see the [self-hosting guide on GitHub](https://githu
 
 ## Next Steps
 
-<Card title="Core Concepts" icon="book" href="/concepts">
-  Learn about plans, customers, subscriptions, and invoices
-</Card>
+<CardGroup cols={2}>
+  <Card title="Core Concepts" icon="book" href="/concepts">
+    Plans, customers, subscriptions, invoices — and how the ledger ties
+    them together.
+  </Card>
+  <Card title="Usage-based billing" icon="gauge" href="/advanced/usage-billing">
+    Billable metrics, charge models, wallets, commitments, and alerts.
+  </Card>
+  <Card title="SDKs" icon="cube" href="/sdk">
+    Official Go, Node, and Python clients.
+  </Card>
+  <Card title="Going to production" icon="server" href="/going-to-production">
+    Hardening, backups, and the production checklist.
+  </Card>
+</CardGroup>

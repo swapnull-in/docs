@@ -102,13 +102,26 @@ curl -X PUT https://api.recurso.dev/v1/plans/$PLAN_ID/charges \
 
 Report usage events throughout the billing period. The `POST /v1/usage/events` endpoint accepts:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `subscription_id` | `string` | The subscription to report usage for |
-| `customer_id` | `string` | The subscription's customer |
-| `dimension` | `string` | Usage dimension/meter name, e.g. `api_calls` — matches a billable metric's `code` |
-| `quantity` | `number` | Amount of usage to record |
-| `properties` | `object` | Optional string attributes (max 20) — `unique` metrics count distinct values of one of them |
+<ParamField body="subscription_id" type="string" required>
+  The subscription to report usage for. Must belong to your tenant (`404` otherwise).
+</ParamField>
+<ParamField body="customer_id" type="string" required>
+  The subscription's customer (`400` if it doesn't match).
+</ParamField>
+<ParamField body="dimension" type="string" required>
+  Usage dimension/meter name, e.g. `api_calls` — matches a billable metric's `code`.
+</ParamField>
+<ParamField body="quantity" type="integer" required>
+  Amount of usage to record. Must be greater than zero.
+</ParamField>
+<ParamField body="properties" type="object">
+  Optional string attributes (max 20; keys ≤100 chars, values ≤255) —
+  `unique` metrics count distinct values of one of them.
+</ParamField>
+<ParamField body="transaction_id" type="string">
+  Your idempotency key for this event (≤255 chars) — retries collapse to the
+  original event instead of double-counting.
+</ParamField>
 
 <CodeGroup>
 ```typescript TypeScript
@@ -174,44 +187,57 @@ results — one bad event never fails the batch:
 
 ## Charge Models
 
-### `per_unit`
+The same 7,000-call month prices very differently depending on the model —
+switch the tabs to compare:
 
-Every unit at one rate. `"unit_amount": "0.0035"` × 1,500 calls = ₹5.25.
+<Tabs>
+  <Tab title="per_unit">
+    Every unit at one rate.
 
-### `graduated`
+    ```json
+    { "charge_model": "per_unit", "unit_amount": "0.0035" }
+    ```
 
-Each tier prices only the units inside it:
+    1,500 calls × ₹0.0035 = **₹5.25**. Sub-paise rates are computed
+    exactly (big-rational arithmetic) and rounded half-up once per line.
+  </Tab>
+  <Tab title="graduated">
+    Each tier prices **only the units inside it** — like income-tax slabs.
 
-```json
-"tiers": [
-  { "up_to": 1000, "unit_amount": "0.10" },
-  { "up_to": 5000, "unit_amount": "0.05" },
-  { "up_to": null, "unit_amount": "0.01" }
-]
-```
+    ```json
+    "tiers": [
+      { "up_to": 1000, "unit_amount": "0.10" },
+      { "up_to": 5000, "unit_amount": "0.05" },
+      { "up_to": null, "unit_amount": "0.01" }
+    ]
+    ```
 
-7,000 calls = 1,000×0.10 + 4,000×0.05 + 2,000×0.01 = **₹320**.
+    7,000 calls = 1,000×0.10 + 4,000×0.05 + 2,000×0.01 = **₹320**.
+  </Tab>
+  <Tab title="volume">
+    The **whole** quantity is priced at the single tier it reaches.
 
-### `volume`
+    With the same tiers as graduated, 7,000 calls land in the last tier:
+    7,000 × 0.01 = **₹70**.
+  </Tab>
+  <Tab title="package">
+    Bundles — partial bundles round **up**.
 
-The **whole** quantity is priced at the single tier it reaches. With the
-same tiers, 7,000 calls = 7,000 × 0.01 = **₹70**.
+    ```json
+    { "package_amount": 500, "package_size": 1000 }
+    ```
 
-### `package`
+    ₹5.00 per 1,000 calls — 5,200 calls bills 6 bundles = **₹30**.
+  </Tab>
+</Tabs>
 
-Bundles, partial bundles round up:
-
-```json
-{ "package_amount": 500, "package_size": 1000 }
-```
-
-₹5.00 per 1,000 calls — 5,200 calls bills 6 bundles = **₹30**.
-
+<Note>
 Tier rules: bounds are strictly ascending; the last tier must leave
 `up_to` null (unbounded); a tier's optional `flat_amount` (minor units) is
 added once when any unit lands in it. Amounts are validated at `PUT` time
 with the same code path that rates invoices, so a config that saves cannot
 fail at billing time.
+</Note>
 
 ## What the Invoice Looks Like
 

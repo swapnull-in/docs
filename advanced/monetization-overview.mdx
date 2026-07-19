@@ -1,6 +1,6 @@
 ---
 title: "Monetization"
-description: "Model and capture revenue beyond flat subscriptions — usage, entitlements, coupons, quotes, credit notes, and one-off charges"
+description: "Model and capture revenue beyond flat subscriptions — usage, wallets, commitments, alerts, entitlements, coupons, quotes, and credit notes"
 ---
 
 ## Overview
@@ -10,6 +10,8 @@ Flat monthly subscriptions are only the starting point. Monetization is the set 
 ## Key capabilities
 
 - **Usage-based billing** — meter events and invoice consumption at the end of each cycle
+- **Prepaid wallets** — customers top up; invoices drain the wallet before any gateway is charged
+- **Commitments & alerts** — contract minimums true-up automatically; usage alerts fire before surprises
 - **Entitlements** — attach feature grants to plans and gate access with a fast check endpoint
 - **Promotions** — percentage and fixed-amount coupons with redemption rules
 - **Sales-led motion** — build, send, and convert quotes into subscriptions
@@ -20,6 +22,15 @@ Flat monthly subscriptions are only the starting point. Monetization is the set 
 <CardGroup cols={2}>
   <Card title="Usage-Based Billing" icon="chart-line" href="/advanced/usage-billing">
     Report metered events and bill consumption at the end of each billing period.
+  </Card>
+  <Card title="Wallets" icon="wallet" href="/advanced/wallets">
+    Money-denominated prepaid balances with promotional credit, expiry, and auto-recharge.
+  </Card>
+  <Card title="Commitments" icon="file-contract" href="/advanced/commitments">
+    Minimum-spend contracts that true-up automatically at period close.
+  </Card>
+  <Card title="Usage Alerts" icon="bell" href="/advanced/usage-alerts">
+    Threshold alerts that fire once per billing period via webhook and email.
   </Card>
   <Card title="Entitlements" icon="key" href="/advanced/entitlements">
     Attach boolean and limit feature grants to plans and gate features with one check.
