@@ -81,126 +81,102 @@ The checkout page handles everything from there: card + local methods via the St
 
 ### One-Time Charges
 
-```typescript
-const invoice = await recurso.invoices.create({
-  customer_id: 'cust_abc123',
-  auto_finalize: true,
-  items: [
-    { description: 'Onboarding Fee', amount: 9999 }
-  ]
-});
+There's no standalone invoice-create API — one-off charges attach to a
+subscription and bill on its **next** invoice, or land immediately via an
+advance invoice:
 
-// Collect immediately
-await recurso.invoices.pay(invoice.id);
+```bash
+# Add a one-off charge (bills on the next recurring invoice)
+curl -X POST https://api.recurso.dev/v1/subscriptions/{sub_id}/charges \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "description": "Onboarding fee", "amount": 999900, "currency": "INR" }'
+
+# …or bill ahead of schedule right now
+curl -X POST https://api.recurso.dev/v1/subscriptions/{sub_id}/advance \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "periods": 1 }'
 ```
+
+See [Advanced Billing](/advanced/advanced-billing) for details.
 
 ## Create Payment Order
 
-For direct payment collection outside of subscriptions, create a payment order through the gateway:
+The hosted checkout calls this for you; if you build a custom payment UI,
+create the gateway order directly. It is a **public, rate-limited**
+endpoint (no API key — it powers buyer-facing pages) that takes only the
+invoice id and picks the gateway by the invoice's currency:
 
-<CodeGroup>
-```typescript TypeScript
-const order = await recurso.payments.createOrder({
-  invoice_id: 'inv_001',
-  gateway: 'razorpay',
-  amount: 5899,
-  currency: 'INR'
-});
-
-// Response
-{
-  order_id: 'order_xyz',
-  gateway: 'razorpay',
-  gateway_order_id: 'order_AbCdEf123456',
-  amount: 5899,
-  currency: 'INR',
-  status: 'created'
-}
-```
-
-```bash cURL
-curl -X POST https://api.recurso.dev/v1/payments/order \
-  -H "Authorization: Bearer $API_KEY" \
+```bash
+curl -X POST https://billing.example.com/payments/order \
   -H "Content-Type: application/json" \
-  -d '{
-    "invoice_id": "inv_001",
-    "gateway": "razorpay",
-    "amount": 5899,
-    "currency": "INR"
-  }'
+  -d '{ "invoice_id": "9b2f6c1e-…" }'
 ```
-</CodeGroup>
 
-For most integrations you won't call this directly — the hosted checkout's [`POST /checkout/{id}/pay`](/api-reference/checkout/pay) wraps order creation and returns everything the browser flow needs (`gateway`, Stripe `client_secret` + `publishable_key`, or `razorpay_key_id`). Settle only via the verify endpoints ([success](/api-reference/checkout/success) / [razorpay/verify](/api-reference/checkout/razorpay-verify)); never mark invoices paid from the client.
+For most integrations use the checkout wrapper instead —
+[`POST /checkout/{id}/pay`](/api-reference/checkout/pay) returns everything
+the browser flow needs (`gateway`, Stripe `client_secret` +
+`publishable_key`, or `razorpay_key_id`). Settle only via the verify
+endpoints ([success](/api-reference/checkout/success) /
+[razorpay/verify](/api-reference/checkout/razorpay-verify)); never mark
+invoices paid from the client.
 
 ## Payment Methods
 
-Save payment methods for future charges:
+The payment instrument lives at the **gateway**, attached during checkout
+(Stripe SetupIntent / Razorpay token or UPI mandate) or through the
+[customer portal](/portal/self-service). Renewals then charge it
+automatically. On the Recurso side you can update the card-on-file
+display metadata shown in the dashboard and dunning emails:
 
-```typescript
-// Attach a saved method
-await recurso.customers.attachPaymentMethod('cust_abc123', {
-  gateway: 'razorpay',
-  gateway_token: 'token_xxx',
-  set_default: true
-});
-
-// Future invoices charge the default method automatically
+```bash
+curl -X PUT https://api.recurso.dev/v1/customers/{customer_id}/payment-method \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "card_brand": "visa", "card_last4": "4242",
+        "card_exp_month": 12, "card_exp_year": 2028 }'
 ```
 
-### Update Payment Method
-
-When a customer's card expires or they want to switch payment methods:
-
-```typescript
-await recurso.customers.updatePaymentMethod('cust_abc123', {
-  gateway: 'razorpay',
-  gateway_token: 'token_new_card',
-  set_default: true
-});
-```
-
-See the [Customers guide](/core/customers#update-payment-method) for the full update flow.
+<Tip>
+When a card expires, send the customer a [magic link](/portal/magic-links)
+— the portal walks them through a fresh SetupIntent or mandate.
+</Tip>
 
 ## Record Offline Payment
 
-Record payments received outside of Recurso (bank transfers, cash, cheques):
+Record payments received outside of Recurso — bank transfers, cash,
+cheques — optionally against an invoice, with TDS handled first-class:
 
-<CodeGroup>
-```typescript TypeScript
-await recurso.payments.recordOffline({
-  invoice_id: 'inv_001',
-  amount: 5899,
-  payment_method: 'bank_transfer',
-  reference: 'NEFT-REF-123456',
-  received_at: '2026-06-20T10:30:00Z',
-  notes: 'NEFT transfer from HDFC account'
-});
-```
-
-```bash cURL
+```bash
 curl -X POST https://api.recurso.dev/v1/payments/offline \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "invoice_id": "inv_001",
-    "amount": 5899,
-    "payment_method": "bank_transfer",
-    "reference": "NEFT-REF-123456",
-    "received_at": "2026-06-20T10:30:00Z"
+    "customer_id": "…",
+    "invoice_id": "…",
+    "payment_type": "bank_transfer",
+    "amount": 589882,
+    "tds_amount": 58988,
+    "currency": "INR",
+    "reference_number": "NEFT-REF-123456",
+    "notes": "NEFT from HDFC account"
   }'
 ```
-</CodeGroup>
 
-### Offline Payment Methods
-
-| Method | Value |
-|--------|-------|
-| Bank transfer (NEFT/RTGS/IMPS) | `bank_transfer` |
-| Cash | `cash` |
-| Cheque | `cheque` |
-| Wire transfer | `wire` |
-| Other | `other` |
+<ParamField body="payment_type" type="string" required>
+  `bank_transfer`, `cash`, or `cheque`.
+</ParamField>
+<ParamField body="amount" type="integer" required>
+  Cash actually received, in minor units.
+</ParamField>
+<ParamField body="tds_amount" type="integer">
+  Tax deducted at source by the customer (Indian B2B). Posts to the TDS
+  Receivable account — `amount + tds_amount` settles the invoice.
+</ParamField>
+<ParamField body="reference_number" type="string">
+  Bank/UTR/cheque reference for reconciliation.
+</ParamField>
 
 ## List Offline Payments
 
@@ -220,8 +196,8 @@ const payments = await recurso.payments.listOffline({
       id: 'opay_001',
       invoice_id: 'inv_001',
       amount: 5899,
-      payment_method: 'bank_transfer',
-      reference: 'NEFT-REF-123456',
+      payment_type: 'bank_transfer',
+      reference_number: 'NEFT-REF-123456',
       received_at: '2026-06-20T10:30:00Z'
     }
   ]
