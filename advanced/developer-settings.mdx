@@ -35,37 +35,6 @@ Live API keys (`rsk_live_`) process real payments. Never use live keys in develo
 ### Create an API Key
 
 <CodeGroup>
-```typescript TypeScript
-const key = await recurso.apiKeys.create({
-  name: "Backend Server — Production",
-  environment: "live",       // "live" or "test"
-  scopes: [
-    "subscriptions:read",
-    "subscriptions:write",
-    "invoices:read",
-    "customers:read",
-    "customers:write"
-  ]
-});
-
-// Response — the secret is only shown once
-{
-  id: "key_Mn4xR7kp",
-  name: "Backend Server — Production",
-  environment: "live",
-  prefix: "rsk_live_",
-  secret: "rsk_live_7f3a9c2e1b4d8f6a0e5c3b7d9a1f4e2c8b6d0a3e5f7c9b1d4a6e8f0c2b5d7a",
-  scopes: [
-    "subscriptions:read",
-    "subscriptions:write",
-    "invoices:read",
-    "customers:read",
-    "customers:write"
-  ],
-  created_at: "2025-07-10T08:30:00Z",
-  last_used_at: null
-}
-```
 
 ```bash cURL
 curl -X POST https://api.recurso.dev/v1/api-keys \
@@ -115,12 +84,6 @@ Follow the principle of least privilege. A service that only reads invoice data 
 ### Revoke an API Key
 
 <CodeGroup>
-```typescript TypeScript
-await recurso.apiKeys.revoke("key_Mn4xR7kp");
-
-// The key is immediately invalidated.
-// Any request using this key will return 401 Unauthorized.
-```
 
 ```bash cURL
 curl -X DELETE https://api.recurso.dev/v1/api-keys/key_Mn4xR7kp \
@@ -135,26 +98,6 @@ Revoking a key is permanent and takes effect immediately. All active sessions an
 ### List API Keys
 
 <CodeGroup>
-```typescript TypeScript
-const keys = await recurso.apiKeys.list({
-  environment: "live"   // optional filter
-});
-
-// Response — secrets are never returned in list calls
-{
-  data: [
-    {
-      id: "key_Mn4xR7kp",
-      name: "Backend Server — Production",
-      environment: "live",
-      prefix: "rsk_live_",
-      scopes: ["subscriptions:read", "subscriptions:write"],
-      created_at: "2025-07-10T08:30:00Z",
-      last_used_at: "2025-07-15T14:22:00Z"
-    }
-  ]
-}
-```
 
 ```bash cURL
 curl -X GET "https://api.recurso.dev/v1/api-keys?environment=live" \
@@ -214,18 +157,6 @@ const liveClient = new Recurso({ apiKey: "rsk_live_..." });
 Configure tenant-level settings that apply across your account:
 
 <CodeGroup>
-```typescript TypeScript
-await recurso.settings.update({
-  company_name: "Acme SaaS Pvt Ltd",
-  billing_email: "billing@acme.com",
-  support_url: "https://support.acme.com",
-  default_currency: "INR",
-  timezone: "Asia/Kolkata",
-  invoice_prefix: "ACME",
-  auto_finalize_invoices: true,
-  payment_terms_days: 30
-});
-```
 
 ```bash cURL
 curl -X PUT https://api.recurso.dev/v1/settings \

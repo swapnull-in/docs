@@ -91,33 +91,6 @@ curl -X GET https://api.recurso.dev/v1/customers/cust_abc123/churn \
 Query all customers whose churn score exceeds a configurable threshold.
 
 <CodeGroup>
-```typescript TypeScript
-const highRisk = await recurso.churn.highRisk({ threshold: 0.7 });
-
-// Returns
-{
-  data: [
-    {
-      customer_id: 'cust_abc123',
-      name: 'Acme Corp',
-      score: 0.85,
-      risk_level: 'high',
-      subscription_id: 'sub_xyz789',
-      plan: 'Enterprise',
-      mrr: 49900,
-      risk_factors: [
-        { factor: 'payment_failures', description: '3 failed payments in 60 days', weight: 0.35 },
-        { factor: 'usage_decline', description: 'Usage dropped 65% MoM', weight: 0.25 }
-      ],
-      recommendations: ['Offer a 30% discount', 'Schedule a CS call']
-    }
-  ],
-  meta: {
-    threshold: 0.7,
-    total_count: 23
-  }
-}
-```
 
 ```bash cURL
 curl -X GET "https://api.recurso.dev/v1/churn/high-risk?threshold=0.7" \
@@ -136,26 +109,6 @@ When a customer's score crosses the high-risk threshold, Recurso generates an al
 ### Get Alerts
 
 <CodeGroup>
-```typescript TypeScript
-const alerts = await recurso.churn.alerts();
-
-// Returns
-{
-  data: [
-    {
-      id: 'alert_001',
-      type: 'churn_risk_high',
-      customer_id: 'cust_abc123',
-      score: 0.85,
-      risk_factors: [
-        { factor: 'payment_failures', description: '3 failed payments in 60 days', weight: 0.35 }
-      ],
-      created_at: '2025-06-23T08:00:00Z',
-      acknowledged_at: null
-    }
-  ]
-}
-```
 
 ```bash cURL
 curl -X GET https://api.recurso.dev/v1/churn/alerts \
@@ -168,9 +121,6 @@ curl -X GET https://api.recurso.dev/v1/churn/alerts \
 Mark an alert as handled after taking action.
 
 <CodeGroup>
-```typescript TypeScript
-await recurso.churn.alerts.acknowledge('alert_001');
-```
 
 ```bash cURL
 curl -X POST https://api.recurso.dev/v1/churn/alerts/alert_001/acknowledge \
@@ -199,20 +149,19 @@ curl -X POST https://api.recurso.dev/v1/churn/alerts/alert_001/acknowledge \
 Use churn scores to dynamically select retention offers in a [cancellation flow](/advanced/cancel-flows):
 
 ```typescript
-const churn = await recurso.customers.churn(customerId);
+// Score: GET /v1/customers/{id}/churn  → { score: 0-100, risk_level }
+const churn = (await (await fetch(
+  `${BASE_URL}/v1/customers/${customerId}/churn`,
+  { headers: { Authorization: `Bearer ${API_KEY}` } },
+)).json()).data;
 
-if (churn.score > 0.8) {
-  // Aggressive retention flow with bigger discount
-  await recurso.cancelFlows.sessions.start({
-    customer_id: customerId,
-    subscription_id: subscriptionId,
-    flow_id: 'cf_aggressive_retention'
-  });
-} else {
-  // Standard flow
-  await recurso.cancelFlows.sessions.start({
-    customer_id: customerId,
-    subscription_id: subscriptionId
+if (churn.score >= 80) {
+  // Route high-risk cancellations through a retention flow session:
+  // POST /v1/cancel-flows/sessions/start { customer_id, subscription_id }
+  await fetch(`${BASE_URL}/v1/cancel-flows/sessions/start`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ customer_id: customerId, subscription_id: subscriptionId }),
   });
 }
 ```

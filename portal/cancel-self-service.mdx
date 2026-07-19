@@ -27,21 +27,6 @@ flowchart LR
 Before a customer can access the cancel flow, they must authenticate with the customer portal. Recurso uses **magic links** — one-time, time-limited URLs sent to the customer's email address.
 
 <CodeGroup>
-```typescript TypeScript
-// Generate a portal magic link for a customer
-const session = await recurso.portal.sessions.create({
-  customer_id: "cust_8Tj3mKvR",
-  return_url: "https://app.acme.com/account"   // redirect after portal session
-});
-
-// Response
-{
-  id: "psess_Lk9mNx2p",
-  customer_id: "cust_8Tj3mKvR",
-  url: "https://portal.recurso.dev/s/psess_Lk9mNx2p?token=mtk_a1b2c3d4...",
-  expires_at: "2025-07-10T09:30:00Z"   // valid for 60 minutes
-}
-```
 
 ```bash cURL
 curl -X POST https://api.recurso.dev/v1/portal/sessions \
@@ -197,18 +182,6 @@ await recurso.cancelFlows.update("cf_default", {
 Control which cancel flow features appear in the portal:
 
 <CodeGroup>
-```typescript TypeScript
-await recurso.settings.portal.update({
-  self_service: {
-    allow_cancel: true,
-    cancel_flow_id: "cf_default",
-    require_cancellation_reason: true,
-    show_retention_offers: true,
-    allow_reactivate: true,
-    allow_pause: true
-  }
-});
-```
 
 ```bash cURL
 curl -X PUT https://api.recurso.dev/v1/settings/portal \

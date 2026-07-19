@@ -27,31 +27,6 @@ A virtual account is a unique bank account number assigned to a specific custome
 ### Create a Virtual Account
 
 <CodeGroup>
-```typescript TypeScript
-const virtualAccount = await recurso.virtualAccounts.create({
-  customer_id: "cust_8Tj3mKvR",
-  invoice_id: "inv_Q4xnL92p",   // optional — ties the VA to a specific invoice
-  amount: 49900                   // expected amount in paise (₹499.00)
-});
-
-// Response
-{
-  id: "va_Wk7nPx3m",
-  tenant_id: "ten_abc123",
-  customer_id: "cust_8Tj3mKvR",
-  invoice_id: "inv_Q4xnL92p",
-  account_number: "1112109002132451",
-  ifsc_code: "RATN0VAAPIS",
-  bank_name: "RBL Bank",
-  beneficiary_name: "Acme Corp — Invoice #Q4xnL92p",
-  razorpay_va_id: "va_rzp_Di5gbNptcWV8fQ",
-  status: "active",
-  amount_expected: 49900,
-  amount_received: 0,
-  closed_at: null,
-  created_at: "2025-07-10T08:30:00Z"
-}
-```
 
 ```bash cURL
 curl -X POST https://api.recurso.dev/v1/virtual-accounts \
@@ -95,27 +70,6 @@ curl -X POST https://api.recurso.dev/v1/virtual-accounts \
 ### List Virtual Accounts
 
 <CodeGroup>
-```typescript TypeScript
-const accounts = await recurso.virtualAccounts.list({
-  customer_id: "cust_8Tj3mKvR",  // optional filter
-  status: "active"                 // optional filter
-});
-
-// Response
-{
-  data: [
-    {
-      id: "va_Wk7nPx3m",
-      customer_id: "cust_8Tj3mKvR",
-      account_number: "1112109002132451",
-      status: "active",
-      amount_expected: 49900,
-      amount_received: 0,
-      created_at: "2025-07-10T08:30:00Z"
-    }
-  ]
-}
-```
 
 ```bash cURL
 curl -X GET "https://api.recurso.dev/v1/virtual-accounts?customer_id=cust_8Tj3mKvR&status=active" \
@@ -162,33 +116,6 @@ For payments received outside your payment gateway — cash at a counter, a mail
 ### Record an Offline Payment
 
 <CodeGroup>
-```typescript TypeScript
-const payment = await recurso.payments.recordOffline({
-  customer_id: "cust_8Tj3mKvR",
-  invoice_id: "inv_Q4xnL92p",       // optional — link to an invoice
-  payment_type: "bank_transfer",      // "bank_transfer" | "cash" | "cheque"
-  amount: 49900,                      // amount in paise
-  currency: "INR",                    // defaults to INR
-  reference_number: "NEFT-20250710-4829",
-  notes: "Received via NEFT from HDFC account ending 4821",
-  recorded_by: "ops_sanjay@acme.com"
-});
-
-// Response
-{
-  id: "offpay_Rn4kLm8x",
-  tenant_id: "ten_abc123",
-  customer_id: "cust_8Tj3mKvR",
-  invoice_id: "inv_Q4xnL92p",
-  payment_type: "bank_transfer",
-  amount: 49900,
-  currency: "INR",
-  reference_number: "NEFT-20250710-4829",
-  notes: "Received via NEFT from HDFC account ending 4821",
-  recorded_by: "ops_sanjay@acme.com",
-  recorded_at: "2025-07-10T14:22:00Z"
-}
-```
 
 ```bash cURL
 curl -X POST https://api.recurso.dev/v1/payments/offline \
@@ -237,28 +164,6 @@ curl -X POST https://api.recurso.dev/v1/payments/offline \
 ### List Offline Payments
 
 <CodeGroup>
-```typescript TypeScript
-const payments = await recurso.payments.listOffline({
-  customer_id: "cust_8Tj3mKvR"   // optional filter
-});
-
-// Response
-{
-  data: [
-    {
-      id: "offpay_Rn4kLm8x",
-      customer_id: "cust_8Tj3mKvR",
-      invoice_id: "inv_Q4xnL92p",
-      payment_type: "bank_transfer",
-      amount: 49900,
-      currency: "INR",
-      reference_number: "NEFT-20250710-4829",
-      recorded_by: "ops_sanjay@acme.com",
-      recorded_at: "2025-07-10T14:22:00Z"
-    }
-  ]
-}
-```
 
 ```bash cURL
 curl -X GET "https://api.recurso.dev/v1/payments/offline?customer_id=cust_8Tj3mKvR" \

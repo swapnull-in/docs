@@ -80,17 +80,6 @@ Store OAuth client secrets securely. Never expose them in client-side code or ve
 Initiate the OAuth flow to link your accounting software.
 
 <CodeGroup>
-```typescript TypeScript
-const connection = await recurso.accounting.connect('quickbooks');
-
-// Response
-{
-  auth_url: 'https://appcenter.intuit.com/connect/oauth2?client_id=...&redirect_uri=...&state=...'
-}
-
-// Redirect the user to auth_url to authorize access
-window.location.href = connection.auth_url;
-```
 
 ```bash cURL
 curl -X POST https://api.recurso.dev/v1/accounting/connect/quickbooks \
@@ -132,25 +121,6 @@ You do not need to implement the callback handler yourself. Recurso manages the 
 Retrieve all accounting connections for your tenant.
 
 <CodeGroup>
-```typescript TypeScript
-const connections = await recurso.accounting.listConnections();
-
-// Response
-{
-  data: [
-    {
-      id: 'acc_qb_abc123',
-      tenant_id: 'tenant_xyz',
-      provider: 'quickbooks',
-      realm_id: '1234567890',
-      sync_status: 'idle',
-      is_active: true,
-      token_expires_at: '2026-07-23T10:00:00Z',
-      created_at: '2026-03-15T08:30:00Z'
-    }
-  ]
-}
-```
 
 ```bash cURL
 curl https://api.recurso.dev/v1/accounting/connections \
@@ -176,9 +146,6 @@ curl https://api.recurso.dev/v1/accounting/connections \
 Remove an accounting connection. This revokes tokens and stops all syncing.
 
 <CodeGroup>
-```typescript TypeScript
-await recurso.accounting.disconnect('acc_qb_abc123');
-```
 
 ```bash cURL
 curl -X DELETE https://api.recurso.dev/v1/accounting/connections/acc_qb_abc123 \
@@ -195,12 +162,6 @@ Disconnecting does not delete previously synced data from the accounting provide
 Manually trigger a sync to push billing data to your connected accounting platforms.
 
 <CodeGroup>
-```typescript TypeScript
-await recurso.accounting.triggerSync();
-
-// Syncs all active connections for your tenant
-// Response: 200 OK
-```
 
 ```bash cURL
 curl -X POST https://api.recurso.dev/v1/accounting/sync \
@@ -268,28 +229,6 @@ with just a description and the default sales account code.
 View recent sync logs to monitor sync health and troubleshoot failures.
 
 <CodeGroup>
-```typescript TypeScript
-const status = await recurso.accounting.syncStatus();
-
-// Response -- last 50 sync logs
-{
-  data: [
-    {
-      id: 'sync_log_001',
-      connection_id: 'acc_qb_abc123',
-      provider: 'quickbooks',
-      status: 'completed',
-      invoices_synced: 24,
-      payments_synced: 18,
-      credit_notes_synced: 3,
-      errors: [],
-      started_at: '2026-06-23T02:00:00Z',
-      completed_at: '2026-06-23T02:01:45Z'
-    }
-    // ... up to 50 entries
-  ]
-}
-```
 
 ```bash cURL
 curl https://api.recurso.dev/v1/accounting/sync/status \

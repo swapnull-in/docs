@@ -40,17 +40,6 @@ Before e-invoices can be submitted, configure your IRP connection credentials. R
 ### Update IRP Configuration
 
 <CodeGroup>
-```typescript TypeScript
-await recurso.settings.irp.update({
-  client_id: 'your_irp_client_id',
-  client_secret: 'your_irp_client_secret',
-  username: 'your_irp_username',
-  password: 'your_irp_password',
-  gstin: '27AABCU9603R1ZM',
-  environment: 'production',  // or 'sandbox'
-  is_enabled: true
-});
-```
 
 ```bash cURL
 curl -X PUT https://api.recurso.dev/v1/settings/irp \
@@ -89,20 +78,6 @@ Always test with `environment: "sandbox"` before switching to production. Sandbo
 Retrieve the current IRP configuration. Secrets are returned in a masked format for security.
 
 <CodeGroup>
-```typescript TypeScript
-const config = await recurso.settings.irp.get();
-
-// Returns
-// {
-//   client_id: "your_ir****ent_id",
-//   client_secret: "****",
-//   username: "your_i****ername",
-//   password: "****",
-//   gstin: "27AABCU9603R1ZM",
-//   environment: "production",
-//   is_enabled: true
-// }
-```
 
 ```bash cURL
 curl https://api.recurso.dev/v1/settings/irp \
@@ -115,12 +90,6 @@ curl https://api.recurso.dev/v1/settings/irp \
 Validate that your credentials are correct and the IRP portal is reachable before going live.
 
 <CodeGroup>
-```typescript TypeScript
-const result = await recurso.settings.irp.test();
-
-// Returns
-// { success: true, message: "IRP connection successful" }
-```
 
 ```bash cURL
 curl -X POST https://api.recurso.dev/v1/settings/irp/test \

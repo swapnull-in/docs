@@ -140,34 +140,6 @@ stateDiagram-v2
 The `GET /v1/finance/revrec/report` endpoint provides a consolidated revenue recognition report for a given period. It returns both recognized and deferred amounts, broken down by subscription.
 
 <CodeGroup>
-```typescript TypeScript
-const report = await recurso.finance.revrecReport({
-  start_date: '2026-01-01',
-  end_date: '2026-06-30'
-});
-
-// Response
-{
-  data: {
-    start_date: '2026-01-01',
-    end_date: '2026-06-30',
-    total_recognized_amount: 28500000,  // Revenue earned in this period
-    total_deferred_amount: 14200000,    // Revenue still deferred at period end
-    currency: 'INR',
-    subscriptions: [
-      {
-        subscription_id: 'sub_xyz',
-        customer_id: 'cust_abc',
-        recognized_amount: 2499500,   // Amount recognized during period
-        deferred_amount: 2499500,     // Amount still deferred at period end
-        schedule_start: '2026-01-01',
-        schedule_end: '2026-12-31'
-      }
-      // ... one entry per subscription with activity in the period
-    ]
-  }
-}
-```
 
 ```bash cURL
 curl -G https://api.recurso.dev/v1/finance/revrec/report \

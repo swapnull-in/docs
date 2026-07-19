@@ -183,26 +183,6 @@ curl -X POST https://api.recurso.dev/v1/payments/offline \
 Retrieve all offline payments recorded for an invoice or customer:
 
 <CodeGroup>
-```typescript TypeScript
-const payments = await recurso.payments.listOffline({
-  invoice_id: 'inv_001',
-  limit: 20
-});
-
-// Response
-{
-  data: [
-    {
-      id: 'opay_001',
-      invoice_id: 'inv_001',
-      amount: 5899,
-      payment_type: 'bank_transfer',
-      reference_number: 'NEFT-REF-123456',
-      received_at: '2026-06-20T10:30:00Z'
-    }
-  ]
-}
-```
 
 ```bash cURL
 curl -G https://api.recurso.dev/v1/payments/offline \
@@ -216,14 +196,15 @@ curl -G https://api.recurso.dev/v1/payments/offline \
 For customers who prefer to pay via bank transfer, create a virtual account that auto-reconciles incoming payments:
 
 ```typescript
-const va = await recurso.virtualAccounts.create({
-  customer_id: 'cust_abc123',
-  description: 'Payment for Acme Corp'
+// POST /v1/virtual-accounts { customer_id, invoice_id, amount }
+const res = await fetch(`${BASE_URL}/v1/virtual-accounts`, {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+  body: JSON.stringify({ customer_id: 'cust_abc123', invoice_id: 'inv_001', amount: 589882 }),
 });
-
-// Share these bank details with the customer
-console.log(va.account_number);  // Virtual account number
-console.log(va.ifsc);            // IFSC code
+const va = (await res.json()).data;
+// Share these with the customer — incoming transfers auto-reconcile:
+console.log(va.account_number, va.ifsc_code, va.bank_name, va.beneficiary_name);
 ```
 
 When the customer transfers to this account, Recurso automatically matches the payment to the correct invoice. See the [Virtual Accounts guide](/advanced/virtual-accounts) for setup.

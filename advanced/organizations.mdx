@@ -50,23 +50,6 @@ Each tenant is a fully independent billing entity with its own customers, plans,
 ## Create an Organization
 
 <CodeGroup>
-```typescript TypeScript
-const org = await recurso.organizations.create({
-  name: 'Acme Holdings',
-  owner_email: 'admin@acmeholdings.com'
-});
-
-// Response
-{
-  data: {
-    id: 'org_acme01',
-    name: 'Acme Holdings',
-    owner_email: 'admin@acmeholdings.com',
-    created_at: '2026-06-23T10:00:00Z',
-    updated_at: '2026-06-23T10:00:00Z'
-  }
-}
-```
 
 ```bash cURL
 curl -X POST https://api.recurso.dev/v1/organizations \
@@ -91,25 +74,6 @@ curl -X POST https://api.recurso.dev/v1/organizations \
 Retrieve all organizations accessible with your API key:
 
 <CodeGroup>
-```typescript TypeScript
-const orgs = await recurso.organizations.list({
-  limit: 20,
-  offset: 0
-});
-
-// Response
-{
-  data: [
-    {
-      id: 'org_acme01',
-      name: 'Acme Holdings',
-      owner_email: 'admin@acmeholdings.com',
-      created_at: '2026-06-23T10:00:00Z'
-    }
-  ],
-  has_more: false
-}
-```
 
 ```bash cURL
 curl -G https://api.recurso.dev/v1/organizations \
@@ -121,20 +85,6 @@ curl -G https://api.recurso.dev/v1/organizations \
 ## Get an Organization
 
 <CodeGroup>
-```typescript TypeScript
-const org = await recurso.organizations.get('org_acme01');
-
-// Response
-{
-  data: {
-    id: 'org_acme01',
-    name: 'Acme Holdings',
-    owner_email: 'admin@acmeholdings.com',
-    created_at: '2026-06-23T10:00:00Z',
-    updated_at: '2026-06-23T10:00:00Z'
-  }
-}
-```
 
 ```bash cURL
 curl https://api.recurso.dev/v1/organizations/org_acme01 \
@@ -147,22 +97,6 @@ curl https://api.recurso.dev/v1/organizations/org_acme01 \
 Update the name or owner email of an existing organization:
 
 <CodeGroup>
-```typescript TypeScript
-const updated = await recurso.organizations.update('org_acme01', {
-  name: 'Acme Holdings International',
-  owner_email: 'cfo@acmeholdings.com'
-});
-
-// Response
-{
-  data: {
-    id: 'org_acme01',
-    name: 'Acme Holdings International',
-    owner_email: 'cfo@acmeholdings.com',
-    updated_at: '2026-06-24T09:00:00Z'
-  }
-}
-```
 
 ```bash cURL
 curl -X PUT https://api.recurso.dev/v1/organizations/org_acme01 \
@@ -180,9 +114,6 @@ curl -X PUT https://api.recurso.dev/v1/organizations/org_acme01 \
 Remove an organization. This does not delete the tenants — they become standalone entities.
 
 <CodeGroup>
-```typescript TypeScript
-await recurso.organizations.delete('org_acme01');
-```
 
 ```bash cURL
 curl -X DELETE https://api.recurso.dev/v1/organizations/org_acme01 \
@@ -201,16 +132,6 @@ Tenants are independent billing entities. Add existing tenants to an organizatio
 ### Add a Tenant to an Organization
 
 <CodeGroup>
-```typescript TypeScript
-const result = await recurso.organizations.addTenant('org_acme01', {
-  tenant_id: 'tenant_brandx'
-});
-
-// Response
-{
-  status: 'added'
-}
-```
 
 ```bash cURL
 curl -X POST https://api.recurso.dev/v1/organizations/org_acme01/tenants \
@@ -235,39 +156,6 @@ A tenant can belong to only one organization. Attempting to add a tenant that is
 ### List Tenants in an Organization
 
 <CodeGroup>
-```typescript TypeScript
-const tenants = await recurso.organizations.listTenants('org_acme01');
-
-// Response
-{
-  data: [
-    {
-      id: 'tenant_brandx',
-      name: 'Brand X',
-      active_subscriptions: 142,
-      mrr: 2850000,
-      currency: 'INR',
-      created_at: '2025-09-01T00:00:00Z'
-    },
-    {
-      id: 'tenant_brandy',
-      name: 'Brand Y',
-      active_subscriptions: 87,
-      mrr: 1450000,
-      currency: 'INR',
-      created_at: '2026-01-15T00:00:00Z'
-    },
-    {
-      id: 'tenant_brandz',
-      name: 'Brand Z',
-      active_subscriptions: 23,
-      mrr: 980000,
-      currency: 'USD',
-      created_at: '2026-04-10T00:00:00Z'
-    }
-  ]
-}
-```
 
 ```bash cURL
 curl https://api.recurso.dev/v1/organizations/org_acme01/tenants \
@@ -280,14 +168,6 @@ curl https://api.recurso.dev/v1/organizations/org_acme01/tenants \
 Detach a tenant from an organization without deleting the tenant or its data:
 
 <CodeGroup>
-```typescript TypeScript
-await recurso.organizations.removeTenant('org_acme01', 'tenant_brandz');
-
-// Response
-{
-  status: 'removed'
-}
-```
 
 ```bash cURL
 curl -X DELETE https://api.recurso.dev/v1/organizations/org_acme01/tenants/tenant_brandz \
@@ -302,31 +182,6 @@ After removal, the tenant continues operating independently but no longer appear
 The consolidated MRR endpoint aggregates MRR metrics across all tenants in an organization, giving you a single view of your total recurring revenue.
 
 <CodeGroup>
-```typescript TypeScript
-const metrics = await recurso.organizations.getConsolidatedMRR('org_acme01');
-
-// Response
-{
-  data: {
-    organization_id: 'org_acme01',
-    total_mrr: 5280000,
-    total_active_subscriptions: 252,
-    by_tenant: [
-      {
-        tenant_id: 'tenant_brandx',
-        tenant_name: 'Brand X',
-        mrr: 2850000,
-        currency: 'INR',
-        new_mrr: 350000,
-        expansion_mrr: 120000,
-        contraction_mrr: 25000,
-        churn_mrr: 45000
-      }
-      // ... one entry per tenant
-    ]
-  }
-}
-```
 
 ```bash cURL
 curl https://api.recurso.dev/v1/organizations/org_acme01/analytics/mrr \

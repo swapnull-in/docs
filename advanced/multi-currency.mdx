@@ -33,11 +33,6 @@ All monetary amounts in the Recurso API are expressed in **minor units** (e.g., 
 Configure your base currency during tenant setup. This is the currency used for financial reporting and ledger balances.
 
 <CodeGroup>
-```typescript TypeScript
-const tenant = await recurso.tenants.update({
-  base_currency: "INR"
-});
-```
 
 ```bash cURL
 curl -X PATCH https://api.recurso.dev/v1/tenant \
@@ -180,16 +175,6 @@ Recurso supports multiple approaches for exchange rates:
 ### Configuring FX Rate Source
 
 <CodeGroup>
-```typescript TypeScript
-await recurso.tenants.update({
-  fx_rate_source: "gateway",  // "gateway" | "fixed" | "daily"
-  fixed_rates: {
-    "USD_INR": 83.50,
-    "EUR_INR": 90.75,
-    "GBP_INR": 106.20
-  }
-});
-```
 
 ```bash cURL
 curl -X PATCH https://api.recurso.dev/v1/tenant \

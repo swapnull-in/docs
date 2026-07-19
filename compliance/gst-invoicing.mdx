@@ -35,13 +35,18 @@ DEFAULT_GST_RATE=18  # 18% GST
 Or via API:
 
 ```typescript
-await recurso.settings.update({
-  gstin: '27BBBBB0000B1Z5',
-  legal_name: 'Your Company Pvt Ltd',
-  trade_name: 'YourBrand',
-  state_code: '27',
-  sac_code: '998311',
-  gst_rate: 18
+// No SDK settings wrapper — call the endpoint directly.
+await fetch(`${BASE_URL}/v1/settings/gst`, {
+  method: 'PUT',
+  headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    gstin: '27BBBBB0000B1Z5',
+    legal_name: 'Your Company Pvt Ltd',
+    trade_name: 'YourBrand',
+    state_code: '27',
+    sac_code: '998311',
+    gst_rate: 18,
+  }),
 });
 ```
 
@@ -162,12 +167,18 @@ GST-compliant invoice includes:
 For businesses exceeding ₹5 Cr turnover:
 
 ```typescript
-// Enable e-invoicing
-await recurso.settings.update({
-  einvoice_enabled: true,
-  gsp_provider: 'cleartax',  // or 'masters-india'
-  gsp_username: 'xxx',
-  gsp_password: 'xxx'
+// Enable e-invoicing — PUT /v1/settings/irp (environment defaults to sandbox)
+await fetch(`${BASE_URL}/v1/settings/irp`, {
+  method: 'PUT',
+  headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    gsp_provider: 'cleartax',   // your GSP / IRP integrator
+    client_id: 'xxx',
+    client_secret: 'xxx',
+    username: 'xxx',
+    password: 'xxx',
+    environment: 'production',
+  }),
 });
 ```
 

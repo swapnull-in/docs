@@ -36,15 +36,6 @@ stateDiagram-v2
 ## Create a Campaign
 
 <CodeGroup>
-```typescript TypeScript
-const campaign = await recurso.dunningCampaigns.create({
-  name: 'Standard Recovery',
-  description: 'Default dunning sequence for failed payments',
-  is_default: true,
-  payment_wall_enabled: true,
-  payment_wall_grace_days: 7
-});
-```
 
 ```bash cURL
 curl -X POST https://api.recurso.dev/v1/dunning-campaigns \
@@ -52,10 +43,7 @@ curl -X POST https://api.recurso.dev/v1/dunning-campaigns \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Standard Recovery",
-    "description": "Default dunning sequence for failed payments",
-    "is_default": true,
-    "payment_wall_enabled": true,
-    "payment_wall_grace_days": 7
+    "trigger_event": "payment_failed"
   }'
 ```
 </CodeGroup>
@@ -65,14 +53,10 @@ curl -X POST https://api.recurso.dev/v1/dunning-campaigns \
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `name` | string | Yes | Campaign name |
-| `description` | string | No | Description of the campaign |
-| `is_default` | boolean | No | If `true`, applies to all failed payments automatically |
-| `payment_wall_enabled` | boolean | No | Enable payment wall functionality |
-| `payment_wall_grace_days` | integer | No | Days before payment wall activates |
+| `trigger_event` | string | Yes | What starts the campaign — `payment_failed` or `invoice_overdue` |
 
-<Warning>
-Only one campaign can be the default at a time. Setting `is_default: true` will remove the default flag from any existing default campaign.
-</Warning>
+The campaign is a container; the recovery behaviour (including the payment
+wall) lives on its **steps**, added next.
 
 ## Add Campaign Steps
 
@@ -82,50 +66,52 @@ Build your recovery sequence by adding steps at specific day offsets.
 |---------|-------------|
 | `email` | Send an email notification to the customer |
 | `sms` | Send an SMS message to the customer |
-| `payment_wall` | Activate a payment wall blocking service access |
+| `in_app` | Surface an in-app notice |
+
+A step can also raise the **payment wall** by setting `is_payment_wall: true`
+(independent of channel).
+
+Each step fires `delay_hours` after the trigger event. `POST /v1/dunning-campaigns/{id}/steps`:
 
 <Steps>
-  <Step title="Day 0: Immediate email notification">
-    ```typescript
-    await recurso.dunningCampaigns.steps.create('dc_abc123', {
-      day_offset: 0,
-      channel: 'email',
-      subject: 'Action required: Payment failed',
-      body: 'Hi {{customer_name}}, your payment of {{amount}} for {{plan_name}} failed. Please update your payment method.'
-    });
+  <Step title="Hour 0: immediate email">
+    ```bash
+    curl -X POST https://api.recurso.dev/v1/dunning-campaigns/{campaign_id}/steps \
+      -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" \
+      -d '{ "step_order": 1, "channel": "email", "delay_hours": 0,
+            "subject": "Action required: payment failed",
+            "body": "Hi {{customer_name}}, your payment for {{plan_name}} failed." }'
     ```
   </Step>
-  <Step title="Day 3: Follow-up SMS">
-    ```typescript
-    await recurso.dunningCampaigns.steps.create('dc_abc123', {
-      day_offset: 3,
-      channel: 'sms',
-      body: 'Your {{plan_name}} payment is overdue. Update at {{payment_link}}'
-    });
+  <Step title="Day 3: follow-up SMS">
+    ```bash
+    curl -X POST https://api.recurso.dev/v1/dunning-campaigns/{campaign_id}/steps \
+      -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" \
+      -d '{ "step_order": 2, "channel": "sms", "delay_hours": 72,
+            "body": "Your {{plan_name}} payment is overdue." }'
     ```
   </Step>
-  <Step title="Day 5: Urgent email with template">
-    ```typescript
-    await recurso.dunningCampaigns.steps.create('dc_abc123', {
-      day_offset: 5,
-      channel: 'email',
-      template_id: 'tmpl_urgent_payment',
-      subject: 'Urgent: Service suspension in 2 days'
-    });
+  <Step title="Day 5: urgent email from a template">
+    ```bash
+    curl -X POST https://api.recurso.dev/v1/dunning-campaigns/{campaign_id}/steps \
+      -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" \
+      -d '{ "step_order": 3, "channel": "email", "delay_hours": 120,
+            "template_name": "urgent_payment",
+            "subject": "Urgent: service suspension soon" }'
     ```
   </Step>
-  <Step title="Day 7: Payment wall activation">
-    ```typescript
-    await recurso.dunningCampaigns.steps.create('dc_abc123', {
-      day_offset: 7,
-      channel: 'payment_wall'
-    });
+  <Step title="Day 7: raise the payment wall">
+    ```bash
+    curl -X POST https://api.recurso.dev/v1/dunning-campaigns/{campaign_id}/steps \
+      -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" \
+      -d '{ "step_order": 4, "channel": "in_app", "delay_hours": 168,
+            "is_payment_wall": true }'
     ```
   </Step>
 </Steps>
 
-Steps execute in `day_offset` order, escalating from a gentle reminder to a
-hard payment wall. If the invoice is paid at any point, the campaign stops
+Steps execute in `step_order`, escalating from a gentle reminder to a hard
+payment wall. If the invoice is paid at any point, the campaign stops
 immediately and any remaining steps are cancelled:
 
 ```mermaid
@@ -145,11 +131,13 @@ flowchart LR
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `day_offset` | integer | Yes | Days after payment failure to execute this step |
-| `channel` | string | Yes | `email`, `sms`, or `payment_wall` |
-| `template_id` | string | No | ID of a pre-configured message template |
-| `subject` | string | No | Email subject line (email channel only) |
+| `step_order` | integer | Yes | Execution order within the campaign |
+| `channel` | string | Yes | `email`, `sms`, or `in_app` |
+| `delay_hours` | integer | Yes | Hours after the trigger event to fire |
+| `template_name` | string | No | Name of a pre-configured message template |
+| `subject` | string | No | Email subject line (email channel) |
 | `body` | string | No | Message body content |
+| `is_payment_wall` | boolean | No | Raise the payment wall at this step |
 
 ## Payment Wall
 
@@ -170,21 +158,13 @@ flowchart TD
 ### Check Payment Wall Status
 
 <CodeGroup>
-```typescript TypeScript
-const status = await recurso.invoices.paymentWall('inv_overdue_456');
-
-// Returns
-{
-  payment_wall_active: true,
-  grace_days_remaining: 0,
-  blocked_at: '2025-03-22T00:00:00Z',
-  invoice_id: 'inv_overdue_456'
-}
+```bash cURL
+curl https://api.recurso.dev/v1/invoices/{invoice_id}/payment-wall \
+  -H "Authorization: Bearer $API_KEY"
 ```
 
-```bash cURL
-curl -X GET https://api.recurso.dev/v1/invoices/inv_overdue_456/payment-wall \
-  -H "Authorization: Bearer $API_KEY"
+```json Response
+{ "invoice_id": "…", "payment_wall_active": true }
 ```
 </CodeGroup>
 
@@ -200,10 +180,6 @@ curl -X GET https://api.recurso.dev/v1/invoices/inv_overdue_456/payment-wall \
 ### List and Get Campaigns
 
 <CodeGroup>
-```typescript TypeScript
-const campaigns = await recurso.dunningCampaigns.list();
-const campaign = await recurso.dunningCampaigns.get('dc_abc123');
-```
 
 ```bash cURL
 curl -X GET https://api.recurso.dev/v1/dunning-campaigns \
@@ -217,32 +193,21 @@ curl -X GET https://api.recurso.dev/v1/dunning-campaigns/dc_abc123 \
 ### Update Campaign and Steps
 
 <CodeGroup>
-```typescript TypeScript
-await recurso.dunningCampaigns.update('dc_abc123', {
-  name: 'Aggressive Recovery',
-  payment_wall_grace_days: 3
-});
-
-await recurso.dunningCampaigns.steps.update('dc_abc123', 'step_002', {
-  day_offset: 2,
-  body: 'Updated SMS content'
-});
-
-await recurso.dunningCampaigns.steps.delete('dc_abc123', 'step_004');
-```
 
 ```bash cURL
-curl -X PUT https://api.recurso.dev/v1/dunning-campaigns/dc_abc123 \
+# Update the campaign (name / trigger_event)
+curl -X PUT https://api.recurso.dev/v1/dunning-campaigns/{campaign_id} \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{ "name": "Aggressive Recovery", "payment_wall_grace_days": 3 }'
+  -d '{ "name": "Aggressive Recovery" }'
 
-curl -X PUT https://api.recurso.dev/v1/dunning-campaigns/dc_abc123/steps/step_002 \
+# Update a step — steps are addressed by their own id, not nested under the campaign
+curl -X PUT https://api.recurso.dev/v1/dunning-campaigns/steps/{step_id} \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{ "day_offset": 2, "body": "Updated SMS content" }'
+  -d '{ "delay_hours": 48, "body": "Updated SMS content" }'
 
-curl -X DELETE https://api.recurso.dev/v1/dunning-campaigns/dc_abc123/steps/step_004 \
+curl -X DELETE https://api.recurso.dev/v1/dunning-campaigns/steps/{step_id} \
   -H "Authorization: Bearer $API_KEY"
 ```
 </CodeGroup>

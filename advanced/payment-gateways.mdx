@@ -63,20 +63,23 @@ flowchart TD
     In the Razorpay Dashboard, add a webhook pointing to your Recurso instance:
 
     ```
-    URL: https://api.recurso.dev/v1/webhooks/razorpay
+    URL: https://api.recurso.dev/webhooks/razorpay
     Events: payment.authorized, payment.captured, payment.failed, refund.created, subscription.charged
     ```
   </Step>
-  <Step title="Set as default for INR">
-    When creating subscriptions for INR customers, specify `razorpay` as the payment gateway:
+  <Step title="Routing is automatic by currency">
+    You don't pick a gateway per subscription — the **smart router** chooses
+    it from the invoice currency (INR → Razorpay, others → Stripe by
+    default). Subscription create takes no `payment_gateway` field:
 
-    ```typescript
-    const subscription = await recurso.subscriptions.create({
-      customer_id: 'cust_abc123',
-      plan_id: 'plan_pro_inr',
-      payment_gateway: 'razorpay'
-    });
+    ```bash
+    curl -X POST https://api.recurso.dev/v1/subscriptions \
+      -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" \
+      -d '{ "customer_id": "cust_abc123", "plan_id": "plan_pro_inr" }'
     ```
+
+    Override the currency→gateway map at boot with
+    `GATEWAY_CURRENCY_OVERRIDES` (e.g. route USD to Razorpay too).
   </Step>
 </Steps>
 
@@ -121,19 +124,18 @@ flowchart TD
     In the Stripe Dashboard, add a webhook endpoint:
 
     ```
-    URL: https://api.recurso.dev/v1/webhooks/stripe
+    URL: https://api.recurso.dev/webhooks/stripe
     Events: payment_intent.succeeded, payment_intent.payment_failed, charge.refunded, invoice.payment_succeeded, customer.subscription.updated
     ```
   </Step>
-  <Step title="Set as default for USD">
-    When creating subscriptions for USD customers, specify `stripe` as the payment gateway:
+  <Step title="USD routes to Stripe automatically">
+    No per-subscription gateway field is needed — a USD invoice routes to
+    Stripe by default:
 
-    ```typescript
-    const subscription = await recurso.subscriptions.create({
-      customer_id: 'cust_xyz789',
-      plan_id: 'plan_pro_usd',
-      payment_gateway: 'stripe'
-    });
+    ```bash
+    curl -X POST https://api.recurso.dev/v1/subscriptions \
+      -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" \
+      -d '{ "customer_id": "cust_xyz789", "plan_id": "plan_pro_usd" }'
     ```
   </Step>
 </Steps>
@@ -171,67 +173,42 @@ Each localized method must also be **enabled in the Stripe Dashboard** under **S
 **Settlement timing.** Card, iDEAL, and Bancontact confirm within seconds. **SEPA Direct Debit authorizes immediately but funds settle over several business days** — the invoice is only marked **paid** when Stripe delivers the `payment_intent.succeeded` webhook, which fires once settlement completes. Recurso's Stripe webhook handler is payment-method agnostic, so no extra configuration is needed for these asynchronous, redirect-based methods; just ensure your `payment_intent.succeeded` webhook is configured (see above).
 </Info>
 
-## Gateway Selection Per Subscription
+## Gateway Selection (Smart Routing)
 
-Specify the gateway when creating a subscription. Recurso stores the gateway association and uses it for all future payments on that subscription.
+Recurso picks the gateway per **invoice currency** at charge time — you
+never set it on the subscription. The default map:
 
-<CodeGroup>
-```typescript TypeScript
-// INR subscription via Razorpay
-const inrSub = await recurso.subscriptions.create({
-  customer_id: 'cust_india01',
-  plan_id: 'plan_starter_inr',
-  payment_gateway: 'razorpay'
-});
+| Invoice currency | Gateway |
+|------------------|---------|
+| `INR` | Razorpay |
+| everything else | Stripe |
 
-// USD subscription via Stripe
-const usdSub = await recurso.subscriptions.create({
-  customer_id: 'cust_us01',
-  plan_id: 'plan_starter_usd',
-  payment_gateway: 'stripe'
-});
-```
-
-```bash cURL
+```bash
+# No gateway field — currency decides. INR → Razorpay, USD → Stripe.
 curl -X POST https://api.recurso.dev/v1/subscriptions \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "customer_id": "cust_india01",
-    "plan_id": "plan_starter_inr",
-    "payment_gateway": "razorpay"
-  }'
+  -d '{ "customer_id": "cust_india01", "plan_id": "plan_starter_inr" }'
 ```
-</CodeGroup>
+
+Override the map at boot with the `GATEWAY_CURRENCY_OVERRIDES` env var —
+for example, route `USD` to Razorpay if that's where your US entity
+settles. Overrides are validated at startup against configured gateways.
 
 ## Payment Method Management
 
-Customers can have multiple payment methods across gateways. Recurso tracks which methods belong to which gateway.
-
-```typescript
-// Attach a Razorpay payment method
-await recurso.customers.attachPaymentMethod('cust_india01', {
-  gateway: 'razorpay',
-  gateway_payment_method_id: 'method_rzp_xxx',
-  type: 'upi',
-  set_default: true
-});
-
-// Attach a Stripe payment method
-await recurso.customers.attachPaymentMethod('cust_us01', {
-  gateway: 'stripe',
-  gateway_payment_method_id: 'pm_stripe_xxx',
-  type: 'card',
-  set_default: true
-});
-```
+The payment instrument is created and stored at the **gateway** during
+checkout — Stripe SetupIntent / Razorpay token or UPI mandate — or through
+the [customer portal](/portal/self-service). Recurso keeps the display
+metadata (brand, last 4, expiry) for the dashboard and dunning emails; see
+[Payments → Payment Methods](/core/payments#payment-methods).
 
 ### Payment Method Types by Gateway
 
 | Gateway | Method Types | Best For |
 |---------|-------------|----------|
-| Razorpay | `card`, `upi`, `netbanking`, `wallet`, `emandate` | Indian customers, INR billing |
-| Stripe | `card`, `ach_debit`, `sepa_debit`, `ideal`, `bancontact` | International customers, USD and EUR billing |
+| Razorpay | card, UPI, netbanking, wallet, UPI AutoPay mandate | Indian customers, INR billing |
+| Stripe | card, ACH debit, SEPA debit, iDEAL, Bancontact | International customers, USD and EUR billing |
 
 ## Webhook Handling from Gateways
 
@@ -274,11 +251,13 @@ While Recurso does not automatically fail over between gateways (a Razorpay subs
     If a payment method fails, prompt the customer to add a new payment method on the same gateway. Use the customer portal or a custom checkout flow.
 
     ```typescript
-    // After payment.failed webhook
-    const session = await recurso.portal.createSession({
-      customer_id: 'cust_india01',
-      return_url: 'https://yourapp.com/billing',
-      flow: 'update_payment_method'
+    // After a payment.failed webhook, email the customer a portal magic
+    // link so they can re-authorize the mandate / update their card:
+    //   POST /portal/auth/request { email }
+    await fetch(`${PORTAL_ORIGIN}/portal/auth/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: customer.email }),
     });
     ```
   </Accordion>

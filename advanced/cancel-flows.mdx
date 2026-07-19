@@ -35,39 +35,6 @@ flowchart TD
 ## Create a Cancellation Flow
 
 <CodeGroup>
-```typescript TypeScript
-const flow = await recurso.cancelFlows.create({
-  name: 'Standard Cancel Flow',
-  description: 'Survey, retention offer, and confirmation',
-  cooldown_hours: 48,
-  steps: [
-    {
-      type: 'survey',
-      title: 'We\'re sorry to see you go',
-      description: 'Help us understand why you\'re leaving',
-      required: true
-    },
-    {
-      type: 'offer',
-      title: 'Before you go...',
-      description: 'We\'d love to keep you. How about a special offer?',
-      required: false,
-      offer: {
-        type: 'discount',
-        value: 50,
-        duration_days: 90,
-        description: '50% off for the next 3 months'
-      }
-    },
-    {
-      type: 'confirmation',
-      title: 'Confirm cancellation',
-      description: 'Your subscription will remain active until the end of your billing period.',
-      required: true
-    }
-  ]
-});
-```
 
 ```bash cURL
 curl -X POST https://api.recurso.dev/v1/cancel-flows \
@@ -127,27 +94,6 @@ curl -X POST https://api.recurso.dev/v1/cancel-flows \
 ### Start a Session
 
 <CodeGroup>
-```typescript TypeScript
-const session = await recurso.cancelFlows.sessions.start({
-  customer_id: 'cust_abc123',
-  subscription_id: 'sub_xyz789',
-  flow_id: 'cf_flow_001'  // Optional: uses default flow if omitted
-});
-
-// Returns
-{
-  id: 'cfs_session_001',
-  flow_id: 'cf_flow_001',
-  customer_id: 'cust_abc123',
-  subscription_id: 'sub_xyz789',
-  status: 'in_progress',
-  current_step_index: 0,
-  responses: {},
-  accepted_offer_id: null,
-  started_at: '2025-06-01T14:30:00Z',
-  completed_at: null
-}
-```
 
 ```bash cURL
 curl -X POST https://api.recurso.dev/v1/cancel-flows/sessions/start \
@@ -168,24 +114,6 @@ If the customer has an active cooldown from a previous session, starting a new s
 ### Submit a Step
 
 <CodeGroup>
-```typescript TypeScript
-// Submit survey response
-await recurso.cancelFlows.sessions.submitStep('cfs_session_001', {
-  step_id: 'step_survey_001',
-  response: {
-    reason: 'too_expensive',
-    feedback: 'Looking for a cheaper alternative'
-  },
-  accepted_offer: false
-});
-
-// Submit offer step (customer accepts the discount)
-await recurso.cancelFlows.sessions.submitStep('cfs_session_001', {
-  step_id: 'step_offer_001',
-  response: {},
-  accepted_offer: true  // Session status changes to 'retained'
-});
-```
 
 ```bash cURL
 curl -X POST https://api.recurso.dev/v1/cancel-flows/sessions/cfs_session_001/submit \
@@ -211,9 +139,6 @@ curl -X POST https://api.recurso.dev/v1/cancel-flows/sessions/cfs_session_001/su
 ### Get Session
 
 <CodeGroup>
-```typescript TypeScript
-const session = await recurso.cancelFlows.sessions.get('cfs_session_001');
-```
 
 ```bash cURL
 curl -X GET https://api.recurso.dev/v1/cancel-flows/sessions/cfs_session_001 \
@@ -226,49 +151,43 @@ curl -X GET https://api.recurso.dev/v1/cancel-flows/sessions/cfs_session_001 \
 The `cooldown_hours` parameter prevents a customer from starting a new session too frequently, giving retention offers time to take effect.
 
 ```typescript
-const flow = await recurso.cancelFlows.create({
-  name: 'With Cooldown',
-  cooldown_hours: 72,  // 3 days between cancellation attempts
-  steps: [...]
+// POST /v1/cancel-flows — a flow is a name + ordered steps.
+// cooldown is in DAYS; steps carry a step_type and a free-form config.
+const res = await fetch(`${BASE_URL}/v1/cancel-flows`, {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: 'With Cooldown',
+    is_default: true,
+    cooldown_days: 3,
+    steps: [
+      { step_order: 1, step_type: 'survey', config: { title: 'Why are you leaving?' } },
+      { step_order: 2, step_type: 'offer',  config: { coupon_code: 'SAVE30' } },
+      { step_order: 3, step_type: 'confirm', config: { behavior: 'end_of_period' } },
+    ],
+  }),
 });
+const flow = (await res.json()).data;
 ```
 
 ## Manage Flows
 
 ```typescript
-// List all flows
-const flows = await recurso.cancelFlows.list();
-
-// Update a flow
-await recurso.cancelFlows.update('cf_flow_001', { cooldown_hours: 24 });
-
-// Manage steps
-await recurso.cancelFlows.steps.create('cf_flow_001', { type: 'survey', title: 'Quick question', required: false });
-await recurso.cancelFlows.steps.update('cf_flow_001', 'step_xyz', { title: 'Updated title' });
-await recurso.cancelFlows.steps.delete('cf_flow_001', 'step_xyz');
+// GET    /v1/cancel-flows                     list flows
+// PUT    /v1/cancel-flows/{id}                update a flow (name, is_default, cooldown_days)
+// POST   /v1/cancel-flows/{id}/steps          add a step
+// PUT    /v1/cancel-flows/steps/{id}          update a step
+// DELETE /v1/cancel-flows/steps/{id}          remove a step
+//
+// A customer-facing run is a session:
+// POST /v1/cancel-flows/sessions/start { customer_id, subscription_id }
+// POST /v1/cancel-flows/sessions/{id}/submit  advance a step
+// GET  /v1/cancel-flows/stats                 saves vs. cancels
 ```
 
 ## Retention Analytics
 
 <CodeGroup>
-```typescript TypeScript
-const stats = await recurso.cancelFlows.stats();
-
-// Returns
-{
-  total_sessions: 1250,
-  completed_sessions: 480,
-  retained_customers: 385,
-  retention_rate: 0.445,
-  top_reasons: [
-    { reason: 'too_expensive', count: 312 },
-    { reason: 'not_using', count: 245 },
-    { reason: 'missing_features', count: 198 },
-    { reason: 'competitor', count: 156 },
-    { reason: 'temporary', count: 134 }
-  ]
-}
-```
 
 ```bash cURL
 curl -X GET https://api.recurso.dev/v1/cancel-flows/stats \

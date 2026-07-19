@@ -79,13 +79,10 @@ const subscription = await recurso.subscriptions.create({
 Recurso automatically sends 24-hour reminders:
 
 ```typescript
-await recurso.settings.notifications.update({
-  precharge_reminder: {
-    enabled: true,
-    hours_before: 24,  // RBI requirement
-    template: 'precharge_reminder'
-  }
-});
+// The 24-hour RBI pre-debit notice is sent automatically by the built-in
+// pre-charge scheduler for every UPI AutoPay mandate — there is nothing to
+// enable. It fires ~24h before each scheduled debit; see the mandate lifecycle
+// under UPI AutoPay.
 ```
 
 Email content:
@@ -131,11 +128,12 @@ await recurso.subscriptions.cancel('sub_xyz', {
 ## View Consent History
 
 ```typescript
-const consents = await recurso.consents.list({
-  customer_id: 'cust_abc'
+// Consent history for a customer:
+//   GET /v1/customers/{id}/consents
+const res = await fetch(`${BASE_URL}/v1/customers/cust_abc/consents`, {
+  headers: { Authorization: `Bearer ${API_KEY}` },
 });
-
-// Returns all consent records with history
+const { data: consents } = await res.json();
 ```
 
 ## Compliance Checklist
@@ -160,14 +158,10 @@ const consents = await recurso.consents.list({
 All consent actions are logged for compliance:
 
 ```typescript
-const auditLog = await recurso.consents.auditLog({
-  customer_id: 'cust_abc'
-});
-
-// Returns
-[
-  { action: 'granted', timestamp: '2024-01-15...', ip: '...' },
-  { action: 'reminder_sent', timestamp: '2024-02-14...' },
-  { action: 'revoked', timestamp: '2024-02-15...', reason: '...' }
-]
+// Each consent record carries its own grant/revoke trail. Records are
+// created with POST /v1/consents and withdrawn with POST /v1/consents/revoke;
+// the full history reads back from GET /v1/customers/{id}/consents. The
+// append-only audit log (POST/PUT/DELETE across the API) captures the actor,
+// IP, and timestamp of every change — see /advanced/webhooks and the audit
+// log in the dashboard.
 ```

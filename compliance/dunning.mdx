@@ -29,26 +29,22 @@ graph TD
 
 ## Configuration
 
-```typescript
-await recurso.settings.dunning.update({
-  // Retry schedule (days after due date)
-  retry_schedule: [1, 3, 7],
-  
-  // Email notifications
-  emails: {
-    first_reminder: { day: 1, template: 'dunning_first' },
-    second_reminder: { day: 3, template: 'dunning_second' },
-    final_notice: { day: 7, template: 'dunning_final' }
-  },
-  
-  // Actions
-  suspend_after_days: 14,
-  cancel_after_days: 30,
-  
-  // Behavior
-  allow_customer_retry: true,
-  update_payment_url: true
-});
+```bash
+# Dunning is configured as a campaign of timed steps, not a settings blob.
+# 1. Create the campaign:
+curl -X POST https://api.recurso.dev/v1/dunning-campaigns \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "Standard dunning", "trigger_event": "payment_failed" }'
+
+# 2. Add steps (delay_hours from the trigger; channel email|sms|in_app):
+curl -X POST https://api.recurso.dev/v1/dunning-campaigns/{campaign_id}/steps \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "step_order": 1, "channel": "email", "delay_hours": 24,
+        "subject": "Payment failed — action needed",
+        "body": "Hi {{customer_name}}, your payment for {{plan_name}} failed." }'
+# Later steps can set "is_payment_wall": true to gate access.
 ```
 
 ## Email Templates
