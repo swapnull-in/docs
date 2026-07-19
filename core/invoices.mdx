@@ -34,58 +34,60 @@ stateDiagram-v2
 | `uncollectible` | Written off as bad debt |
 | `void` | Cancelled, no longer valid |
 
-## Get an Invoice
+## The Invoice Object
 
-```typescript
-const invoice = await recurso.invoices.get('inv_001');
+Invoices come back from `GET /v1/invoices` (and inside subscription and
+checkout responses). The shape, on real fields:
 
-// Returns
+```json
 {
-  id: 'inv_001',
-  invoice_number: 'REC/2024/0001',
-  customer_id: 'cust_abc123',
-  subscription_id: 'sub_xyz',
-  status: 'open',
+  "id": "9b2f6c1e-…",
+  "invoice_number": "INV-2026-0042",
+  "customer_id": "…",
+  "subscription_id": "…",
+  "billing_reason": "subscription_cycle",
+  "status": "open",
 
-  // Amounts (in smallest currency unit)
-  currency: 'INR',
-  subtotal: 4999,
-  tax_amount: 900,
-  total: 5899,
-  amount_paid: 0,
-  amount_due: 5899,
+  "currency": "INR",
+  "subtotal": 499900,
+  "tax_amount": 89982,
+  "total": 589882,
+  "amount_paid": 0,
+  "credit_applied": 0,
+  "amount_due": 589882,
 
-  // Dates
-  created_at: '2024-01-01T00:00:00Z',
-  due_date: '2024-01-15T00:00:00Z',
+  "cgst_amount": 44991,
+  "sgst_amount": 44991,
+  "igst_amount": 0,
+  "hsn_code": "998314",
+  "irn": "8f21…c4d9",
+  "e_invoice_status": "generated",
+  "tds_amount": 0,
 
-  // Line items
-  lines: [
-    {
-      description: 'Pro Plan - Jan 2024',
-      quantity: 1,
-      unit_amount: 4999,
-      amount: 4999
-    }
+  "line_items": [
+    { "description": "Pro Plan", "quantity": 1, "unit_amount": 499900, "amount": 499900 }
   ],
-
-  // GST details (India)
-  gstin: '29ABCDE1234F1Z5',
-  cgst_amount: 450,
-  sgst_amount: 450,
-  hsn_code: '998311'
+  "created_at": "2026-07-01T00:00:00Z"
 }
 ```
 
+<Note>
+All amounts are minor units. `amount_due = total − amount_paid −
+credit_applied` — account credit from adjustment credit notes applies at
+billing time while `total` stays gross. Each line item is taxed at its own
+HSN/SAC rate.
+</Note>
+
 ## List Invoices
 
-```typescript
-const invoices = await recurso.invoices.list({
-  customer_id: 'cust_abc123',
-  status: 'open',
-  limit: 20
-});
+```bash
+curl https://api.recurso.dev/v1/invoices \
+  -H "Authorization: Bearer $API_KEY"
 ```
+
+Returns every invoice for the tenant, newest first. There are no query
+filters on this endpoint today — filter client-side, or start from a
+subscription's invoices in the dashboard.
 
 ## GST Invoicing (India)
 
@@ -133,56 +135,56 @@ curl https://api.recurso.dev/v1/invoices/9b2f6c1e-.../pdf \
 
 The rendering is jurisdiction-aware (India-GST tax invoice vs. plain invoice) and requires authentication — see the [endpoint reference](/api-reference/invoices/pdf).
 
-## Invoice Preview
+## Invoice Preview (HTML)
 
-Preview what an invoice will look like before it is finalized. This is useful for showing customers their upcoming charges:
+`GET /v1/invoices/{id}/preview` returns the same tenant-scoped,
+authenticated rendering as the PDF endpoint, as HTML — useful for showing
+an invoice inline in your own UI:
 
-<CodeGroup>
-```typescript TypeScript
-const preview = await recurso.invoices.preview({
-  customer_id: 'cust_abc123',
-  subscription_id: 'sub_xyz'
-});
-
-// Returns the same structure as a real invoice
-// but with status: 'preview' and no invoice number
+```bash
+curl https://api.recurso.dev/v1/invoices/{invoice_id}/preview \
+  -H "Authorization: Bearer $API_KEY"
 ```
 
-```bash cURL
-curl -X POST https://api.recurso.dev/v1/invoices/preview \
-  -H "Authorization: Bearer $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customer_id": "cust_abc123",
-    "subscription_id": "sub_xyz"
-  }'
-```
-</CodeGroup>
+<Note>
+This renders an **existing** invoice. To estimate a plan change before
+committing it, use the proration preview on the subscription — see
+[Upgrade / Downgrade](/core/subscriptions#upgrade--downgrade).
+</Note>
 
 ## Payment Wall
 
-For overdue invoices, generate a payment wall URL that blocks access until the customer pays:
+Dunning campaigns can raise a **payment wall** on an overdue invoice —
+the customer portal then blocks usage-related pages until it is settled.
+Check whether the wall is active:
 
-```typescript
-const { url } = await recurso.invoices.paymentWall('inv_001');
-// https://pay.yourapp.com/wall/inv_001?token=xxx
-
-// Redirect the customer to this URL
-// They must complete payment before continuing
+```bash
+curl https://api.recurso.dev/v1/invoices/{invoice_id}/payment-wall \
+  -H "Authorization: Bearer $API_KEY"
 ```
 
-The payment wall displays the outstanding invoice amount and provides a payment form. After successful payment, the customer is redirected to your `return_url`.
-
-## Pay an Invoice
-
-```typescript
-// Collect payment manually
-const payment = await recurso.invoices.pay('inv_001');
-
-// Or send payment link to customer
-const { payment_url } = await recurso.invoices.paymentLink('inv_001');
-// https://pay.yourapp.com/inv/xxx
+```json
+{ "invoice_id": "…", "payment_wall_active": true }
 ```
+
+See [Dunning Campaigns](/advanced/dunning-campaigns) for configuring wall
+steps.
+
+## Paying an Invoice
+
+Customers pay on Recurso's **hosted checkout** — there is no server-side
+"pay" API (card data never touches your backend):
+
+```text
+https://billing.example.com/checkout/{invoice_id}
+```
+
+The checkout creates the gateway order, drives Stripe's Payment Element or
+Razorpay Checkout.js, verifies settlement server-side, and posts the
+payment through the ledger. Offline settlements (bank transfer, cheque)
+are recorded with
+[`POST /v1/payments/offline`](/api-reference/payments/record-offline).
+See [Payments](/core/payments) for the full flow.
 
 ## Due Date Calculation
 
@@ -201,48 +203,43 @@ See the [Subscriptions guide](/core/subscriptions#payment-terms) for configuring
 
 ## E-Invoice Status
 
-For invoices subject to India's e-invoicing rules, check the IRN generation status:
+For invoices subject to India's e-invoicing rules, check the IRN state at
+`GET /v1/invoices/{id}/einvoice`:
 
-<CodeGroup>
-```typescript TypeScript
-const status = await recurso.invoices.einvoiceStatus('inv_001');
+```bash
+curl https://api.recurso.dev/v1/invoices/{invoice_id}/einvoice \
+  -H "Authorization: Bearer $API_KEY"
+```
 
-// Returns
+```json
 {
-  invoice_id: 'inv_001',
-  irn: 'xxxxxxxxxxxxxxxxxxxxxxxx',
-  status: 'generated',  // 'pending', 'generated', 'failed', 'cancelled'
-  ack_number: '12345678',
-  ack_date: '2026-01-15T10:30:00Z',
-  signed_qr: 'base64_encoded_qr_data'
+  "data": {
+    "invoice_id": "…",
+    "invoice_number": "INV-2026-0042",
+    "e_invoice_status": "generated",
+    "irn": "8f21…c4d9",
+    "ack_no": "112010036563",
+    "ack_date": "2026-07-11 10:30:00",
+    "signed_qr_code": "…",
+    "retry_count": 0,
+    "next_retry_at": null
+  }
 }
 ```
 
-```bash cURL
-curl https://api.recurso.dev/v1/invoices/inv_001/einvoice-status \
-  -H "Authorization: Bearer $API_KEY"
-```
-</CodeGroup>
-
-See the [E-Invoicing guide](/compliance/e-invoicing) for IRP configuration and troubleshooting.
+Failed generations retry automatically with backoff; you can also force
+one with [`POST /v1/invoices/{id}/einvoice/retry`](/api-reference/einvoice/retry)
+or cancel the IRN within the 24-hour window via
+[`POST /v1/invoices/{id}/einvoice/cancel`](/api-reference/einvoice/cancel).
+See the [E-Invoicing guide](/compliance/e-invoicing) for IRP configuration.
 
 ## Multi-Currency Invoices
 
-When a subscription uses a non-default currency, invoices are generated in the customer's currency:
-
-```typescript
-// Invoice for a USD customer
-{
-  currency: 'USD',
-  subtotal: 999,
-  tax_amount: 0,
-  total: 999,
-  exchange_rate: 83.50,  // USD to INR at time of invoice
-  base_currency_total: 83415  // Total in your base currency (INR)
-}
-```
-
-Exchange rates are locked at the time the invoice is generated. See the [Multi-Currency guide](/advanced/multi-currency) for exchange rate handling.
+Invoices are generated in the **subscription's currency** — a USD plan
+bills a USD invoice, end to end. Invoices don't store an exchange rate;
+FX normalization happens at the reporting layer, where MRR and revenue
+are converted to your reporting currency with daily rates. See the
+[Multi-Currency guide](/advanced/multi-currency).
 
 <Note>
 Tax on an invoice depends on the seller's jurisdiction: India uses GST
@@ -254,38 +251,36 @@ jurisdiction-level sales tax via TaxJar — or an honest 0% marked
 
 ## Advance Invoicing
 
-Generate invoices for future billing periods ahead of schedule. This is useful for customers who want to prepay:
+Bill a subscription ahead of schedule — useful for customers who want to
+prepay:
 
 ```bash
-curl -X POST https://api.recurso.dev/v1/billing/advance-invoice \
+curl -X POST https://api.recurso.dev/v1/subscriptions/{subscription_id}/advance \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "periods": 3 }'
+```
+
+Returns the created invoice covering the next 3 billing periods. One-off
+charges outside the cycle use
+[`POST /v1/subscriptions/{id}/charges`](/advanced/advanced-billing).
+
+## Adjustments & Refunds
+
+There is no void endpoint — issued invoices are adjusted the accounting
+way, with **credit notes** (full or partial, refund or account credit):
+
+```bash
+curl -X POST https://api.recurso.dev/v1/credit-notes \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "subscription_id": "sub_xyz",
-    "periods": 3
+    "customer_id": "…",
+    "invoice_id": "…",
+    "amount": 250000,
+    "currency": "INR",
+    "reason": "Customer requested downgrade"
   }'
-```
-
-This generates invoices for the next 3 billing periods immediately. See the [Advanced Billing guide](/advanced/advanced-billing) for more advance invoicing options.
-
-## Void an Invoice
-
-Cancel an invoice (no refund generated):
-
-```typescript
-await recurso.invoices.void('inv_001');
-```
-
-## Credit Notes
-
-Issue refunds through credit notes:
-
-```typescript
-const creditNote = await recurso.creditNotes.create({
-  invoice_id: 'inv_001',
-  amount: 2500,  // Partial refund
-  reason: 'Customer requested downgrade'
-});
 ```
 
 See the [Credit Notes guide](/advanced/credit-notes) for full credit note management.
@@ -295,7 +290,5 @@ See the [Credit Notes guide](/advanced/credit-notes) for full credit note manage
 | Event | Description |
 |-------|-------------|
 | `invoice.created` | New invoice generated |
-| `invoice.finalized` | Invoice ready for payment |
-| `invoice.paid` | Payment received |
-| `invoice.payment_failed` | Payment attempt failed |
-| `invoice.past_due` | Invoice overdue |
+| `invoice.paid` | Payment received and settled through the ledger |
+| `invoice.payment_failed` | Payment attempt failed (dunning may start) |
