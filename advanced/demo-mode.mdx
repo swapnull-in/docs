@@ -1,0 +1,55 @@
+---
+title: "Demo Mode"
+description: "Run a safe public sandbox of Recurso with one flag"
+---
+
+## Overview
+
+`DEMO_MODE=true` turns an instance into a **public sandbox** that is safe
+to expose to strangers: visitors get a fully seeded dashboard and API to
+play with, while every outward-reaching adapter is forced to its mock at
+the construction site — the demo can never email a human, charge a card,
+submit an e-invoice IRN, deliver a webhook, or reach a SaaS, regardless
+of what other environment variables are set.
+
+This is what powers the "Open live demo" button on recurso.dev.
+
+## What visitors can do
+
+Everything that makes billing worth demoing: create plans, customers,
+subscriptions, invoices, billable metrics, charges, wallets, alerts;
+meter usage; watch the ledger post. Test-mode only.
+
+## What's blocked
+
+Identity and destructive edges answer `403 {"code":"demo_mode"}`: team
+invites and role changes, SSO/MFA configuration, API-key rotation,
+password resets, account changes, and registration.
+
+## Run it
+
+```bash
+docker compose -f docker-compose.demo.yml up -d
+```
+
+That's the whole deployment: Postgres + API (auto-seeded on first boot)
+on `:8080` + dashboard on `:80`. On boot the sandbox bootstraps a demo
+tenant, the demo login, and the stable test key `sk_test_12345`, then
+loads a rich data set — 40+ customers, 15 months of invoice history,
+metering with graduated charges, a funded wallet, a commitment, and a
+usage alert.
+
+## Entry & reset
+
+- **`POST /auth/demo`** opens a dashboard session as the demo user — the
+  dashboard calls it automatically when visited with `?demo=1`, so
+  `https://your-demo-host/?demo=1` lands visitors logged in. The endpoint
+  only exists in demo mode (404 everywhere else).
+- **Every `DEMO_RESET_INTERVAL`** (default `1h`) the environment wipes
+  visitor changes and reseeds pristine data.
+
+<Warning>
+Never point DEMO_MODE at a database containing real data: the reset
+worker deletes and reseeds the demo tenant's rows, and the sandbox is,
+by design, open to the world.
+</Warning>
