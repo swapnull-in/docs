@@ -208,6 +208,35 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
+  /auth/demo:
+    post:
+      operationId: startDemoSession
+      tags: [Auth]
+      summary: Start a demo sandbox session
+      description: >
+        Opens a session in the shared demo sandbox (sets the httpOnly
+        `recurso_session` cookie) and returns the demo user's email and API
+        key. Only available when the server runs with DEMO_MODE enabled;
+        returns 404 otherwise.
+      security: []
+      responses:
+        '200':
+          description: Demo session opened. Sets the recurso_session cookie.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      demo: { type: boolean }
+                      email: { type: string, format: email }
+                      api_key: { type: string }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          description: Demo environment is still warming up — retry shortly.
   /auth/login:
     post:
       operationId: login
@@ -530,6 +559,135 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Plan'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/plans/{id}:
+    get:
+      operationId: getPlan
+      tags: [Plans]
+      summary: Get a plan
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The plan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Plan'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      operationId: updatePlan
+      tags: [Plans]
+      summary: Update or archive a plan
+      description: >
+        Partial update of mutable plan fields — omitted fields are left
+        unchanged. Set `active: false` to archive the plan (hides it from new
+        subscriptions without affecting existing ones) and `true` to restore
+        it. The plan's price/amount is a separate versioned entity and is not
+        editable here.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                hsn_code: { type: string }
+                interval_unit: { type: string, enum: [day, week, month, year] }
+                interval_count: { type: integer, minimum: 1 }
+                active: { type: boolean }
+      responses:
+        '200':
+          description: Updated plan.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/customers/{id}:
+    get:
+      operationId: getCustomer
+      tags: [Customers]
+      summary: Get a customer
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The customer.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Customer'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      operationId: updateCustomer
+      tags: [Customers]
+      summary: Update or archive a customer
+      description: >
+        Partial update — omitted fields are left unchanged. Set
+        `active: false` to archive the customer; archiving is refused while
+        the customer has active subscriptions (cancel or pause them first).
+        Archived customers keep full billing history and can be restored with
+        `active: true`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string }
+                tax_id: { type: string }
+                gstin: { type: string }
+                tax_type: { type: string, enum: [business, consumer] }
+                place_of_supply: { type: string }
+                line1: { type: string }
+                city: { type: string }
+                state: { type: string }
+                zip: { type: string }
+                country: { type: string, minLength: 2, maxLength: 2 }
+                active: { type: boolean }
+      responses:
+        '200':
+          description: Updated customer.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -1158,6 +1316,42 @@ paths:
                     type: string
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/coupons/{id}:
+    put:
+      operationId: updateCoupon
+      tags: [Coupons]
+      summary: Deactivate or reactivate a coupon
+      description: >
+        Flips the redemption gate. `active: false` stops new subscriptions
+        from redeeming the code; existing subscriptions keep their applied
+        discount. `active: true` restores redeemability.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [active]
+              properties:
+                active: { type: boolean }
+      responses:
+        '200':
+          description: Coupon updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [activated, deactivated] }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -3027,6 +3221,33 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /v1/developer/keys/{id}:
+    delete:
+      operationId: revokeAPIKey
+      tags: [Developer]
+      summary: Revoke an API key
+      description: >
+        Soft-deactivates the key. Authentication filters on the active flag,
+        so a revoked key stops working immediately and cannot be restored.
+        Owner/admin only for dashboard sessions.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Key revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: revoked }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          description: Requires owner or admin role.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /v1/developer/keys:
     get:
       operationId: listAPIKeys
@@ -4610,12 +4831,58 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /v1/accounting/connect-token/{provider}:
+    post:
+      operationId: connectAccountingProviderToken
+      tags: [Accounting]
+      summary: Connect a token-based accounting provider (NetSuite, Tally)
+      description: >
+        Creates or refreshes a connection for providers outside the browser
+        OAuth flow. `netsuite` requires `account_id` and a SuiteTalk OAuth 2.0
+        `access_token` minted in NetSuite (EXPERIMENTAL). `tally` takes no
+        credentials — it enables the local JSONL export sync.
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [netsuite, tally]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                account_id:
+                  type: string
+                  description: NetSuite account id (required for netsuite).
+                access_token:
+                  type: string
+                  description: SuiteTalk OAuth 2.0 access token (required for netsuite).
+      responses:
+        '200':
+          description: Existing connection refreshed.
+        '201':
+          description: Connection created.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /v1/accounting/callback/{provider}:
     get:
       operationId: accountingOAuthCallback
       tags: [Accounting]
       summary: OAuth callback for accounting providers
-      description: Redirect target for QuickBooks/Xero. Exchanges the authorization code for tokens and stores (or refreshes) the connection.
+      description: >
+        Redirect target for QuickBooks/Xero. Exchanges the authorization code
+        for tokens, stores (or refreshes) the connection, and 302-redirects the
+        browser back to the dashboard's Integrations page —
+        `{DASHBOARD_URL}/integrations?connected={provider}` on success, or
+        `?error={code}` (missing_code, invalid_state, unsupported_provider,
+        exchange_failed, org_lookup_failed, save_failed) on failure.
       parameters:
         - $ref: '#/components/parameters/AccountingProvider'
         - name: code
@@ -4636,21 +4903,14 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: Connection stored.
-          content:
-            application/json:
+        '302':
+          description: >
+            Redirect to the dashboard Integrations page carrying the outcome
+            as a query param (`connected` or `error`).
+          headers:
+            Location:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    const: connected
-                  connection_id:
-                    type: string
-                    format: uuid
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                type: string
         '401':
           $ref: '#/components/responses/Unauthorized'
 
