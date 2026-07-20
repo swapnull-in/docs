@@ -1,0 +1,112 @@
+---
+title: "Dunning"
+description: "Recover failed payments with smart retries and multi-step reminder campaigns"
+---
+
+## Overview
+
+**Dunning** is how Recurso recovers money from failed and overdue payments. It
+has two parts:
+
+- **Smart Dunning** — an automated retry engine that learns the best time to
+  re-attempt a failed payment, and reports the revenue it recovers.
+- **Dunning campaigns** — the sequence of reminders (email, SMS, in-app) sent
+  to the customer while recovery is in flight.
+
+<Info>
+The retry engine decides *when to re-charge*; campaigns decide *what the
+customer hears*. They work together on the same failed invoices.
+</Info>
+
+## Smart Dunning
+
+The **Smart Dunning** dashboard is the landing screen. It uses a reinforcement-
+learning retry optimizer (an epsilon-greedy multi-armed bandit) that learns,
+per context, which retry interval recovers payments best.
+
+### KPIs
+
+Four cards head the page:
+
+| Card | Meaning |
+| --- | --- |
+| **Recovered Revenue** | Money recovered by the retry/dunning engine, normalized into your reporting currency. The subtitle shows how many invoices, average attempts, and any other source currencies included. |
+| **Total Retries** | Retry attempts made |
+| **Successful Recoveries** | Retries that led to payment |
+| **Success Rate** | Recoveries ÷ retries |
+
+### Recovered Revenue by Month
+
+A bar chart of revenue attributed to the retry/dunning engine over the last 12
+months, in your reporting currency. A recovery is counted when a failed invoice
+is paid **after** retries — so the chart stays empty until the engine recovers
+something.
+
+### Arm Performance by Context
+
+Each **context** (`currency:error_code`) learns independently which retry
+interval — an **arm** — works best. The table groups arms by context and shows
+each arm's **average reward**, **sample count**, and marks the winning arm with
+a **Best** badge once it has samples.
+
+<Info>
+Reward and sample counts populate only after the first retry outcomes are
+recorded. Early on, expect sparse data while the bandit explores.
+</Info>
+
+### Recent Retry History
+
+A log of individual retry attempts — time, invoice, context, the action (arm)
+chosen, and whether the outcome was **Success** or **Failed**.
+
+## Dunning campaigns
+
+Click **Manage campaigns** (page header) to reach **Dunning campaigns**. A
+campaign is a named sequence of reminder steps tied to a trigger.
+
+### Create a campaign
+
+<Steps>
+  <Step title="Click New campaign">
+    Opens a side panel.
+  </Step>
+  <Step title="Name it and choose a trigger">
+    - **Payment failed**
+    - **Invoice overdue**
+
+    Steps run in order after the trigger until payment is recovered. Click
+    **Create campaign** — you're dropped straight into configuring its steps.
+  </Step>
+</Steps>
+
+Each campaign card shows its name, an **Active**/**Inactive** badge, and its
+trigger. Click **Configure steps** to open the campaign detail panel.
+
+### Configure steps
+
+In the campaign panel you can **Activate / Deactivate** the campaign and manage
+its ordered steps. Each step has:
+
+- **Order** — position in the sequence.
+- **Delay (hours)** — how long to wait after the trigger (step 1) or the
+  previous step before this step sends.
+- **Channel** — **Email**, **SMS**, or **In-app**.
+- **Subject** and **Body** — the message content.
+- **Template name** (optional) — reference a named template instead.
+- **Payment wall** — toggle to gate the customer behind a pay-now wall at this
+  step.
+
+Steps run in order, each waiting its delay before sending. Add, edit, and
+delete steps from the panel; deleting a step doesn't affect in-flight
+executions.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Recover a failed payment" icon="rotate" href="/dashboard/workflows/recover-failed-payment">
+    The end-to-end recovery walkthrough.
+  </Card>
+  <Card title="Invoices" icon="file-invoice" href="/dashboard/invoices">
+    The failed and overdue invoices dunning acts on.
+  </Card>
+</CardGroup>

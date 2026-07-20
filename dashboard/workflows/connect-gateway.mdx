@@ -1,0 +1,87 @@
+---
+title: "Connect your own gateway"
+description: "Route payments through your own Stripe or Razorpay account, end to end"
+---
+
+## Overview
+
+By default Recurso processes payments through the platform gateway. If you have
+your own Stripe or Razorpay merchant account, you can connect it so that
+**payment creation, verification, and webhooks all run on your account** — with
+credentials encrypted at rest.
+
+This workflow takes you from nothing to a live, verified payment on your own
+gateway.
+
+<Info>
+This is an **owner/admin** task. It requires the server to have a credential
+encryption key configured; if the connect button is disabled, ask your operator
+to set `GATEWAY_ENCRYPTION_KEY`.
+</Info>
+
+## Before you start
+
+- Your Stripe **secret + publishable** keys, or your Razorpay **key id + key
+  secret** (test keys are fine to start).
+- Access to your gateway's dashboard to create a webhook endpoint.
+
+## Steps
+
+<Steps>
+  <Step title="Connect your keys">
+    Go to **Integrations → Payment gateways** and click **Connect** on Stripe or
+    Razorpay. Choose **Test** mode, paste your keys, and click **Connect**. The
+    card flips to a **Test** badge.
+  </Step>
+  <Step title="Point a webhook at your connection URL">
+    Copy the **Webhook URL** from the card — it's unique to this connection. In
+    your gateway dashboard, create a webhook endpoint at that URL:
+
+    - **Stripe** — add an endpoint and subscribe to
+      `payment_intent.succeeded`, `charge.refunded`, and the invoice/subscription
+      events you care about.
+    - **Razorpay** — add a webhook for `payment.captured`, `refund.processed`,
+      and mandate/virtual-account events.
+  </Step>
+  <Step title="Save the signing secret">
+    Your gateway shows a **signing secret** for the new endpoint. Paste it into
+    the webhook-secret field on the card and click **Save**. The card shows a
+    green **Signing secret set** check — Recurso can now verify inbound events
+    against your account.
+  </Step>
+  <Step title="Test a real payment">
+    Send a test invoice to a customer (or open its hosted checkout link). Pay it
+    with a gateway test card. Because you connected your account:
+
+    - the payment **order** is created on your gateway,
+    - the checkout **widget** mounts with your public key,
+    - **verification** confirms the payment on your account,
+    - the **webhook** settles the invoice, verified with your secret.
+
+    Confirm the invoice moves to **Paid** and the charge appears in *your*
+    gateway dashboard.
+  </Step>
+  <Step title="Go live">
+    When you're ready, **Update keys** with your live keys and switch mode to
+    **Live**, then repeat the webhook setup with your live endpoint. The
+    connection's webhook URL is unchanged.
+  </Step>
+</Steps>
+
+## How routing works
+
+Recurso routes by currency. INR defaults to Razorpay, other currencies to
+Stripe. A currency you haven't connected keeps using the platform gateway, so
+you can adopt your own account one gateway at a time.
+
+## Rolling back
+
+**Disconnect** on the card returns new payments to the platform gateway
+immediately. In-flight and past transactions are unaffected, and you can
+reconnect whenever you like.
+
+## Related
+
+- [Integrations](/dashboard/integrations) — the section reference.
+- [Developers](/dashboard/developers) — outbound webhooks *from* Recurso to your
+  systems (distinct from the inbound gateway webhooks above).

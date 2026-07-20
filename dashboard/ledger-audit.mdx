@@ -1,0 +1,100 @@
+---
+title: "Ledger & audit"
+description: "The double-entry financial ledger and the append-only audit log"
+---
+
+## Overview
+
+Two screens back the integrity of your books:
+
+- **Financial Ledger** — the double-entry ledger of every posted transaction,
+  browsable by account, with each account's running balance.
+- **Audit Log** — an append-only trail of every config-grade change made in the
+  workspace.
+
+Both are read-only views: they show what happened, they don't let you edit
+history.
+
+## Financial Ledger
+
+The **Financial Ledger** shows double-entry transactions and account balances.
+PostgreSQL is the authoritative ledger; TigerBeetle, when enabled, is an
+optional mirror (see [Reconciliation](/dashboard/finance-reports#reconciliation)
+for the cross-check).
+
+<Steps>
+  <Step title="Select an account">
+    The **Select account** dropdown lists your chart of accounts. Each entry
+    shows the account name and its numeric **code** — for example
+    *Accounts Receivable (1100)*. Every customer has their own AR sub-account,
+    so those entries are additionally labelled with the customer name to tell
+    them apart. The first account is selected automatically on load.
+  </Step>
+  <Step title="Read the current balance">
+    The **Current Balance** card shows the selected account's balance in its
+    own currency.
+  </Step>
+  <Step title="Review the entries">
+    The table lists that account's ledger entries (most recent first,
+    up to 50).
+  </Step>
+</Steps>
+
+Each entry row shows:
+
+| Column | Shows |
+| --- | --- |
+| Transaction ID | The ledger transaction's identifier |
+| Debit | The account debited (customer/account name where known, else the raw ID) |
+| Credit | The account credited (customer/account name where known, else the raw ID) |
+| Amount | The transaction amount, in the account's currency |
+| Code | The posting code that classifies the transaction |
+
+<Info>
+Because entries are double-entry, every transaction names both a **debit** and
+a **credit** account — the two sides always move together. To confirm the whole
+book balances, use the
+[Trial Balance](/dashboard/finance-reports#trial-balance) report.
+</Info>
+
+## Audit Log
+
+The **Audit Log** records every configuration change, immutably. Updates and
+deletes are rejected at the database, so the trail can't be rewritten — it's
+append-only by design.
+
+Config-grade mutations across the product land here: plans, metrics, wallets,
+webhooks, team changes, and more.
+
+Each row shows:
+
+| Column | Shows |
+| --- | --- |
+| When | The timestamp of the change |
+| Actor | Who made it — an **API key** badge, or the truncated user ID |
+| Action | The action performed |
+| Entity | The entity type affected, and its short ID |
+| Status | The HTTP result code, badged **green** for success (`< 300`) or **red** otherwise |
+
+### Filter by entity
+
+Use the **All entities** dropdown in the toolbar to narrow the log to a single
+entity type (the options are drawn from the entity types present in the log).
+The view loads the most recent entries (up to 200).
+
+<Info>
+Only *successful* config-grade mutations are recorded. Day-to-day billing
+activity (individual invoices, payments) is tracked in its own screens, not
+the audit log.
+</Info>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Finance reports" icon="chart-column" href="/dashboard/finance-reports">
+    Trial balance, reconciliation, revenue recognition, and more.
+  </Card>
+  <Card title="Team & security" icon="user-shield" href="/dashboard/team-security">
+    Members, roles, and sessions — the actors behind audit entries.
+  </Card>
+</CardGroup>

@@ -1,0 +1,89 @@
+---
+title: "Onboard your first customer"
+description: "Go from an empty account to a billed, paid subscription — customer, plan, subscription, invoice, payment"
+---
+
+## Overview
+
+This is the end-to-end path every account starts with: create the person you're
+billing, define what you're selling, put the two together as a subscription, and
+watch the first invoice generate and get paid. It touches four sections —
+**Customers**, **Plans**, **Subscriptions**, and **Invoices** — in that order.
+
+<Info>
+Already have a plan? Skip step 2 and pick it in step 3. You can reuse one plan
+across every customer who buys it.
+</Info>
+
+## Before you start
+
+- Know the price, currency, and billing interval (monthly/yearly) you want to
+  charge.
+- If you'll collect via Razorpay auto-debit (INR), have the customer ready to
+  complete the checkout mandate — the subscription flow opens it inline.
+
+## Steps
+
+<Steps>
+  <Step title="Add the customer">
+    Go to **Customers** and click **Add customer**. Fill in the customer's name
+    and email (and any billing details), then save. The new customer appears in
+    the list with an **Inactive** status — it turns **Active** once they have a
+    running subscription.
+  </Step>
+  <Step title="Create the plan you'll sell">
+    Go to **Plans** and click **New plan**. In the right-hand sheet, set:
+
+    - **Plan name** and **Plan code (slug)** — e.g. *Pro Tier* / `pro-monthly`.
+    - **Price** and **Currency** (USD, INR, EUR, GBP).
+    - **Billing interval** — Monthly or Yearly.
+
+    Click **Create plan**. Price and code are fixed once created, so pick them
+    deliberately — for a different price point you create a new plan.
+  </Step>
+  <Step title="Create the subscription">
+    Go to **Subscriptions** and click **New subscription**. In the sheet:
+
+    - Pick the **Customer** and the **Plan** from the dropdowns (no UUIDs — the
+      pickers list everyone by name).
+    - Set the **Start date**.
+    - Choose a **Billing anchor** — *Acquisition date* bills from the start
+      date; *Calendar billing (1st of month)* prorates the first period and
+      aligns all renewals to the 1st.
+    - Choose **Payment terms** — Due on receipt, or Net 15/30/45/60.
+    - Tick the **Billing authorization** consent box (required).
+
+    The **Summary** box shows the customer, plan, dates, and total. Click
+    **Create subscription**.
+
+    <Warning>
+    For an INR/Razorpay auto-debit plan, the Razorpay checkout opens right after
+    you create the subscription so the mandate can be authorized. Complete or
+    dismiss it — either way you land back on the subscription list.
+    </Warning>
+  </Step>
+  <Step title="Find the first invoice">
+    Open **Invoices**. The subscription's first invoice is listed with its
+    number, customer, amount, and **status** (`open`, `paid`, etc.). Click the
+    row to open the detail sheet — it shows the line items, the amount
+    breakdown (subtotal, tax, total, amount paid, amount due), and a **Download
+    PDF** button.
+  </Step>
+  <Step title="Confirm the payment">
+    When the payment settles — via the gateway, the customer's portal checkout,
+    or auto-debit — the invoice moves to **Paid** and **Amount due** drops to
+    zero. The customer's status flips to **Active** on the Customers list, and
+    the payment posts to the ledger behind the scenes.
+  </Step>
+</Steps>
+
+## Related
+
+- [Customers](/dashboard/customers) — the customer list and detail sheet.
+- [Plans & products](/dashboard/plans) — plans, prices, entitlements, and usage
+  charges.
+- [Subscriptions](/dashboard/subscriptions) — active, trialing, and canceled
+  subscriptions.
+- [Invoices](/dashboard/invoices) — every invoice, its status, and line items.
+- [Launch a usage-based product](/dashboard/workflows/usage-based-product) —
+  add metered pricing on top of the flat plan you just made.

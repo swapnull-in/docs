@@ -1,0 +1,74 @@
+---
+title: "Refund a customer"
+description: "Issue a credit note against an invoice and understand what happens at the gateway and in the ledger"
+---
+
+## Overview
+
+Refunds and adjustments in Recurso are **credit notes**. You issue a credit note
+for a customer — optionally linked to a specific invoice — and it either reduces
+what they owe or triggers a refund back to their payment method. This workflow
+issues the credit note from the **Credit notes** section and explains the
+downstream effect at the gateway and in the double-entry ledger.
+
+<Info>
+Grab the invoice first. Linking the credit note to the paid invoice keeps the
+refund tied to the original charge, which the ledger and reporting rely on.
+</Info>
+
+## Before you start
+
+- Find the invoice you're refunding in **Invoices** and open its detail sheet to
+  confirm the amount, currency, and that it's **Paid**. Note its ID.
+
+## Steps
+
+<Steps>
+  <Step title="Open the credit note form">
+    Go to **Credit notes** and click **Create credit note**. The form opens in a
+    right-hand sheet.
+  </Step>
+  <Step title="Fill in the credit">
+    - **Customer** — pick from the dropdown (required).
+    - **Credit amount** — the value to refund/credit, in major units (required).
+    - **Linked invoice (optional)** — paste the invoice ID from the step above so
+      the credit is tied to that charge.
+    - **Reason** — free text, e.g. *Service downtime compensation*.
+
+    Click **Issue credit note**.
+  </Step>
+  <Step title="Read the credit note's status">
+    The new note appears in the list with an **Amount**, a **Balance**
+    (how much is still unused), and a **status** (`issued`, `used`, `active`).
+    Click it to open the detail sheet, which also shows the **Reason** and, for a
+    money-back refund, a **Refund status**.
+  </Step>
+  <Step title="Understand the gateway + ledger effect">
+    Depending on the credit type:
+
+    - **Refund to the customer** — Recurso asks the payment gateway to refund the
+      original charge; the note's **Refund status** tracks that request through to
+      completion.
+    - **Credit toward future invoices** — the balance drains against the
+      customer's next invoices instead of moving money at the gateway.
+
+    In both cases the credit note posts its own **double-entry legs** to the
+    ledger, so the refund/adjustment is reflected in the trial balance and
+    reconciliation — nothing is booked outside the books.
+  </Step>
+</Steps>
+
+<Warning>
+A credit note's balance is consumed as it's applied — once a note is fully
+**used** it can't be reused. Issue a new note for a further adjustment.
+</Warning>
+
+## Related
+
+- [Credit notes](/dashboard/credit-notes) — the credit note list and detail
+  sheet.
+- [Invoices](/dashboard/invoices) — find and open the invoice you're crediting.
+- [Ledger & audit](/dashboard/ledger-audit) — where the refund's ledger legs
+  land.
+- [Run your monthly close](/dashboard/workflows/monthly-close) — reconcile
+  refunds against the ledger at period end.

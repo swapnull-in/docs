@@ -1,0 +1,110 @@
+---
+title: "Customers"
+description: "Browse your customer base, add new customers, and manage their details from the dashboard"
+---
+
+## Overview
+
+**Customers** (in the left nav) is the directory of everyone you bill. It shows
+a searchable, paginated table and opens a detail panel for each customer where
+you can edit or archive them.
+
+## The customer list
+
+Each row shows:
+
+| Column | What it shows |
+| --- | --- |
+| **Customer** | Name and email. |
+| **Status** | **Active** (has active subscriptions), **Inactive** (none), or **Archived**. |
+| **Risk** | The churn-risk score with a **Low / Medium / High** label. |
+| **Subscriptions** | Count of active subscriptions. |
+| **Joined** | When the customer was created. |
+| (row end) | A **copy portal link** button. |
+
+<Info>
+The **Risk** badge is colored by score: green (Low, under 20), amber (Medium,
+20–49), and red (High, 50+). It only appears once a churn score has been
+calculated.
+</Info>
+
+### Search and filter
+
+- **Search** by name or email — the box debounces, so results update shortly
+  after you stop typing.
+- A **status toggle** filters between **All**, **Active**, and **Inactive**.
+- Paging is server-driven; use **Prev / Next** at the bottom (10 per page).
+
+### Copy portal link
+
+The link icon at the end of a row copies a **portal login link** prefilled with
+the customer's email. The customer enters the self-service portal via a
+magic-link login — see [Customer portal](/dashboard/customer-portal).
+
+## Add a customer
+
+Click **Add customer** (top right, or from the empty state). A right-side sheet
+opens with two sections.
+
+<Steps>
+  <Step title="Contact information">
+    **Customer name** and **Email** are required; **Phone** is optional. The
+    form validates that the email is well-formed before it will submit.
+  </Step>
+  <Step title="Billing details">
+    Enter a **Billing address**, then pick a **Country** (United States, India,
+    Canada, or United Kingdom) and a **State / Province**.
+
+    <Info>
+    Choosing **India** switches the last two fields to **Place of supply
+    (State)** — picked from a list of Indian states — and **GSTIN**, so tax is
+    handled correctly for Indian customers. Other countries show a free-text
+    **Tax ID / VAT Number**.
+    </Info>
+  </Step>
+  <Step title="Create">
+    Click **Create customer**. The new customer appears in the list
+    immediately. **Cancel** closes the sheet without saving.
+  </Step>
+</Steps>
+
+## Customer detail
+
+Click any row to open the **Customer details** sheet. It shows the customer's
+name, email, and badges for archived status and active-subscription count,
+followed by grouped fields:
+
+- **Contact** — email and phone.
+- **Billing & tax** — billing address, tax type, GSTIN, and place of supply
+  (shown only when there's something to display).
+- **Record** — customer ID, joined date, churn risk, active subscription count,
+  and referral code if one exists.
+
+### Edit a customer
+
+Click **Edit customer** to switch the panel into an inline form. You can update
+name, email, phone, GSTIN, place of supply, and the full billing address (line,
+city, state, ZIP, and ISO-2 country). Click **Save customer** to apply, or
+**Cancel** to discard. Email cannot be left blank.
+
+### Archive / restore
+
+Click **Archive** to remove a customer from active use. A confirmation dialog
+explains what happens.
+
+<Warning>
+Archiving is **blocked while the customer has active subscriptions** — cancel
+or move those first. Billing history is always kept, and an archived customer
+can be **restored** at any time (the button becomes **Restore**).
+</Warning>
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Subscriptions" icon="repeat" href="/dashboard/subscriptions">
+    Put a customer on a recurring plan.
+  </Card>
+  <Card title="Invoices" icon="file-invoice" href="/dashboard/invoices">
+    See what a customer has been billed.
+  </Card>
+</CardGroup>

@@ -1,0 +1,89 @@
+---
+title: "Customer portal"
+description: "The self-service portal your customers use to view invoices, update payment methods, and redeem gifts"
+---
+
+## Overview
+
+The **customer portal** is the self-service area your customers sign into — it
+lives under `/portal`, separate from the operator dashboard. From it a customer
+can view their invoices and subscription, download invoice PDFs, raise a query on
+an invoice, update their payment method, and redeem a gift code.
+
+<Info>
+The portal is what your **customers** see. As an operator you configure the
+billing behind it from the main dashboard; you can also deep-link a customer
+straight to `/portal/login?email=…` with their address prefilled.
+</Info>
+
+## Signing in (magic link)
+
+The portal is password-free.
+
+<Steps>
+  <Step title="Request a link">
+    At **/portal/login** the customer enters their email and clicks **Send login
+    link**. Recurso emails a one-time magic link and the page confirms *"Check
+    your email."*
+  </Step>
+  <Step title="Verify">
+    Opening the link lands on **/portal/verify**, which exchanges the single-use
+    token for a session and forwards to the dashboard. An invalid or expired link
+    bounces back to login.
+  </Step>
+</Steps>
+
+## Portal dashboard
+
+After signing in, the customer sees **/portal/dashboard** with:
+
+- **Quick stats** — Total Invoices, Total Paid, and Outstanding, plus a
+  **Refer & earn** card showing their referral code with a copy button.
+- **Invoices table** — each invoice with its date, amount, and status. From a
+  row they can:
+  - **PDF** — open the rendered invoice in a new tab.
+  - **Query invoice** — raise a question or dispute (see below).
+- Header actions: **Update payment method**, **Redeem gift**, and **Sign out**.
+
+### Querying an invoice
+
+**Query invoice** opens a dialog where the customer describes what looks wrong and
+submits it. The row then shows a **Query open** badge (turning to **Query
+resolved** once your team resolves it), and the button is disabled while a query
+is open.
+
+## Update payment method
+
+**Update payment method** opens a secure dialog. The card is entered directly with
+Stripe — full card numbers never touch Recurso — and once saved becomes the
+customer's default, including billing name and address so it can be charged for
+future invoices.
+
+<Info>
+On deployments that don't support self-serve card entry (for example
+Razorpay-only), the dialog instead offers **Re-authorize UPI Autopay**, which
+sends the customer to a secure Razorpay page to approve the mandate.
+</Info>
+
+## Redeem a gift
+
+**Redeem gift** (**/portal/redeem**) lets a signed-in customer enter a **gift
+code** to claim a subscription. On success they're returned to the dashboard. A
+customer who isn't signed in is sent to login first.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Gifts & referrals" icon="gift" href="/dashboard/gifts-referrals">
+    Issue the gift codes and referral rewards customers redeem here.
+  </Card>
+  <Card title="Invoices" icon="file-invoice" href="/dashboard/invoices">
+    The invoices customers view and query in the portal.
+  </Card>
+  <Card title="Disputes" icon="gavel" href="/dashboard/disputes">
+    Where invoice queries raised in the portal surface for your team.
+  </Card>
+  <Card title="Payments & mandates" icon="credit-card" href="/dashboard/payments">
+    Payment methods and UPI mandates behind the portal's card update.
+  </Card>
+</CardGroup>

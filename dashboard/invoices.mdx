@@ -1,0 +1,106 @@
+---
+title: "Invoices"
+description: "Browse invoices, read the amount breakdown, download PDFs, and manage GST e-invoices from the dashboard"
+---
+
+## Overview
+
+**Invoices** (in the left nav) lists every invoice Recurso has generated. Click
+any row to open its detail sheet, download the PDF, or manage its GST
+e-invoice.
+
+## The invoice list
+
+Each row shows:
+
+| Column | What it shows |
+| --- | --- |
+| **Number** | The invoice number. |
+| **Customer** | Customer name (or a short ID if the name isn't loaded). |
+| **Amount** | The invoice total, formatted in its currency. |
+| **Status** | A colored badge — see below. |
+| **E-Invoice** | GST e-invoice status, or `—` when not applicable. |
+| **Date** | When the invoice was created. |
+
+### Status badges
+
+| Badge | Meaning |
+| --- | --- |
+| **paid** | Fully paid. |
+| **open** | Issued, awaiting payment. |
+| **overdue / past_due** | Past its due date. |
+| **draft** | Not yet issued. |
+| **void** | Cancelled. |
+
+The **E-Invoice** column shows **GENERATED**, **FAILED**, **CANCELLED**, or
+**NA**; a pending or missing status shows as a dash.
+
+<Info>
+Search matches invoice number, customer ID, or status. Invoices are generated
+by billing runs and other flows — there is no "create invoice" button on this
+screen.
+</Info>
+
+## Invoice detail
+
+Click a row to open the **Invoice details** sheet. It leads with the total and
+a status badge, then shows:
+
+### Line items
+
+Each line's description, quantity, and amount. For GST invoices the line also
+shows its **HSN code** and **GST rate**.
+
+### Amount breakdown
+
+A summary box totals the invoice:
+
+- **Subtotal**
+- **Tax** — split into **IGST**, **CGST**, and **SGST** for GST invoices, or a
+  single **Tax** line otherwise.
+- **TDS withheld** — shown as a deduction when present.
+- **Total**, **Amount paid**, and **Amount due** (highlighted red while a
+  balance remains).
+
+Below that: **Customer ID**, **Created at**, and **Due date**.
+
+### Download PDF
+
+**Download PDF** at the bottom opens the rendered invoice in a new tab.
+
+## GST e-invoicing
+
+When an invoice has a GST e-invoice, an **E-Invoice** section shows its
+**status**, **IRN**, **acknowledgement number and date**, and any error
+message.
+
+<Steps>
+  <Step title="Retry a failed e-invoice">
+    If the status is **FAILED**, click **Retry** to re-submit it to the IRP.
+  </Step>
+  <Step title="Cancel an IRN">
+    If the status is **GENERATED**, click **Cancel IRN**. Choose a **cancel
+    reason** (Duplicate, Data Entry Mistake, Order Cancelled, or Others), add
+    **remarks**, and click **Confirm cancel**.
+  </Step>
+</Steps>
+
+<Warning>
+The IRP only allows an IRN to be cancelled within its permitted window (a
+short period after generation). After that, cancellation fails and you'll need
+a credit note instead.
+</Warning>
+
+For setting up GST e-invoicing end to end, see
+[Set up GST e-invoicing](/dashboard/workflows/india-gst-invoicing).
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Payments & mandates" icon="credit-card" href="/dashboard/payments">
+    Record a payment that settles an invoice.
+  </Card>
+  <Card title="Credit notes" icon="receipt" href="/dashboard/credit-notes">
+    Adjust or refund against an invoice.
+  </Card>
+</CardGroup>

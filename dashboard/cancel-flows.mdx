@@ -1,0 +1,91 @@
+---
+title: "Cancel flows"
+description: "Design the survey, retention offers, and confirmation a customer sees when they try to cancel"
+---
+
+## Overview
+
+**Cancel flows** (in the left nav, also called cancellation flows) let you
+intercept a customer who's about to cancel and try to keep them. A flow is an
+ordered sequence of steps — a survey, one or more retention offers, and a final
+confirmation — shown to the customer during cancellation.
+
+Each flow has a name, an **Active**/**Inactive** state, an optional **Default**
+flag, and a **cooldown** that limits how often the same customer sees it.
+
+<Info>
+Cancel flows are the *save* half of retention: [Churn risk](/dashboard/churn)
+tells you who's likely to leave; a cancel flow tries to save them at the moment
+they act.
+</Info>
+
+## The flow list
+
+Each flow shows as a card with its name, badges (**Default**, and
+**Active**/**Inactive**), and its cooldown in days. Click **Configure steps** to
+open the flow detail panel.
+
+## Create a flow
+
+<Steps>
+  <Step title="Click New flow">
+    Opens a side panel.
+  </Step>
+  <Step title="Name it and set a cooldown">
+    - **Name** — e.g. `Standard retention flow`.
+    - **Cooldown (days)** — the minimum days before the same customer sees this
+      flow again (defaults to 30).
+    - **Use as the default flow** — optional checkbox to make this the flow
+      shown when no other applies.
+
+    Click **Create flow** — you're taken straight into configuring its steps.
+  </Step>
+</Steps>
+
+## Configure steps
+
+The flow panel controls the flow and its steps. At the top you can:
+
+- **Activate / Deactivate** the flow.
+- **Set as default** (or unset it).
+- See the **cooldown** in days.
+
+### Performance stats
+
+When available, the panel shows three stats for the flow:
+
+| Stat | Meaning |
+| --- | --- |
+| **Completed** | Customers who went through the flow |
+| **Saved** | Customers retained rather than canceled |
+| **Save rate** | Saved ÷ completed |
+
+### Step types
+
+Steps are shown to the customer in order. Add a step with **Add step**, then
+pick its **Order** and **Type**:
+
+| Type | What it does |
+| --- | --- |
+| **Survey** | Asks why they're leaving — a set of reason options |
+| **Offer** | Presents a retention offer (e.g. a discount), with a headline and one or more offers |
+| **Confirmation** | The final confirm-cancellation step, with a message |
+
+Each type has its own configuration below the type picker. Edit or delete steps
+from the list; deleting a step doesn't affect sessions already in progress.
+
+<Info>
+A typical flow is **Survey → Offer → Confirmation**: understand the reason,
+counter it with an offer, and only then confirm the cancellation.
+</Info>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Cancel with a save offer" icon="door-open" href="/dashboard/workflows/cancel-with-save-offer">
+    The full walkthrough of intercepting a cancellation.
+  </Card>
+  <Card title="Churn risk" icon="triangle-exclamation" href="/dashboard/churn">
+    Spot at-risk customers before they reach the cancel button.
+  </Card>
+</CardGroup>

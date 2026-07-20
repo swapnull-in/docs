@@ -1,0 +1,95 @@
+---
+title: "Gifts & referrals"
+description: "Sell gift subscriptions and run a customer referral program with rewards"
+---
+
+## Overview
+
+Two growth features share this area of the dashboard:
+
+- **Gift subscriptions** — a customer buys a subscription for someone else,
+  redeemable with a gift code.
+- **Referrals** — reward existing customers for bringing in new ones.
+
+Each lives on its own page in the left nav.
+
+## Gift subscriptions
+
+The **Gift Subscriptions** page opens with three stat cards — **Total Gifts
+Sold**, **Redeemed**, and **Pending** — over a table of every gift:
+
+| Column | What it shows |
+| --- | --- |
+| Gift Code | The redemption code |
+| Status | **Purchased** (pending) or **Redeemed** |
+| Duration | Length of the gifted subscription, in months |
+| Recipient | Recipient email, if set |
+| Purchased | When the gift was bought |
+
+### Create a gift
+
+<Steps>
+  <Step title="Open Create gift">
+    Click **Create gift** to open the side panel.
+  </Step>
+  <Step title="Fill in the gift">
+    - **Buyer customer** (required) — the customer purchasing the gift.
+    - **Plan** (required) — the plan being gifted.
+    - **Duration (months)** (required) — 1 to 36 months.
+
+    Click **Create gift**. The new gift appears in the list as **Purchased**
+    until its code is redeemed.
+  </Step>
+</Steps>
+
+<Info>
+You can also start a gift purchase from the **Gift plan** button on the
+[Plans](/dashboard/plans) page.
+</Info>
+
+## Referrals
+
+The **Referral Program** page opens with three stat cards — **Total Referrals**,
+**Total Rewards Paid**, and **Pending** — over a table of every referral:
+
+| Column | What it shows |
+| --- | --- |
+| Code | The referral code |
+| Status | **Pending**, **Qualified**, or **Rewarded** |
+| Reward | The reward amount |
+| Created | When the referral was created |
+
+### Create a referral
+
+<Steps>
+  <Step title="Open Create referral">
+    Click **Create referral** to open the side panel.
+  </Step>
+  <Step title="Link the two customers">
+    - **Referrer** (required) — the existing customer doing the referring.
+    - **Referred** (required) — the new customer. The referrer is excluded from
+      this list so you can't link a customer to themselves.
+    - **Reward amount** — entered in **cents** (e.g. `500` = $5.00).
+
+    Click **Create referral**. It starts as **Pending**.
+  </Step>
+</Steps>
+
+### Qualify a referral
+
+A **Pending** referral shows a **Qualify** action in its row. Qualifying marks
+the referral as met — the reward becomes claimable — and the status advances.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Customers" icon="users" href="/dashboard/customers">
+    The buyers, referrers, and referred customers.
+  </Card>
+  <Card title="Plans & products" icon="box" href="/dashboard/plans">
+    The plans you gift.
+  </Card>
+  <Card title="Wallets" icon="wallet" href="/dashboard/wallets">
+    Where reward credit can land as prepaid balance.
+  </Card>
+</CardGroup>

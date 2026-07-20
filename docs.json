@@ -154,6 +154,88 @@
         "icon": "book-open"
       },
       {
+        "tab": "Dashboard Guide",
+        "groups": [
+          {
+            "group": "Getting started",
+            "icon": "compass",
+            "pages": [
+              "dashboard/index",
+              "dashboard/overview"
+            ]
+          },
+          {
+            "group": "Customers & subscriptions",
+            "icon": "users",
+            "pages": [
+              "dashboard/customers",
+              "dashboard/plans",
+              "dashboard/subscriptions",
+              "dashboard/invoices",
+              "dashboard/payments"
+            ]
+          },
+          {
+            "group": "Monetization",
+            "icon": "coins",
+            "pages": [
+              "dashboard/coupons",
+              "dashboard/quotes",
+              "dashboard/credit-notes",
+              "dashboard/gifts-referrals",
+              "dashboard/wallets",
+              "dashboard/metering-usage"
+            ]
+          },
+          {
+            "group": "Retention & risk",
+            "icon": "shield-halved",
+            "pages": [
+              "dashboard/dunning",
+              "dashboard/churn",
+              "dashboard/cancel-flows",
+              "dashboard/disputes"
+            ]
+          },
+          {
+            "group": "Finance & records",
+            "icon": "book",
+            "pages": [
+              "dashboard/organizations",
+              "dashboard/ledger-audit",
+              "dashboard/finance-reports"
+            ]
+          },
+          {
+            "group": "Platform",
+            "icon": "plug",
+            "pages": [
+              "dashboard/integrations",
+              "dashboard/developers",
+              "dashboard/team-security",
+              "dashboard/settings",
+              "dashboard/notifications",
+              "dashboard/ask-ai",
+              "dashboard/customer-portal"
+            ]
+          },
+          {
+            "group": "Workflows",
+            "icon": "list-check",
+            "pages": [
+              "dashboard/workflows/first-subscription",
+              "dashboard/workflows/usage-based-product",
+              "dashboard/workflows/recover-failed-payment",
+              "dashboard/workflows/refund-customer",
+              "dashboard/workflows/cancel-with-save-offer",
+              "dashboard/workflows/connect-gateway",
+              "dashboard/workflows/monthly-close",
+              "dashboard/workflows/india-gst-invoicing"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Compliance",
         "groups": [
           {

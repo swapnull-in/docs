@@ -1,0 +1,71 @@
+---
+title: "Recover a failed payment"
+description: "How smart dunning retries a failed charge, how to shape the reminder sequence, and how to settle manually"
+---
+
+## Overview
+
+When a charge fails, Recurso doesn't just give up — a reinforcement-learning
+retry engine (an epsilon-greedy multi-armed bandit) decides *when* to retry each
+failed invoice, learning per context which retry timing works best. On top of
+that, **dunning campaigns** send the customer a sequence of reminders. This
+workflow covers watching recovery on the **Smart Dunning** dashboard, shaping
+the reminder sequence in **Campaigns**, and settling an invoice by hand when you
+need to.
+
+<Info>
+Retries are automatic — there's no "retry now" button to babysit. Your job is to
+tune the reminder sequence and monitor the recovery rate; the bandit handles
+timing.
+</Info>
+
+## Steps
+
+<Steps>
+  <Step title="Read the Smart Dunning dashboard">
+    Open **Dunning**. The KPI row shows **Recovered Revenue** (normalized to your
+    reporting currency), **Total Retries**, **Successful Recoveries**, and
+    **Success Rate**. Below:
+
+    - **Recovered Revenue by Month** — revenue the retry engine has clawed back
+      over the last 12 months.
+    - **Arm Performance by Context** — each context (`currency:error_code`)
+      learns independently which retry interval works best; the winning arm per
+      context is tagged **Best**.
+    - **Recent Retry History** — the raw per-attempt log with each attempt's
+      invoice, context, action, and **Success/Failed** outcome.
+  </Step>
+  <Step title="Configure a dunning campaign">
+    Click **Manage campaigns** (top right) to reach **Dunning campaigns**, then
+    **New campaign**. Give it a name and pick a **Trigger** — *Payment failed* or
+    *Invoice overdue*. Steps run in order after the trigger until payment is
+    recovered.
+  </Step>
+  <Step title="Add the reminder steps">
+    On the new campaign card click **Configure steps** to open its detail sheet
+    and build the sequence — the reminders sent to the customer at each stage
+    after the trigger fires. Activate the campaign when the sequence is ready.
+  </Step>
+  <Step title="Let the engine work — or settle manually">
+    The bandit keeps retrying the gateway on its learned schedule while the
+    campaign nudges the customer. To resolve an invoice by hand instead:
+
+    - The customer can pay the outstanding invoice from their **portal** or a
+      hosted checkout link.
+    - You can record an out-of-band payment against the invoice in **Payments &
+      mandates → Offline payments** (bank transfer, cash, etc.), which settles
+      it and posts to the ledger.
+
+    Either way the invoice moves to **Paid**, and a recovery after retries is
+    what shows up as recovered revenue on the dashboard.
+  </Step>
+</Steps>
+
+## Related
+
+- [Dunning](/dashboard/dunning) — the Smart Dunning dashboard and campaigns
+  reference.
+- [Payments & mandates](/dashboard/payments) — record offline payments and
+  manage auto-debit mandates.
+- [Invoices](/dashboard/invoices) — the invoice's status and amount due.
+- [Churn risk](/dashboard/churn) — customers at risk when payments keep failing.

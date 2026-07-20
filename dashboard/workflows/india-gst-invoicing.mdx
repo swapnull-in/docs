@@ -1,0 +1,90 @@
+---
+title: "Set up GST e-invoicing"
+description: "Configure company GST, HSN/SAC, IRP e-invoicing, and tax nexus in Settings, then issue a GST-correct invoice"
+---
+
+## Overview
+
+Billing Indian customers correctly means three things must be in place before
+you invoice: your **company GST** details (so invoices carry a valid GSTIN and
+the right tax split), **IRP e-invoicing** credentials (so B2B invoices get an
+IRN from the government portal), and, if you also sell into the US, your **tax
+nexus**. All three live under **Settings**. This workflow configures each and
+then issues and verifies a GST-correct invoice.
+
+<Info>
+Settings changes are an **owner/admin** task. Open **Settings** to reach the
+GST, IRP, and tax-nexus screens listed on that page.
+</Info>
+
+## Before you start
+
+- Your **GSTIN** (15 characters), **PAN**, and registered legal/trade name and
+  address.
+- Your **NIC IRP** API credentials (client id/secret, username, password) if you
+  want e-invoicing — start in the **Sandbox** environment.
+
+## Steps
+
+<Steps>
+  <Step title="Configure company GST">
+    Go to **Settings → GST configuration**. Enter your **GSTIN** and click
+    **Validate** — a valid GSTIN auto-fills the **State code**, **State name**,
+    and **PAN**. Fill in **Business details** (legal name, trade name,
+    registered address) and **Tax settings**:
+
+    - **SAC code** — defaults to `998314` for SaaS.
+    - **GST rate (%)** — standard software rate is `18`.
+    - **LUT for exports** — tick if you have a Letter of Undertaking (0% GST on
+      export of services).
+
+    Click **Save configuration**.
+  </Step>
+  <Step title="Set HSN/SAC on your catalog">
+    HSN/SAC codes flow onto invoice line items from your catalog. Set a plan's
+    code in **Plans → (a plan) → Edit plan → HSN/SAC code**, and per-metric codes
+    in a plan's **Usage charges** editor. A blank code falls back to the tenant
+    default from the GST screen.
+  </Step>
+  <Step title="Connect the IRP for e-invoicing">
+    Go to **Settings → E-invoicing (IRP)**. Toggle **Enable e-invoicing**, choose
+    the **Environment** (start with *Sandbox*), and enter your **GSTIN** and NIC
+    credentials (**Client ID**, **Client secret**, **Username**, **Password**).
+    Click **Test connection** to confirm the credentials work, then **Save
+    configuration**. B2B invoices will now be registered for an IRN.
+  </Step>
+  <Step title="(If you sell into the US) declare tax nexus">
+    Go to **Settings → US sales-tax nexus**. Add each state where you collect
+    sales tax with its **nexus type** (physical, voluntary, economic) and click
+    **Save states**. The **Economic-nexus status** table below tracks YTD taxable
+    sales and transactions per state and flags threshold crossings.
+  </Step>
+  <Step title="Issue and verify a GST-correct invoice">
+    Bill an Indian customer as usual, then open the invoice from **Invoices**. In
+    the detail sheet check:
+
+    - The **amount breakdown** shows the correct GST split — **CGST + SGST** for
+      an intra-state customer, or **IGST** for inter-state.
+    - Each **line item** carries its HSN/SAC and tax rate.
+    - The **E-Invoice** section shows status **GENERATED** with an **IRN** and
+      **Ack No/Date**.
+
+    If e-invoicing status is **FAILED**, use **Retry** in that section; a
+    **GENERATED** invoice can be withdrawn with **Cancel IRN** (pick a cancel
+    reason). The **E-Invoice** column on the Invoices list mirrors this status.
+  </Step>
+</Steps>
+
+<Warning>
+Keep IRP in **Sandbox** until you've generated a test IRN end to end. Switch the
+environment to **Production** only when you're ready to file real e-invoices.
+</Warning>
+
+## Related
+
+- [Settings](/dashboard/settings) — company details, GST, e-invoicing, and tax
+  nexus.
+- [Invoices](/dashboard/invoices) — where the GST split, IRN, and e-invoice
+  status appear.
+- [Plans & products](/dashboard/plans) — set HSN/SAC codes on plans and usage
+  charges.

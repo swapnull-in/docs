@@ -1,0 +1,207 @@
+---
+title: "Finance reports"
+description: "MRR waterfall, revenue recognition, trial balance, reconciliation, and every other finance report in the dashboard"
+---
+
+## Overview
+
+The finance reports turn your billing data into the numbers finance actually
+files and reviews — how MRR moved, how revenue recognizes over time, whether
+the books balance, what's overdue, and the tax returns for a period. Each
+report is its own screen; this guide covers all of them.
+
+<Info>
+Most reports display in a **reporting currency** and, where amounts are summed
+across schedules or accounts that may span currencies, fall back to showing
+grouped **minor-unit** totals rather than asserting a single symbol. Several
+reports need a few days of captured **MRR history** before they fill in.
+</Info>
+
+<CardGroup cols={2}>
+  <Card title="MRR waterfall" icon="chart-column" href="/dashboard/finance-reports#mrr-waterfall" />
+  <Card title="Revenue waterfall" icon="chart-area" href="/dashboard/finance-reports#revenue-waterfall" />
+  <Card title="Revenue recognition" icon="calendar-clock" href="/dashboard/finance-reports#revenue-recognition" />
+  <Card title="Revenue by plan" icon="chart-pie" href="/dashboard/finance-reports#revenue-by-plan" />
+  <Card title="Revenue by geography" icon="earth-americas" href="/dashboard/finance-reports#revenue-by-geography" />
+  <Card title="Trial balance" icon="scale-balanced" href="/dashboard/finance-reports#trial-balance" />
+  <Card title="Reconciliation" icon="shield-check" href="/dashboard/finance-reports#reconciliation" />
+  <Card title="Invoice aging" icon="file-clock" href="/dashboard/finance-reports#invoice-aging" />
+  <Card title="Unit economics" icon="gauge" href="/dashboard/finance-reports#unit-economics" />
+  <Card title="GST returns" icon="file-invoice" href="/dashboard/finance-reports#gst-returns" />
+</CardGroup>
+
+## MRR waterfall
+
+**Route:** `/finance/mrr-waterfall`
+
+Shows how monthly recurring revenue moved over a period you choose with the
+**start/end date** pickers in the header. Three cards summarize **Starting
+MRR**, **Net change** (with the percentage vs. start), and **Ending MRR**. When
+there's starting MRR, two more cards show **Net Dollar Retention** (revenue kept
+from existing customers, expansion included) and **Gross Dollar Retention**
+(before expansion — churn and contraction only).
+
+The floating-bar chart and the **Breakdown** list decompose the change into
+**New**, **Expansion**, and **Reactivation** (additions, green) and
+**Contraction** and **Churned** (reductions, red), bridging starting to ending
+MRR.
+
+<Warning>
+If snapshots don't reach back to the start of your range, a banner notes that
+everything present at the end is counted as **New**. Movement gets more accurate
+each day as MRR history accrues.
+</Warning>
+
+## Revenue waterfall
+
+**Route:** `/finance/revenue-waterfall`
+
+The recognition curve plus the deferred-revenue rollforward. Cards show **Total
+recognized** (booked as earned across all periods), **Total scheduled** (still
+to recognize), and **Months on the curve**.
+
+Pick a **month and year** in the header to see the **Deferred rollforward** for
+that month — Opening + Added − Released = Closing — i.e. how the Deferred
+Revenue balance moved. The **Recognition curve** table below lists each month
+with its **Recognized** (historical) and **Scheduled** (future) revenue.
+
+<Info>
+The curve fills in once you invoice for a period — an annual plan, for example —
+which creates the revenue schedule that spreads across its term.
+</Info>
+
+## Revenue recognition
+
+**Route:** `/finance/revenue-recognition`
+
+The deferred (unearned) revenue still on the books and when it's scheduled to
+recognize, for a **month/year** you select. Cards show **Recognized** in the
+chosen month, the **Deferred balance** still to recognize, and how many
+**currencies** are deferred.
+
+Two tables follow: the **Release schedule** (which future months the deferred
+balance recognizes in, and how much) and **Deferred by currency** (the
+still-deferred balance in each schedule's own currency).
+
+<Info>
+When more than one currency is deferred, the combined totals are shown in minor
+units — the per-currency table carries the real, symboled numbers.
+</Info>
+
+## Revenue by plan
+
+**Route:** `/finance/revenue-by-plan`
+
+How recurring revenue splits across your plans. Cards show **Total MRR**,
+**Plans with revenue**, and the **Top plan** (with its share of MRR). A ranked
+bar list shows each plan's label, its share percentage, its MRR, and its
+subscription count — largest first.
+
+## Revenue by geography
+
+**Route:** `/finance/revenue-by-geography`
+
+The same ranked bar view as revenue by plan, but split by **customer country**.
+Cards show **Total MRR**, the number of **Countries** with revenue, and the
+**Top region**. Each bar shows a country's label, share percentage, MRR, and
+subscription count.
+
+## Trial balance
+
+**Route:** `/finance/trial-balance`
+
+Every account's posted totals, with the core double-entry invariant: **debits
+must equal credits**. A banner at the top states whether the books balance and
+whether any account carries a wrong-sign (abnormal) balance. Cards show **Total
+debits**, **Total credits**, and a balanced/unbalanced **Status**.
+
+The **Accounts** table lists each account with its code, name, type (Asset,
+Liability, Equity, Revenue, Expense), debits, credits, and balance. Any account
+whose balance sits on the wrong side is flagged **abnormal** in red.
+
+Use **Export GL (CSV)** in the header to download the full general ledger.
+
+<Warning>
+An **Out of balance** banner (debits ≠ credits) or an abnormal-balance flag
+means the ledger needs investigating — start with
+[Reconciliation](/dashboard/finance-reports#reconciliation).
+</Warning>
+
+## Reconciliation
+
+**Route:** `/finance/reconciliation`
+
+An on-demand check that billing records, the Postgres ledger, and TigerBeetle
+(when enabled) all agree. It runs when you open the page; **Run again** re-runs
+it. Cards show **Invoices Checked** (with the paid subset), the number of
+**Discrepancies**, the **TigerBeetle** comparison status (**Compared** with
+account/transfer counts, or **Skipped** with a reason), and the **Last Run**
+time.
+
+If everything agrees, you get a **Books balanced** state. Otherwise a
+**Discrepancies** table lists each issue by **type** — e.g. missing invoice
+transaction, invoice/payment amount mismatch, orphaned transaction, or a
+Postgres/TigerBeetle mismatch — with the invoice, transaction, and reference
+IDs and the **Expected** vs. **Found** amounts (in minor units).
+
+<Info>
+If the result is truncated, a notice tells you how many discrepancies are shown
+out of the total — resolve those and run again to see the rest.
+</Info>
+
+## Invoice aging
+
+**Route:** `/finance/invoice-aging`
+
+Outstanding receivables bucketed by how far past due each open invoice is. Cards
+show **Total outstanding** (with the open-invoice count), **Overdue** (past due
+date), and **Current** (not yet due).
+
+The **By age** bar chart breaks the total into buckets — **Current**, **1–30**,
+**31–60**, **61–90**, and **90+ days** — coloured from healthy green to deep
+red as they age, each with its amount and invoice count.
+
+## Unit economics
+
+**Route:** `/finance/unit-economics`
+
+Revenue per account and per subscription, plus lifetime value. Cards show
+**ARPA** (average revenue per customer/month), **ARPU** (average revenue per
+subscription/month), and **LTV**.
+
+The **Basis** panel shows the inputs: **MRR**, **Active customers**, **Active
+subscriptions**, and **Monthly churn**.
+
+<Info>
+LTV = ARPA ÷ monthly revenue churn. Churn is measured from captured MRR history,
+so LTV shows `—` until there's a trailing month to compare against.
+</Info>
+
+## GST returns
+
+**Route:** `/finance/gst-returns`
+
+Return-ready India GST filings for a tax period. Set the **month** and **year**
+(it defaults to the previous month — the period you'd be filing), then switch
+between the **GSTR-1** (outward supplies) and **GSTR-3B** (summary) tabs.
+
+Click **Build return** to generate and preview the return's sections. Once
+built, download it as either the **GSTN JSON** (the exact upload file the GSTN
+portal accepts) or a **Readable** JSON copy.
+
+<Warning>
+GST export must be configured on the deployment. If it isn't, building a return
+reports that the export isn't available. See
+[Set up GST e-invoicing](/dashboard/workflows/india-gst-invoicing).
+</Warning>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Ledger & audit" icon="book" href="/dashboard/ledger-audit">
+    The double-entry ledger these reports summarize, and the audit log.
+  </Card>
+  <Card title="Run your monthly close" icon="calendar-check" href="/dashboard/workflows/monthly-close">
+    The end-to-end month-end workflow across these reports.
+  </Card>
+</CardGroup>

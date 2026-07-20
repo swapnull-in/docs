@@ -1,0 +1,92 @@
+---
+title: "Launch a usage-based product"
+description: "Meter what customers do, price it on a plan, and let it rate onto the renewal invoice"
+---
+
+## Overview
+
+Usage-based billing in Recurso has three moving parts that live in different
+places: a **billable metric** (Metering) aggregates raw usage events, a **usage
+charge** on a plan (Plans → the plan's detail sheet) prices that metric, and the
+**renewal invoice** rates the period's usage into a line item. This workflow
+wires all three together, then shows you where to confirm usage is landing.
+
+<Info>
+A metric and a plan charge are independent of each other by design — the same
+metric can be priced differently on different plans. Create the metric first;
+the charge editor won't let you add a charge until at least one metric exists.
+</Info>
+
+## Before you start
+
+- Decide the **dimension** you're metering (API calls, seats, GB, …) and how it
+  aggregates: `sum`, `count`, `max`, or `unique`.
+- Have a plan to attach the charge to (see
+  [Onboard your first customer](/dashboard/workflows/first-subscription)).
+
+## Steps
+
+<Steps>
+  <Step title="Create the billable metric">
+    Go to **Metering** and click **New metric**. In the sheet set:
+
+    - **Name** — a human label (e.g. *API calls*).
+    - **Code** — this doubles as the usage-event dimension and is **immutable**
+      once created (e.g. `api_calls`).
+    - **Aggregation** — `sum` (total quantity), `count` (number of events),
+      `max` (largest event), or `unique` (distinct property values — this adds a
+      **Property to count** field).
+
+    Click **Create metric**. It now appears in the metrics table.
+  </Step>
+  <Step title="Price the metric on a plan">
+    Go to **Plans**, click the plan you want to meter, and scroll the detail
+    sheet to **Usage charges**. Click **Edit charges**, then **Add charge**:
+
+    - Pick the **metric** and a **charge model**:
+      - **Per unit** — one decimal rate per unit (sub-paise rates like `0.0035`
+        are allowed).
+      - **Graduated (tiered)** / **Volume** — add tiers with an *up to* bound, a
+        *rate/unit*, and an optional *flat fee*; the last tier must be unbounded.
+      - **Package** — a flat price per bundle of N units.
+    - Optionally set an **HSN/SAC** code (blank = the plan's default).
+
+    Click **Save charges**. A metric can only be charged once per plan, and
+    saving an empty list removes all usage charges from the plan.
+  </Step>
+  <Step title="Record usage">
+    Usage events are ingested through the API (`POST /v1/usage/events`, or the
+    batch endpoint) with the metric's **code** as the dimension and a
+    **quantity**. Send an idempotency key so retried events aren't
+    double-counted.
+  </Step>
+  <Step title="Confirm events are landing">
+    Open **Metering & usage → Usage**. The **Recent events** stream at the bottom
+    shows the raw ingestion, newest first — filter by dimension and use it to
+    verify events arrived before they aggregate. The stat cards and the **Usage
+    by dimension** chart above show the lifetime aggregates per customer, plan,
+    and dimension.
+  </Step>
+  <Step title="Let it rate onto the renewal invoice">
+    At the end of the billing period, Recurso rates the aggregated usage through
+    the plan's charge model and adds it to the subscription's **renewal invoice**
+    as a line item. Open the invoice from **Invoices** to see the metered line
+    alongside the base plan charge.
+  </Step>
+  <Step title="(Optional) Add a usage alert">
+    Back on **Metering**, click **New alert** to warn when usage crosses a
+    threshold. Pick a subscription and metric, choose **Absolute quantity** or
+    **Percent of entitlement limit**, and set the threshold. The alert fires once
+    per billing period via the `usage.alert.triggered` webhook and an email.
+  </Step>
+</Steps>
+
+## Related
+
+- [Metering & usage](/dashboard/metering-usage) — metrics, usage events, alerts,
+  and per-subscription usage.
+- [Plans & products](/dashboard/plans) — where usage charges and entitlements
+  live on each plan.
+- [Invoices](/dashboard/invoices) — where rated usage shows up as a line item.
+- [Developers](/dashboard/developers) — API keys and webhooks for ingesting
+  events and receiving alerts.

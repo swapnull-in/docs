@@ -1,0 +1,45 @@
+---
+title: "Notifications"
+description: "A running feed of the billing events happening in your account"
+---
+
+## Overview
+
+**Notifications** is an in-app feed of recent activity in your workspace. Each
+card shows an icon, a title, a short description, and when it happened. It's a
+read-only view — a quick way to see what's going on without opening the event
+logs.
+
+<Info>
+The feed is built from your account's most recent **events** — the same stream
+that powers webhook deliveries. For the full technical log with payloads and
+delivery status, use the **Event logs** tab in
+[Developers](/dashboard/developers#event-logs).
+</Info>
+
+## What you'll see
+
+Common billing events are given a friendly title and icon:
+
+| Event | Shows as |
+| --- | --- |
+| `subscription.created` | **New Subscription** |
+| `invoice.paid` | **Payment Received** |
+| `invoice.payment_failed` | **Payment Failed** |
+| `customer.created` | **New Customer** |
+| Anything else | The event type, title-cased, with a bell icon |
+
+Each card is timestamped with when the event occurred. If there's no recent
+activity, the page shows an empty state; if the feed can't load, it prompts you
+to refresh.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Developers" icon="code" href="/dashboard/developers">
+    Event logs, payloads, and outbound webhook deliveries.
+  </Card>
+  <Card title="Overview" icon="gauge" href="/dashboard/overview">
+    Billing at a glance, including recent activity.
+  </Card>
+</CardGroup>
