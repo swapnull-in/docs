@@ -107,3 +107,29 @@ invoices, and provider IDs are reused so nothing is duplicated.
 Accounting connections are per workspace and store OAuth tokens server-side.
 Which entities sync (customers, invoices, payments) depends on the provider.
 </Info>
+
+## Operator-configured integrations
+
+Not every integration Recurso supports is connected from this page. Payment
+gateways and accounting are configured **per workspace** here; several others
+are **operator-level** — set once for the whole deployment via environment
+variables at server boot, not in the dashboard:
+
+| Integration | Configured with |
+| --- | --- |
+| Tax — **TaxJar** (US sales tax) | `TAXJAR_API_KEY` |
+| Tax — **Avalara AvaTax** | `AVALARA_ACCOUNT_ID` / `AVALARA_LICENSE_KEY` |
+| CRM — **HubSpot** (contact sync) | `HUBSPOT_ACCESS_TOKEN` |
+| Storage — **Amazon S3 / MinIO / R2** (GL export) | `S3_EXPORT_BUCKET` (+ region/keys) |
+| Payments — **GoCardless**, **Adyen** (experimental) | provider env vars + [currency overrides](/advanced/payment-gateways) |
+
+Some matrix entries aren't credentials you configure at all: **Zapier / n8n /
+Make** consume Recurso's [signed webhooks](/advanced/automation);
+**GST / IRP e-invoicing** and **tax nexus** are set in
+[Settings](/dashboard/settings); **SSO** in [Team & security](/dashboard/team-security);
+outbound webhooks in [Developers](/dashboard/developers).
+
+<Info>
+For the full matrix — every integration, its status, and exactly how it's
+configured — see the [Integrations Overview](/advanced/integrations).
+</Info>
