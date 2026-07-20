@@ -7,8 +7,8 @@ description: "Payments, accounting, tax, CRM, storage, and automation around Rec
 
 | Category | Integration | Status | Configure with |
 |---|---|---|---|
-| Payments | Stripe | Stable | `STRIPE_SECRET_KEY` |
-| Payments | Razorpay + UPI AutoPay | Stable | `RAZORPAY_KEY_ID`/`_SECRET` |
+| Payments | Stripe | Stable | Dashboard (bring your own) or `STRIPE_SECRET_KEY` |
+| Payments | Razorpay + UPI AutoPay | Stable | Dashboard (bring your own) or `RAZORPAY_KEY_ID`/`_SECRET` |
 | Payments | GoCardless (SEPA/BACS bank debit) | Experimental | `GOCARDLESS_ACCESS_TOKEN` + [currency overrides](/advanced/payment-gateways#gocardless--adyen-experimental) |
 | Payments | Adyen (cards/wallets) | Experimental | `ADYEN_API_KEY`, `ADYEN_MERCHANT_ACCOUNT` |
 | Accounting | QuickBooks Online | Stable | OAuth from the dashboard |
@@ -27,6 +27,14 @@ description: "Payments, accounting, tax, CRM, storage, and automation around Rec
 **Experimental** means the adapter is built and unit-verified against the
 provider's documented API but not yet certified against a live sandbox
 account. Experimental integrations log their status at boot.
+
+**Per-workspace vs operator-level.** Payment gateways, accounting, SSO, and the
+GST/e-invoicing config are **per-workspace** — connect them from the dashboard
+([Integrations](/dashboard/integrations), [Settings](/dashboard/settings),
+[Team & security](/dashboard/team-security)). Each tenant can bring their own
+Stripe/Razorpay account. Tax providers (TaxJar/Avalara), CRM (HubSpot), storage
+(S3/MinIO), and the experimental gateways (GoCardless/Adyen) are **operator-level**
+— set once for the whole deployment via the environment variables above.
 
 ## Residency guarantees
 
