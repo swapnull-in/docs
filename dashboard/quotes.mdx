@@ -1,0 +1,90 @@
+---
+title: "Quotes"
+description: "Draft priced quotes, send them to customers, and convert accepted quotes into billing"
+---
+
+## Overview
+
+**Quotes** (in the left nav) are the sales-side of billing: a priced,
+line-itemed proposal you send to a customer, that converts into an invoice once
+accepted. Each quote moves through a lifecycle you can see at a glance:
+
+| Status | Meaning |
+| --- | --- |
+| **Draft** | Being prepared; not yet sent |
+| **Sent** | Delivered to the customer |
+| **Accepted** | Customer agreed — ready to convert |
+| **Declined** | Customer rejected it |
+| **Expired** | Passed its *valid until* date |
+
+The list shows the **Quote** number, **Customer**, **Amount** (the total),
+**Status**, and **Created** date. Search by text and filter by status. Each row
+has contextual actions on the right.
+
+## Create a quote
+
+<Steps>
+  <Step title="Open New quote">
+    Click **New quote** to open the side panel.
+  </Step>
+  <Step title="Set quote details">
+    - **Customer** (required) — pick from your customers.
+    - **Currency** — USD, EUR, GBP, or INR.
+    - **Valid until** — an optional expiry date.
+  </Step>
+  <Step title="Add line items">
+    Each line item has a **Description**, **Qty**, and **Unit price**. The
+    **Amount** column computes automatically. Use **Add item** to add rows and the
+    trash icon to remove them (at least one line item is required).
+
+    <Info>
+    Unit price and the **Tax** and **Discount** fields are entered in **minor
+    units** (cents) — the field labels show `(¢)`. The panel live-updates the
+    **Subtotal**, **Tax**, **Discount**, and **Total** as you type.
+    </Info>
+  </Step>
+  <Step title="Add notes & terms">
+    **Notes** are visible to the customer. **Terms & conditions** default to
+    standard payment terms and can be edited. Click **Create quote** — it starts
+    as a **draft**.
+  </Step>
+</Steps>
+
+## Working a quote
+
+Row actions change with the quote's status:
+
+<Steps>
+  <Step title="Send">
+    A **draft** shows a **Send** action. Sending moves the quote to **sent**.
+  </Step>
+  <Step title="Convert to invoice">
+    An **accepted** quote that hasn't been converted yet shows a **Convert to
+    invoice** action. Converting turns the quote into a live invoice so billing
+    can begin; once converted, the action disappears.
+  </Step>
+  <Step title="View details">
+    The **⋯** action (or clicking the quote number) opens the detail panel.
+  </Step>
+</Steps>
+
+## The quote detail panel
+
+The detail sheet leads with the **Total amount**, then lists every **line item**
+with its quantity and unit price, followed by a **Subtotal / Discount / Tax /
+Total** breakdown. Below that it shows the **Customer**, **Valid until**,
+**Created** date, and any **Notes** and **Terms** you entered.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Customers" icon="users" href="/dashboard/customers">
+    The customer a quote is addressed to.
+  </Card>
+  <Card title="Invoices" icon="file-invoice" href="/dashboard/invoices">
+    Where a converted quote lands.
+  </Card>
+  <Card title="Plans & products" icon="box" href="/dashboard/plans">
+    Reference catalog pricing when quoting.
+  </Card>
+</CardGroup>

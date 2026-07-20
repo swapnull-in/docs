@@ -1,0 +1,117 @@
+---
+title: "Payments & mandates"
+description: "Record offline payments, issue virtual accounts, and manage UPI Autopay mandates from the dashboard"
+---
+
+## Overview
+
+Two dashboard screens cover money that moves outside the online checkout:
+
+- **Offline payments** — record NEFT / cash / cheque receipts and issue
+  **virtual accounts** customers transfer into.
+- **Mandates** — **UPI Autopay** authorizations that let you debit a customer
+  up to a cap each cycle.
+
+<Info>
+Virtual accounts and UPI mandates are **INR** features. Amounts are entered in
+major units in the forms and stored as minor units.
+</Info>
+
+## Offline payments
+
+Open **Offline payments** in the left nav. It has two tabs: **Recorded
+payments** and **Virtual accounts**.
+
+### Record a payment
+
+On the **Recorded payments** tab, click **Record payment** to open a right-side
+sheet:
+
+<Steps>
+  <Step title="Pick the customer and (optionally) an invoice">
+    Choose a **Customer**. The **Invoice** picker then lists that customer's
+    unpaid invoices (open / overdue / past due). Selecting one **settles that
+    invoice** and prefills the amount and currency; leave it **Not linked** to
+    record an unallocated payment.
+  </Step>
+  <Step title="Enter the payment">
+    Choose a **Type** — **Bank transfer**, **Cash**, or **Cheque** — and an
+    **Amount**. Optionally add **TDS withheld**, a **Reference no.** (UTR /
+    cheque number), and **Notes**.
+  </Step>
+  <Step title="Record">
+    Click **Record payment**. It appears in the table with the customer, type,
+    amount (plus TDS if any), reference, linked invoice, and who recorded it.
+  </Step>
+</Steps>
+
+### Virtual accounts
+
+Switch to the **Virtual accounts** tab and click **New virtual account** to
+issue a dedicated account number a customer can transfer into.
+
+- Pick a **Customer**, optionally link an **Invoice** (which prefills the
+  expected amount), and set the **Expected amount (INR)**.
+- The table lists each account's number, IFSC and bank name, customer,
+  **Expected** vs. **Received** amounts, and a **status** badge (**active** or
+  otherwise).
+
+<Info>
+Recurso reconciles inbound bank transfers against the virtual account, moving
+the **Received** amount up as money arrives.
+</Info>
+
+## UPI mandates
+
+Open **Mandates** in the left nav. A mandate is a standing UPI Autopay
+authorization to debit a customer up to a per-cycle cap.
+
+Each row shows:
+
+| Column | What it shows |
+| --- | --- |
+| **Customer** | The authorizing customer. |
+| **VPA** | The customer's UPI ID. |
+| **Max / cycle** | The per-cycle debit cap (INR). |
+| **Frequency** | weekly, monthly, quarterly, or yearly. |
+| **Status** | **created**, **authorized**, **active**, **paused**, or **revoked**. |
+| **Next debit** | When the next automatic debit is scheduled. |
+
+### Create a mandate
+
+Click **New mandate** to open the sheet:
+
+<Steps>
+  <Step title="Customer and VPA">
+    Pick a **Customer** and enter their **VPA (UPI ID)**, e.g.
+    `customer@upi`.
+  </Step>
+  <Step title="Cap and frequency">
+    Set the **Max amount (INR)** per cycle and a **Frequency** (weekly /
+    monthly / quarterly / yearly).
+  </Step>
+  <Step title="Link a subscription (optional)">
+    Optionally link one of the customer's non-canceled **subscriptions** so the
+    mandate funds it. Click **Create mandate**.
+  </Step>
+</Steps>
+
+### Revoke a mandate
+
+Click **Revoke** on any row that isn't already revoked and confirm.
+
+<Warning>
+Revoking **stops all future automatic debits immediately** and can't be undone
+— the customer must authorize a new mandate to resume auto-debit.
+</Warning>
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Invoices" icon="file-invoice" href="/dashboard/invoices">
+    The invoices these payments settle.
+  </Card>
+  <Card title="Subscriptions" icon="repeat" href="/dashboard/subscriptions">
+    Subscriptions a mandate can fund.
+  </Card>
+</CardGroup>

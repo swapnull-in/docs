@@ -1,0 +1,117 @@
+---
+title: "Overview"
+description: "The Home dashboard and the Executive Summary — your billing at a glance"
+---
+
+## Overview
+
+Recurso opens on **Home** — the landing screen at the root of the dashboard.
+It answers two questions fast: *what needs my attention today* and *how is
+billing trending*. A deeper, board-grade view lives one click away under
+**Executive Summary**.
+
+<Info>
+Every tile and strip on these screens is a link. Click a KPI or an alert to
+jump straight to the section it summarizes.
+</Info>
+
+## Home
+
+The header carries quick-create buttons for **Customer**, **Subscription**, and
+**Plan** — each opens the matching create flow.
+
+### Needs attention
+
+A strip below the header surfaces anything that needs action right now, built
+from live data:
+
+- **Overdue invoices** — count and the total past due (per currency), links to
+  [invoice aging](/dashboard/invoices).
+- **Open disputes** — chargebacks waiting on you, links to Disputes.
+- **Churn alerts** — customers whose risk score spiked, links to Churn risk.
+
+When all three are clear, the strip collapses to a single green **All clear**
+line.
+
+### KPI row
+
+Four stat cards summarize the account:
+
+| Card | What it shows |
+| --- | --- |
+| **MRR** | Monthly recurring revenue. Opens the [Executive Summary](/dashboard/overview). |
+| **Active Subscriptions** | Count of subscriptions currently `active`. |
+| **Churn** | Canceled vs. total subscriptions, as a percentage. |
+| **Recovered Revenue** | Amount recovered via smart dunning, in your reporting currency. |
+
+### Charts and recent activity
+
+- **Revenue over time** — an area chart of invoiced revenue over the trailing
+  90 days. Each currency gets its own line (amounts in different currencies are
+  never summed without FX).
+- **Recent invoices** — the eight newest invoices with customer, amount, and a
+  status badge. Click a row to open that invoice's detail sheet; **View all**
+  goes to [Invoices](/dashboard/invoices).
+
+## Executive Summary
+
+Open **Executive Summary** (the MRR card on Home links here) for a fuller
+revenue read-out. A period toggle in the header — **30d / 60d / 90d** — sets
+the window for the movement and retention figures.
+
+<Info>
+Each metric is fetched independently, so if one source is unavailable that
+single tile shows a dash (`—`) rather than breaking the whole page.
+</Info>
+
+The screen is grouped into sections of stat cards, plus two charts:
+
+### Revenue
+
+| Card | Meaning |
+| --- | --- |
+| **MRR** | Monthly recurring revenue (normalized). |
+| **ARR** | Annual run-rate. |
+| **Net change** | Ending vs. starting MRR over the selected window; turns red if negative. |
+| **Net dollar retention** | Trailing-window NDR; needs MRR history, flagged if under 100%. |
+
+### Charts
+
+- **MRR trend** — end-of-month MRR for the last six months (appears once you
+  have at least two months of history).
+- **MRR movement** — what grew and shrank in the selected window.
+
+### MRR movement
+
+**New**, **Expansion**, **Contraction**, and **Churned** for the window.
+Churned turns red when cancellations outpace new plus expansion.
+
+### Unit economics
+
+**ARPA** (per account), **ARPU** (per subscription), **LTV** (at current
+churn, needs history), and **Active customers** with a subscription count.
+
+### Cash & recognition
+
+**Outstanding** and **Overdue** receivables, **Deferred revenue**, and
+**Recognized (MTD)**. Overdue is flagged amber or red as it grows as a share of
+outstanding.
+
+Every card links to the matching finance report so you can drill in.
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Customers" icon="users" href="/dashboard/customers">
+    Add and manage the people you bill.
+  </Card>
+  <Card title="Subscriptions" icon="repeat" href="/dashboard/subscriptions">
+    Create and manage recurring billing.
+  </Card>
+  <Card title="Invoices" icon="file-invoice" href="/dashboard/invoices">
+    Every invoice and its status.
+  </Card>
+  <Card title="Payments & mandates" icon="credit-card" href="/dashboard/payments">
+    Offline payments, virtual accounts, and UPI mandates.
+  </Card>
+</CardGroup>

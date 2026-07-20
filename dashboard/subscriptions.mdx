@@ -1,0 +1,130 @@
+---
+title: "Subscriptions"
+description: "Create subscriptions, manage their lifecycle, change plans, and attach add-ons from the dashboard"
+---
+
+## Overview
+
+**Subscriptions** (in the left nav) lists every recurring subscription and is
+where you create new ones, change plans, pause or cancel, and attach add-ons.
+
+## The subscription list
+
+Each row shows:
+
+| Column | What it shows |
+| --- | --- |
+| **Customer** | Name and email. |
+| **Status** | A colored badge — see below. |
+| **Plan** | The plan name. |
+| **Amount** | The plan price and interval (e.g. `/mo`, `/yr`). |
+| **Start date** | Start of the current period. |
+| **Next invoice** | End of the current period (when the next invoice generates). |
+
+### Status badges
+
+| Badge | Meaning |
+| --- | --- |
+| **Active** | Billing normally. |
+| **Trialing** | In a trial period. |
+| **Paused** | Billing temporarily stopped. |
+| **Past due** | A payment failed and is being recovered. |
+| **Canceled** | Ended; no further invoices. |
+
+### Search and filter
+
+- **Search** by customer name, email, or ID (debounced).
+- Filter by **Status**, by **Plan**, and by **Date** (all time / last 30 days /
+  this month).
+- Paging is server-driven with **Prev / Next** (10 per page).
+
+## Create a subscription
+
+Click **Add subscription**. A right-side sheet opens.
+
+<Steps>
+  <Step title="Customer & plan">
+    Pick an existing **Customer** and a **Plan** from the dropdowns. The plan
+    dropdown shows each plan's price and interval.
+  </Step>
+  <Step title="Scheduling & billing">
+    - **Start date** — defaults to today.
+    - **Billing anchor** — **Acquisition date** (billing repeats from the start
+      date) or **Calendar billing (1st of month)** (the first period is
+      prorated and all renewals align to the 1st).
+    - **Payment terms** — **Due on receipt** (default), or **Net 15 / 30 / 45 /
+      60** days after the invoice date.
+  </Step>
+  <Step title="Authorize and create">
+    Tick the **billing authorization** consent box to confirm recurring billing
+    is authorized — the form won't submit without it. A **Summary** box
+    previews the customer, plan, start date, terms, and total. Click **Create
+    subscription**.
+
+    <Info>
+    If the plan runs through Razorpay recurring billing, a Razorpay
+    authorization dialog opens to capture the customer's mandate before the
+    subscription becomes active.
+    </Info>
+  </Step>
+</Steps>
+
+## Subscription detail
+
+Click any row to open the detail sheet. The header shows the subscription ID
+and a live **status** indicator. Below it a grid lists the customer, plan,
+amount, created date, current period, and the upcoming invoice date and amount.
+
+### Lifecycle actions
+
+The action buttons shown depend on the current status; each opens a
+confirmation dialog:
+
+| Action | Available when | Effect |
+| --- | --- | --- |
+| **Pause** | Active | Billing stops until resumed; access follows your pause policy. |
+| **Resume** | Paused | Billing restarts from the current period. |
+| **Cancel** | Active or paused | Ends the subscription; no further invoices. |
+| **Reactivate** | Canceled | Restarts billing on the same plan from the next cycle. |
+
+### Change plan
+
+Click **Change plan**, pick a new plan, and Recurso fetches a **proration
+preview**: credit for unused time, the prorated charge for the new plan, tax,
+and the net **Due now** (or **Credited to account**), plus the next invoice
+amount and date. Click **Confirm plan change** to apply.
+
+### Add-ons
+
+The **Add-ons** section lists any attached add-on plans and their quantity.
+Pick an add-on plan, set a quantity, and click **Add** to attach one; the **×**
+removes it.
+
+<Info>
+Add-ons **bill from the next invoice**, not immediately.
+</Info>
+
+### Advance invoice & commitment
+
+For active subscriptions, two extra controls appear:
+
+- **Advance invoice** — generate one invoice now covering the next N billing
+  periods (1–60).
+- **Commitment** — set a minimum amount billed per period regardless of usage;
+  set it to 0 to clear.
+
+### Timeline
+
+A short timeline shows when the subscription was **created** and when the
+**next renewal** is scheduled.
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Plans & products" icon="box" href="/dashboard/plans">
+    Build the catalog subscriptions draw from.
+  </Card>
+  <Card title="Invoices" icon="file-invoice" href="/dashboard/invoices">
+    See the invoices a subscription generates.
+  </Card>
+</CardGroup>

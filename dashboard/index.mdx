@@ -1,0 +1,125 @@
+---
+title: "Using the dashboard"
+description: "A tour of every section of the Recurso dashboard and the workflows that connect them"
+---
+
+## Overview
+
+The Recurso dashboard at [app.recurso.dev](https://app.recurso.dev) is the
+operator console for your billing: catalog, customers, money movement, revenue
+reporting, and settings. Every screen is backed by the same API the
+[SDKs](/sdk) use, so anything you do here you can also automate.
+
+This guide documents **every section** of the dashboard — what it shows, the
+actions you can take, and how it connects to the rest of the product — plus
+task-oriented **workflows** that span several sections.
+
+<Info>
+New here? Start with the [Overview](/dashboard/overview) for the home screen,
+then follow [Onboard your first customer](/dashboard/workflows/first-subscription)
+to bill someone end to end.
+</Info>
+
+## How the dashboard is organized
+
+<CardGroup cols={2}>
+  <Card title="Overview" icon="gauge" href="/dashboard/overview">
+    Your billing at a glance — MRR, active subscriptions, recent activity.
+  </Card>
+  <Card title="Customers" icon="users" href="/dashboard/customers">
+    Everyone you bill, their subscriptions, invoices, and payment methods.
+  </Card>
+  <Card title="Plans & products" icon="box" href="/dashboard/plans">
+    Your catalog: plans, prices, usage charges, and multi-product bundles.
+  </Card>
+  <Card title="Subscriptions" icon="repeat" href="/dashboard/subscriptions">
+    Active, trialing, and canceled subscriptions and plan changes.
+  </Card>
+  <Card title="Invoices" icon="file-invoice" href="/dashboard/invoices">
+    Every invoice, its status, and its line items.
+  </Card>
+  <Card title="Payments & mandates" icon="credit-card" href="/dashboard/payments">
+    Offline payments, virtual accounts, and UPI auto-debit mandates.
+  </Card>
+  <Card title="Coupons" icon="ticket" href="/dashboard/coupons">
+    Percentage and fixed-amount discounts.
+  </Card>
+  <Card title="Quotes" icon="file-signature" href="/dashboard/quotes">
+    Sales quotes that convert into subscriptions.
+  </Card>
+  <Card title="Credit notes" icon="receipt" href="/dashboard/credit-notes">
+    Adjustments and refunds against invoices.
+  </Card>
+  <Card title="Gifts & referrals" icon="gift" href="/dashboard/gifts-referrals">
+    Gift cards and referral rewards.
+  </Card>
+  <Card title="Wallets" icon="wallet" href="/dashboard/wallets">
+    Prepaid balances that drain before the gateway is charged.
+  </Card>
+  <Card title="Metering & usage" icon="chart-line" href="/dashboard/metering-usage">
+    Billable metrics, usage events, and per-subscription usage.
+  </Card>
+  <Card title="Dunning" icon="clock-rotate-left" href="/dashboard/dunning">
+    Failed-payment recovery and smart-retry campaigns.
+  </Card>
+  <Card title="Churn risk" icon="triangle-exclamation" href="/dashboard/churn">
+    Customers at risk and open churn alerts.
+  </Card>
+  <Card title="Cancel flows" icon="door-open" href="/dashboard/cancel-flows">
+    Retention save-offers on cancellation.
+  </Card>
+  <Card title="Disputes" icon="gavel" href="/dashboard/disputes">
+    Chargebacks and how to respond.
+  </Card>
+  <Card title="Organizations" icon="sitemap" href="/dashboard/organizations">
+    Multi-entity grouping and consolidated reporting.
+  </Card>
+  <Card title="Ledger & audit" icon="book" href="/dashboard/ledger-audit">
+    The double-entry ledger and the append-only audit log.
+  </Card>
+  <Card title="Finance reports" icon="chart-column" href="/dashboard/finance-reports">
+    MRR waterfall, revenue recognition, trial balance, and more.
+  </Card>
+  <Card title="Notifications" icon="bell" href="/dashboard/notifications">
+    Delivery of emails and in-app alerts.
+  </Card>
+  <Card title="Ask AI" icon="sparkles" href="/dashboard/ask-ai">
+    Ask questions about your billing data in natural language.
+  </Card>
+  <Card title="Integrations" icon="plug" href="/dashboard/integrations">
+    Connect your own payment gateway and accounting system.
+  </Card>
+  <Card title="Developers" icon="code" href="/dashboard/developers">
+    API keys and outbound webhooks.
+  </Card>
+  <Card title="Team & security" icon="user-shield" href="/dashboard/team-security">
+    Members, roles, sessions, and your profile.
+  </Card>
+  <Card title="Settings" icon="gear" href="/dashboard/settings">
+    Company details, GST, e-invoicing, and tax nexus.
+  </Card>
+  <Card title="Customer portal" icon="user" href="/dashboard/customer-portal">
+    The self-service portal your customers see.
+  </Card>
+</CardGroup>
+
+## Workflows
+
+Task-oriented walkthroughs that span several sections:
+
+<CardGroup cols={2}>
+  <Card title="Onboard your first customer" icon="user-plus" href="/dashboard/workflows/first-subscription" />
+  <Card title="Launch a usage-based product" icon="chart-line" href="/dashboard/workflows/usage-based-product" />
+  <Card title="Recover a failed payment" icon="rotate" href="/dashboard/workflows/recover-failed-payment" />
+  <Card title="Refund a customer" icon="rotate-left" href="/dashboard/workflows/refund-customer" />
+  <Card title="Cancel with a save offer" icon="door-open" href="/dashboard/workflows/cancel-with-save-offer" />
+  <Card title="Connect your own gateway" icon="credit-card" href="/dashboard/workflows/connect-gateway" />
+  <Card title="Run your monthly close" icon="calendar-check" href="/dashboard/workflows/monthly-close" />
+  <Card title="Set up GST e-invoicing" icon="file-invoice" href="/dashboard/workflows/india-gst-invoicing" />
+</CardGroup>
+
+## Roles & permissions
+
+Some actions are limited to **owners and admins** (connecting a gateway,
+managing the team, changing settings). Members can view and operate day to day.
+Where a section is role-gated, its guide says so.

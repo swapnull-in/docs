@@ -1,0 +1,70 @@
+---
+title: "Run your monthly close"
+description: "Reconcile, review the ledger, recognize revenue, prove the trial balance, and check aging at period end"
+---
+
+## Overview
+
+Closing a month in Recurso is a sequence of read-and-verify steps across the
+**Finance reports** and **Ledger & audit** sections. Nothing here mutates your
+books — the ledger posts automatically as invoices and payments settle — so the
+close is about *confirming* everything agrees, recognizing the period's revenue,
+and exporting what your accountant needs.
+
+<Info>
+Do these in order. Reconciliation first tells you whether the books even agree;
+there's no point recognizing revenue on top of an unbalanced ledger.
+</Info>
+
+## Steps
+
+<Steps>
+  <Step title="Reconcile">
+    Open **Finance reports → Reconciliation** and click **Run again**. It checks
+    that billing records, the Postgres ledger, and TigerBeetle (when enabled)
+    all agree. The goal is **Books balanced** — *"Every invoice and payment
+    agrees with the ledger."* If discrepancies are listed (missing/mismatched
+    transactions, orphaned entries), resolve them and re-run before continuing.
+  </Step>
+  <Step title="Prove the trial balance">
+    Open **Finance reports → Trial Balance**. The banner should read **Books
+    balance — total debits equal total credits, and every account carries its
+    expected sign**. Scan the accounts table for any **abnormal** (wrong-sign)
+    balances. Use **Export GL (CSV)** to hand the general ledger to your
+    accountant.
+  </Step>
+  <Step title="Spot-check the ledger">
+    Open **Ledger & audit → Ledger** to drill into any account that looked off.
+    Pick an account (each customer has its own Accounts Receivable sub-account)
+    to see its current balance and its double-entry transactions — debit account,
+    credit account, amount, and code — for the period.
+  </Step>
+  <Step title="Recognize revenue">
+    Open **Finance reports → Revenue Recognition** and select the **month** and
+    **year** you're closing. Review **Recognized in <month>** (earned revenue
+    booked this period) and the **Deferred balance** still to recognize, plus the
+    **Release schedule** showing when the remaining deferred revenue recognizes.
+    Multi-currency deferrals are broken out in **Deferred by currency**.
+  </Step>
+  <Step title="Review receivables aging">
+    Open **Finance reports → Invoice Aging** to see outstanding receivables
+    bucketed by how far past due they are (Current, 1–30, 31–60, 61–90, 90+).
+    The stat cards summarize **Total outstanding**, **Overdue**, and **Current** —
+    use this to flag collections follow-ups before you sign off.
+  </Step>
+</Steps>
+
+<Warning>
+If Reconciliation or Trial Balance reports an imbalance, treat it as a
+stop-the-line event — investigate the flagged transactions before closing. An
+out-of-balance ledger means a downstream posting is missing.
+</Warning>
+
+## Related
+
+- [Finance reports](/dashboard/finance-reports) — reconciliation, trial balance,
+  revenue recognition, and aging.
+- [Ledger & audit](/dashboard/ledger-audit) — the double-entry ledger and audit
+  log.
+- [Refund a customer](/dashboard/workflows/refund-customer) — refunds post ledger
+  legs you'll see in these reports.

@@ -1,0 +1,106 @@
+---
+title: "Settings"
+description: "Company details plus India GST, IRP e-invoicing, and US sales-tax nexus configuration"
+---
+
+## Overview
+
+**Settings** holds your company's general information and links out to the tax
+configuration screens. The main page has two parts:
+
+- **General information** — your **company name** and **support email**. Edit them
+  and click **Save changes**.
+- A list of sub-pages: **Security**, **GST configuration**, **E-invoicing (IRP)**,
+  and **US sales-tax nexus**.
+
+<Info>
+The **Security** link opens the [Security](/dashboard/team-security#security)
+page (2FA and sessions).
+</Info>
+
+## GST configuration
+
+Set the GST details Recurso stamps on Indian invoices. Open **Settings → GST
+configuration**, then **Save configuration** when done.
+
+<Steps>
+  <Step title="GSTIN details">
+    Enter your 15-character **GSTIN** and click **Validate**. On a valid number,
+    the **state code**, **state name**, and **PAN** are auto-filled (state fields
+    are read-only). You can also set PAN manually.
+  </Step>
+  <Step title="Business details">
+    Fill in your **legal name** (as registered), **trade name**, and **registered
+    address**.
+  </Step>
+  <Step title="Tax settings">
+    Set the **SAC code** (defaults to `998314` for SaaS), the **GST rate**
+    (standard software rate is 18%), and tick **LUT (Letter of Undertaking)** to
+    apply 0% GST on export of services.
+  </Step>
+</Steps>
+
+## E-invoicing (IRP)
+
+Connect the NIC **Invoice Registration Portal** so Recurso can generate an IRN
+for B2B invoices. Open **Settings → E-invoicing (IRP)**.
+
+<Steps>
+  <Step title="Enable and choose environment">
+    Toggle **Enable e-invoicing**, then pick the **environment** — **Sandbox**
+    for testing or **Production**.
+  </Step>
+  <Step title="Enter credentials">
+    Provide your **GSTIN** and the NIC API **Client ID**, **Client secret**,
+    **Username**, and **Password**.
+  </Step>
+  <Step title="Test and save">
+    Click **Test connection** to verify the credentials — a green or red banner
+    reports the result — then **Save configuration**.
+  </Step>
+</Steps>
+
+<Warning>
+Turning on e-invoicing without a successful connection test means B2B invoices
+may fail to register an IRN. Test in **Sandbox** before switching to
+**Production**.
+</Warning>
+
+## US sales-tax nexus
+
+Open **Settings → US sales-tax nexus** to declare where you collect US sales tax
+and to watch economic-nexus thresholds.
+
+### Declared nexus states
+
+Add a row per state: a two-letter **state code** and a **nexus type**
+(**physical**, **voluntary**, or **economic**). **Save states** persists the list.
+
+<Warning>
+Saving an **empty** list clears all declared nexus.
+</Warning>
+
+### Economic-nexus status
+
+A read-only table (scoped to the current year) shows, per state with activity:
+**YTD taxable sales**, **YTD transactions**, and **threshold proximity** as a
+percentage. A state that has crossed its threshold is flagged, and crossings
+auto-establish nexus server-side.
+
+<Info>
+Economic-nexus tracking depends on the deployment — if it isn't available you'll
+see a note instead of the table. When the threshold dataset hasn't passed
+professional review, a banner marks the proximity figures as **indicative, not
+advice**.
+</Info>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Invoices" icon="file-invoice" href="/dashboard/invoices">
+    Where the GST and e-invoicing config is applied.
+  </Card>
+  <Card title="Team & security" icon="user-shield" href="/dashboard/team-security">
+    Members, roles, 2FA, and sessions.
+  </Card>
+</CardGroup>

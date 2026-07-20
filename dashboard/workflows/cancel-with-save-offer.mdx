@@ -1,0 +1,74 @@
+---
+title: "Cancel with a save offer"
+description: "Build a retention flow — survey, offer, confirmation — that tries to save customers before they cancel"
+---
+
+## Overview
+
+A **cancellation flow** is the sequence a customer walks through when they try to
+cancel: you can ask *why* (a survey), make a **retention offer** (a discount,
+pause, plan switch, or trial extension), and then confirm. This workflow builds
+a flow in **Cancel flows**, adds a save offer, sets it as the default, and shows
+where to watch its save rate.
+
+<Info>
+Mark one flow as the **default** and it applies to every cancellation that
+doesn't match a more specific flow — so a single well-tuned flow covers your
+whole base.
+</Info>
+
+## Steps
+
+<Steps>
+  <Step title="Create the flow">
+    Go to **Cancel flows** and click **New flow**. Set a **Name**, a **Cooldown
+    (days)** — the minimum gap before the same customer sees this flow again —
+    and optionally tick **Use as the default flow**. Click **Create flow**; its
+    detail sheet opens so you can add steps.
+  </Step>
+  <Step title="Add a survey step">
+    In the detail sheet click **Add step** and choose type **Survey**. Enter the
+    cancellation reasons (one per line, e.g. *Too expensive*, *Missing features*,
+    *Other*) and optionally allow free-text feedback. Save the step.
+  </Step>
+  <Step title="Add the save offer">
+    Click **Add step** again and choose type **Offer**. Give it a **Headline**
+    (e.g. *Before you go…*), then **Add offer** and pick a type:
+
+    - **Discount** — a percent off for a number of months.
+    - **Pause subscription** — pause for a number of months.
+    - **Extend trial** — add days to the trial.
+    - **Switch plan** — move the customer to a cheaper plan.
+
+    You can stack more than one offer in the same step. Save it.
+  </Step>
+  <Step title="Add a confirmation step">
+    Add a final **Confirmation** step with a message and the confirm/keep button
+    labels (e.g. *Yes, cancel* / *No, keep my subscription*). Steps run in the
+    **order** shown — reorder them with each step's order number so the offer
+    lands before the final confirmation.
+  </Step>
+  <Step title="Activate and set as default">
+    Use **Activate** in the detail sheet to turn the flow on, and **Set as
+    default** if you want it to catch all cancellations. Customers hitting cancel
+    now see your survey → offer → confirmation.
+  </Step>
+  <Step title="Watch the save rate">
+    The flow's detail sheet shows a stats strip: **Completed**, **Saved**, and
+    **Save rate**. Come back here to see whether the offer is actually retaining
+    customers, and adjust the discount or offer mix accordingly.
+  </Step>
+</Steps>
+
+<Warning>
+Editing or deleting a step takes effect immediately for new cancellations, but
+in-flight sessions already in the flow are unaffected.
+</Warning>
+
+## Related
+
+- [Cancel flows](/dashboard/cancel-flows) — the flow list and step editor.
+- [Churn risk](/dashboard/churn) — customers at risk before they reach the cancel
+  button.
+- [Subscriptions](/dashboard/subscriptions) — where accepted offers (pause, plan
+  switch, discount) land on the subscription.

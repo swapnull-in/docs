@@ -1,0 +1,109 @@
+---
+title: "Integrations"
+description: "Connect your own payment gateways and accounting systems from the dashboard"
+---
+
+## Overview
+
+**Integrations** (in the left nav) is where you connect the third-party
+services Recurso plugs into. It has two areas:
+
+- **Payment gateways** — bring your own Stripe or Razorpay account so payments
+  run through *your* merchant account.
+- **Accounting** — sync customers, invoices, and payments to QuickBooks, Xero,
+  NetSuite, or Tally.
+
+<Info>
+Connecting or disconnecting an integration is limited to **owners and admins**.
+</Info>
+
+## Payment gateways
+
+By default, payments route through the platform gateway configured on the
+server. Connecting your own gateway makes Recurso create, verify, and receive
+webhooks for payments on **your** Stripe/Razorpay account instead — per
+workspace.
+
+<Steps>
+  <Step title="Open Integrations → Payment gateways">
+    Each supported gateway (Stripe, Razorpay) shows a card with its status:
+    **Not connected**, or a **Test**/**Live** badge once connected.
+  </Step>
+  <Step title="Connect a gateway">
+    Click **Connect**. In the side panel choose **Test** or **Live**, then paste
+    your gateway keys:
+
+    - **Stripe** — publishable key (`pk_…`) and secret key (`sk_…`).
+    - **Razorpay** — key id (`rzp_…`) and key secret.
+
+    Keys are **encrypted at rest** and never shown again. Click **Connect**.
+
+    <Warning>
+    If the card shows a banner that connecting is disabled, the server has no
+    credential-encryption key (`GATEWAY_ENCRYPTION_KEY`) configured. Payments
+    keep using the platform gateway until an operator sets one.
+    </Warning>
+  </Step>
+  <Step title="Set up the webhook">
+    Copy the **Webhook URL** shown on the card. In your Stripe or Razorpay
+    dashboard, create a webhook endpoint pointing at that URL, then paste the
+    signing secret it gives you back into the **webhook secret** field and click
+    **Save**. The card then shows a green **Signing secret set** check.
+
+    <Info>
+    The webhook URL is unique to this connection, so Recurso can verify each
+    event with the right account's secret. The URL stays the same if you update
+    your keys later.
+    </Info>
+  </Step>
+</Steps>
+
+### What connecting changes
+
+Once a gateway is connected for a currency:
+
+| Step | Runs on |
+| --- | --- |
+| Payment order creation (checkout) | Your gateway account |
+| Payment verification | Your gateway account |
+| Inbound gateway webhooks | Verified against your account's secret |
+| The pay-link widget shown to customers | Mounts with your public key |
+
+A currency you *haven't* connected (for example, Razorpay for INR while you've
+only connected Stripe) continues to use the platform gateway.
+
+### Update keys or disconnect
+
+- **Update keys** — reconnect with new keys; the webhook URL is preserved.
+- **Disconnect** — new payments fall back to the platform gateway. Existing
+  transactions are unaffected, and you can reconnect at any time.
+
+For the full end-to-end walkthrough, see
+[Connect your own gateway](/dashboard/workflows/connect-gateway).
+
+## Accounting
+
+Connect an accounting system to keep your books in sync — customers push before
+invoices, and provider IDs are reused so nothing is duplicated.
+
+<Steps>
+  <Step title="Connect a provider">
+    - **QuickBooks / Xero** — click **Connect** and complete the OAuth redirect.
+    - **NetSuite / Tally** — click **Connect** and enter the account id / access
+      token in the side panel (no redirect).
+  </Step>
+  <Step title="Sync">
+    With a connection active, **Sync now** appears in the page header. Sync is
+    incremental — only entities changed since the last run are pushed. The
+    **Sync activity** table shows each run's status.
+  </Step>
+  <Step title="Disconnect">
+    Removing a connection stops future syncs; already-synced records stay in
+    your accounting system.
+  </Step>
+</Steps>
+
+<Info>
+Accounting connections are per workspace and store OAuth tokens server-side.
+Which entities sync (customers, invoices, payments) depends on the provider.
+</Info>

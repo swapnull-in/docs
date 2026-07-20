@@ -1,0 +1,127 @@
+---
+title: "Metering & usage"
+description: "Define billable metrics, watch usage thresholds, and inspect recorded usage per customer and subscription"
+---
+
+## Overview
+
+Usage-based billing in Recurso has two dashboard screens:
+
+- **Metering** — define the **billable metrics** that turn raw usage events
+  into billable quantities, and set **usage alerts** that fire at thresholds.
+- **Usage Metering** — inspect the usage that's actually been recorded:
+  aggregates by customer, plan, and dimension, plus the raw ingestion stream.
+
+Metrics only define *how usage is measured*. What each unit **costs** lives on
+the plan as a usage charge — see [Plans & products](/dashboard/plans).
+
+<Info>
+The billing loop is: your app records **usage events** → a **billable metric**
+aggregates them by its code → a **plan charge** prices the aggregate →
+**usage alerts** watch the running total.
+</Info>
+
+## Billable metrics
+
+Open **Metering**. The table lists each metric with its name, `code`, and
+aggregation type.
+
+A metric's **code doubles as the usage-event dimension** it aggregates — when
+your app posts a usage event on dimension `api_calls`, the metric with code
+`api_calls` picks it up.
+
+### Create a metric
+
+<Steps>
+  <Step title="Click New metric">
+    Opens a side panel.
+  </Step>
+  <Step title="Name and code it">
+    - **Name** — a human label, e.g. `API calls`.
+    - **Code** — the event dimension, e.g. `api_calls`. **Immutable** once set.
+  </Step>
+  <Step title="Choose an aggregation">
+    | Aggregation | Bills on |
+    | --- | --- |
+    | `sum` | Total quantity across events |
+    | `count` | Number of events |
+    | `max` | The single largest event |
+    | `unique` | Distinct values of a chosen property |
+
+    For **`unique`**, a **Property to count (`field_name`)** field appears —
+    name the event property whose distinct values you're counting (e.g.
+    `user_id` for unique active users).
+  </Step>
+  <Step title="Create metric">
+    You can **edit** a metric's name, aggregation, and property later (the code
+    stays fixed), or **delete** it.
+  </Step>
+</Steps>
+
+<Warning>
+Deleting a metric keeps usage already recorded, but any plan charging that
+metric **stops rating new events**. A metric that's referenced by a plan charge
+may refuse to delete.
+</Warning>
+
+## Usage alerts
+
+Below the metric table, **Usage alerts** watch a subscription's usage and
+notify you when it crosses a threshold. Each alert fires **once per billing
+period**, via the `usage.alert.triggered` webhook plus an email.
+
+### Create an alert
+
+Click **New alert** and fill in the side panel:
+
+- **Subscription** — pick from active (non-canceled) subscriptions.
+- **Metric** — pick one of your billable metrics.
+- **Threshold type** — **Absolute quantity**, or **Percent of entitlement
+  limit**.
+- **Threshold** — the number (or percent) that triggers the alert.
+
+Alerts that have already fired this period show a **fired this period** badge.
+Delete an alert with the trash icon.
+
+## Recorded usage
+
+Open **Usage Metering** to see what's actually been metered.
+
+### Filters and stat cards
+
+Filter by **customer** and **plan**. Three stat cards summarize the filtered
+view:
+
+- **Total Units Consumed** (lifetime)
+- **Customers Metered** (with recorded usage)
+- **Active Dimensions** (distinct metric types)
+
+A **Usage by dimension** bar chart breaks the total down per dimension, and a
+table lists each customer/plan/dimension aggregate with its total quantity.
+**Export data** downloads the filtered aggregates as CSV.
+
+<Info>
+These figures are **lifetime aggregates**, not a time series — the chart shows
+the split *across dimensions* rather than usage over time.
+</Info>
+
+### Recent events (ingestion stream)
+
+At the bottom, **Recent events** is the raw ingestion stream, newest first —
+use it to verify events are landing before they roll up into metrics. Each row
+shows the timestamp, customer, **dimension**, quantity, and **idempotency key**
+(transaction id). Filter by dimension and **Refresh** to re-pull.
+
+Usage is ingested by your app posting to the usage-events endpoint; events show
+up here immediately.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Plans & products" icon="box" href="/dashboard/plans">
+    Attach a usage charge to a plan and set the per-unit or tiered price.
+  </Card>
+  <Card title="Subscriptions" icon="repeat" href="/dashboard/subscriptions">
+    The subscriptions whose usage is metered and alerted on.
+  </Card>
+</CardGroup>

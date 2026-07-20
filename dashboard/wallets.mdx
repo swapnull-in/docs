@@ -1,0 +1,110 @@
+---
+title: "Wallets"
+description: "Prepaid customer balances that drain before credit notes and the payment gateway are charged"
+---
+
+## Overview
+
+**Wallets** (in the left nav) holds **prepaid balances** for your customers. A
+wallet is money a customer has already paid in — Recurso spends it down before
+it reaches for credit notes or charges the payment gateway, so a customer with
+a funded wallet is billed against that balance first.
+
+Each wallet belongs to one customer and is denominated in a single currency.
+The list shows every wallet with its owner, current **balance**, and whether
+**auto-recharge** is on.
+
+<Info>
+Wallets are drained **before credit notes and the payment gateway**. This makes
+them useful for prepaid credit, promotional grants, and top-up-style billing.
+</Info>
+
+## The wallet list
+
+The table has a row per wallet:
+
+| Column | What it shows |
+| --- | --- |
+| Customer | The wallet owner |
+| Balance | Current spendable balance, in the wallet's currency |
+| Auto-recharge | A green badge (`below X → +Y`) when enabled, otherwise **off** |
+
+Search filters by customer or currency. Click any row to open its
+**transaction history**.
+
+## Create a wallet
+
+<Steps>
+  <Step title="Click Create wallet">
+    Opens a side panel.
+  </Step>
+  <Step title="Pick the customer and currency">
+    Choose the customer from the picker and set a 3-letter currency code
+    (defaults to `INR`). Click **Create wallet**.
+  </Step>
+</Steps>
+
+The new wallet starts at a zero balance — fund it with a top-up.
+
+## Top up a balance
+
+Click **Top up** on a wallet row to add funds.
+
+<Steps>
+  <Step title="Enter the amount">
+    In the wallet's currency (for example `5000.00`).
+  </Step>
+  <Step title="Choose a source">
+    - **Manual (money received)** — you received the money out of band and are
+      recording it.
+    - **Promotional credit** — a grant you're giving the customer.
+
+    Click **Top up**. The new balance is available immediately.
+  </Step>
+</Steps>
+
+## Auto-recharge
+
+Auto-recharge keeps a wallet from running dry. Click **Auto-recharge** on a row
+to configure it.
+
+<Steps>
+  <Step title="Set a threshold and a recharge amount">
+    When the balance falls **below the threshold**, the wallet is automatically
+    topped up by the **recharge amount** using the customer's saved payment
+    method. Both values are in the wallet's currency.
+  </Step>
+  <Step title="Save or disable">
+    Click **Save** to enable it. To turn it off later, reopen the dialog and
+    click **Disable**.
+  </Step>
+</Steps>
+
+<Warning>
+Auto-recharge needs both a threshold **and** a recharge amount — you can't set
+one without the other. Disabling clears both.
+</Warning>
+
+## Transaction history
+
+Click a wallet row to see its recent movements (newest first). Each entry is
+tagged by **type**:
+
+| Type | Meaning |
+| --- | --- |
+| `top_up` | Money added (manual or promotional), shown as `+` |
+| `drain` | Balance spent against billing, shown as `−` |
+
+Each row shows the amount, the source (where relevant), and the resulting
+**balance after** the movement, so you can trace the running balance.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Invoices" icon="file-invoice" href="/dashboard/invoices">
+    See where wallet balance is applied against amounts due.
+  </Card>
+  <Card title="Payments & mandates" icon="credit-card" href="/dashboard/payments">
+    The saved payment methods auto-recharge draws on.
+  </Card>
+</CardGroup>
