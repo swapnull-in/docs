@@ -1,0 +1,214 @@
+---
+title: "Node.js / TypeScript SDK"
+description: "Install, configure, and integrate Recurso from Node.js with the typed recurso client"
+---
+
+## Overview
+
+The [`recurso`](https://www.npmjs.com/package/recurso) package is the official
+Node.js / TypeScript client for the Recurso billing API. It wraps the REST
+surface — 28 resources, 137 methods — behind a `recurso.<resource>.<method>(...)`
+idiom, and every request and response is typed from the API's OpenAPI schema so
+your editor autocompletes fields and `tsc` catches shape mistakes.
+
+Requires Node.js 18 or newer.
+
+## Install
+
+```bash
+npm install recurso
+```
+
+## Client construction
+
+Import the `Recurso` class and construct it with your API key. The key is sent
+as a bearer token (`Authorization: Bearer <key>`) on every request.
+
+```typescript
+import { Recurso } from 'recurso';
+
+const recurso = new Recurso('sk_live_your_api_key', {
+  baseUrl: 'https://api.recurso.dev',
+});
+```
+
+The constructor signature is `new Recurso(apiKey, options?)`. `options` is a
+`RecursoOptions` object whose only field is `baseUrl`. For backward
+compatibility a bare string is also accepted as the base URL:
+
+```typescript
+// Equivalent — a bare string is treated as { baseUrl }
+const recurso = new Recurso('sk_live_your_api_key', 'https://api.recurso.dev');
+```
+
+<Info>
+`baseUrl` is the only supported option. There is no constructor timeout or
+retry setting — the client uses axios defaults. If you need those, they're
+best handled at your own call sites.
+</Info>
+
+### Base URL
+
+| Environment | `baseUrl` |
+| --- | --- |
+| Hosted | `https://api.recurso.dev` |
+| Self-hosted | your API host, e.g. `https://billing.example.com` |
+| Local (`make demo`) | `http://localhost:8080` |
+
+If you omit `options` entirely, the base URL defaults to
+`http://localhost:8080` (exported as `DEFAULT_BASE_URL`), which matches a local
+`make demo` stack.
+
+## The resource-method idiom
+
+Every call is `recurso.<resource>.<method>(...)`. Resources group sensibly by
+domain:
+
+| Domain | Resources |
+| --- | --- |
+| **Catalog** | `plans`, `coupons`, `billableMetrics`, `entitlements` |
+| **Customers** | `customers` |
+| **Billing** | `subscriptions`, `invoices`, `quotes`, `creditNotes`, `mandates`, `wallets`, `offlinePayments`, `virtualAccounts` |
+| **Usage** | `usage`, `usageAlerts` |
+| **Growth** | `gifts`, `referrals`, `cancelFlows`, `dunningCampaigns`, `churn` |
+| **Platform** | `account`, `webhooks`, `events`, `analytics`, `ledger`, `organizations`, `accounting`, `auditLogs` |
+
+Each resource exposes the CRUD and lifecycle methods that make sense for it —
+for example `recurso.subscriptions` has `create`, `list`, `update`, `cancel`,
+`pause`, `resume`, `reactivate`, `advance`, `charges`, `usage`, and
+`setCommitment`.
+
+## Typed responses
+
+Responses are typed from `schema.d.ts`, generated from the same OpenAPI spec the
+API is built from, so results carry concrete field types rather than an opaque
+object. Resource types are exported for annotating your own code:
+
+```typescript
+import type { Subscription, Customer, Invoice } from 'recurso';
+
+const sub = await recurso.subscriptions.create({
+  customer_id: customer.id!,
+  plan_id: plan.id!,
+});
+sub.current_period_end; // string | undefined — typed and autocompleted
+```
+
+Money throughout the API is in **minor units** — `2900` is $29.00, `499900` is
+₹4,999.00 — which sidesteps floating-point rounding.
+
+## Worked example
+
+Create a plan, a customer, and a subscription, read the customer back, then list
+subscriptions with an explicit page size.
+
+<Steps>
+  <Step title="Create a plan">
+    `amount` is in minor units. `interval_count` defaults to `1` when omitted.
+
+    ```typescript
+    const plan = await recurso.plans.create({
+      name: 'Pro Plan',
+      code: 'pro-monthly-usd',
+      amount: 2900,          // $29.00
+      currency: 'USD',
+      interval_unit: 'month',
+    });
+    ```
+  </Step>
+  <Step title="Create a customer">
+    `country` defaults to `US` when omitted.
+
+    ```typescript
+    const customer = await recurso.customers.create({
+      name: 'Jane User',
+      email: 'jane@example.com',
+      country: 'US',
+    });
+    ```
+  </Step>
+  <Step title="Create a subscription">
+    Reference the plan and customer by id.
+
+    ```typescript
+    const sub = await recurso.subscriptions.create({
+      customer_id: customer.id!,
+      plan_id: plan.id!,
+    });
+    ```
+  </Step>
+  <Step title="Read it back">
+    The subscription resource has no `get` — read entities back through a
+    resource that does (`customers.get`, `plans.get`), or find the subscription
+    via `subscriptions.list`.
+
+    ```typescript
+    const fetched = await recurso.customers.get(customer.id!);
+    console.log(fetched.email);
+    ```
+  </Step>
+  <Step title="List with a limit">
+    List endpoints return a `{ data: [...] }` envelope. Pass `limit` (and
+    `page`) to control the page.
+
+    ```typescript
+    const { data } = await recurso.subscriptions.list({ limit: 10 });
+    data?.forEach((s) => console.log(s.id, s.status)); // s is Subscription
+    ```
+  </Step>
+</Steps>
+
+## Pagination
+
+Standard list methods accept a `ListParams` object: `page`, `limit`, `q` (search
+text), and `status`. Pagination is **page-based**, not offset-based, for these
+endpoints:
+
+```typescript
+const page1 = await recurso.plans.list({ limit: 20, page: 1 });
+const page2 = await recurso.plans.list({ limit: 20, page: 2 });
+```
+
+A few specialised list endpoints take their own params — for example
+`webhooks.deliveries` and `auditLogs.list` use `limit`/`offset`. The list
+response is always a `{ data: [...] }` envelope, so destructure `data` (it may
+be `undefined`, hence the optional chaining above).
+
+## Error handling
+
+The SDK does not define a custom error type — it uses axios under the hood and
+lets axios errors propagate. Wrap calls in `try/catch` and inspect the response
+on failure:
+
+```typescript
+import axios from 'axios';
+
+try {
+  await recurso.subscriptions.create({
+    customer_id: customer.id!,
+    plan_id: plan.id!,
+  });
+} catch (err) {
+  if (axios.isAxiosError(err)) {
+    console.error('status:', err.response?.status);
+    console.error('body:', err.response?.data); // API error payload
+  } else {
+    throw err;
+  }
+}
+```
+
+`err.response?.status` gives the HTTP status (e.g. `409` when archiving a
+customer with active subscriptions) and `err.response?.data` carries the API's
+JSON error body.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Bill a customer" icon="user-plus" href="/sdk-guides/workflows/bill-a-customer">
+    Customer → plan → subscription → first invoice, end to end.
+  </Card>
+  <Card title="Usage-based billing" icon="chart-line" href="/sdk-guides/workflows/usage-based-billing">
+    Metric → plan charges → record usage → query and rate it.
+  </Card>
+</CardGroup>

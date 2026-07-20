@@ -1,0 +1,356 @@
+---
+title: "Managing webhook endpoints"
+description: "Register endpoints, pause and resume them, inspect deliveries, and redeliver events — from Node, Go, or Python"
+---
+
+## Overview
+
+Recurso pushes events (`invoice.paid`, `subscription.updated`, `usage.alert.triggered`, …)
+to HTTP endpoints you register. This guide covers **managing those endpoints
+through the SDK**: creating them, listing them, pausing/resuming, inspecting
+delivery attempts, and redelivering an event.
+
+The `webhooks` surface manages **endpoints**. Delivery inspection and
+**redelivery of an event** live on the **events** surface (`events` /
+`Events` in Node/Go, the `redeliver_event` and `list_event_deliveries`
+operations in Python), because an event fans out to *every* subscribed
+endpoint.
+
+<Warning>
+This guide is about **managing outbound webhook endpoints** — the SDK is an API
+client, so every call here is a request to the Recurso API.
+
+**Receiving** webhooks is different: that is an HTTP handler *you* build in your
+own app to accept Recurso's `POST`s. The SDK does not run a server or parse
+inbound deliveries for you. See [Verifying inbound deliveries](#verifying-inbound-deliveries).
+</Warning>
+
+<Info>
+The signing **secret** is returned **only** in the create response. Store it
+when you register the endpoint — you cannot fetch it again later. Listing
+endpoints omits the secret.
+</Info>
+
+## Register an endpoint
+
+Pass the destination URL and the event types to deliver. Fetch the full list of
+valid event types from `GET /v1/events/types` (`events.types()` in Node,
+`client.Events.Types(ctx)` in Go, `list_event_types.sync(...)` in Python).
+
+<Warning>
+The field name differs by SDK. Node's `WebhookInput` uses **`event_types`**,
+while Go (`WebhookCreateParams.Events`) and the Python
+`CreateWebhookEndpointBody` use **`events`**. This is a real inconsistency in
+the current SDKs — use each SDK's own field name.
+</Warning>
+
+<CodeGroup>
+```typescript Node
+import { Recurso } from 'recurso';
+
+const recurso = new Recurso('sk_live_your_api_key', {
+  baseUrl: 'https://api.recurso.dev',
+});
+
+const endpoint = await recurso.webhooks.create({
+  url: 'https://app.example.com/webhooks/recurso',
+  event_types: ['invoice.paid', 'subscription.updated'],
+});
+
+// The signing secret is only present on this create response — persist it now.
+console.log(endpoint.id, endpoint.secret);
+```
+
+```go Go
+package main
+
+import (
+	"context"
+	"fmt"
+
+	recurso "github.com/recurso-dev/recurso-go"
+)
+
+func main() {
+	ctx := context.Background()
+	client := recurso.NewClient("sk_live_your_api_key")
+
+	endpoint, err := client.Webhooks.Create(ctx, &recurso.WebhookCreateParams{
+		URL:    "https://app.example.com/webhooks/recurso",
+		Events: []string{"invoice.paid", "subscription.updated"},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// Secret is populated only on the create response — persist it now.
+	fmt.Println(endpoint.ID, endpoint.Secret)
+}
+```
+
+```python Python
+from recurso import AuthenticatedClient
+from recurso.api.webhooks import create_webhook_endpoint
+from recurso.models import CreateWebhookEndpointBody, Error
+
+client = AuthenticatedClient(
+    base_url="https://api.recurso.dev",
+    token="sk_live_your_api_key",
+)
+
+result = create_webhook_endpoint.sync(
+    client=client,
+    body=CreateWebhookEndpointBody(
+        url="https://app.example.com/webhooks/recurso",
+        events=["invoice.paid", "subscription.updated"],
+    ),
+)
+
+if isinstance(result, Error):
+    raise RuntimeError(f"{result.error.code}: {result.error.message}")
+
+# The signing secret is only present on this 201 response — persist it now.
+print(result.id, result.secret)
+```
+</CodeGroup>
+
+## List endpoints
+
+Listing returns every endpoint for the tenant, **without** the signing secret.
+
+<CodeGroup>
+```typescript Node
+const endpoints = await recurso.webhooks.list();
+for (const ep of endpoints.data ?? []) {
+  console.log(ep.id, ep.url, ep.status);
+}
+```
+
+```go Go
+endpoints, err := client.Webhooks.List(ctx)
+if err != nil {
+	panic(err)
+}
+for _, ep := range endpoints {
+	fmt.Println(ep.ID, ep.URL, ep.Status)
+}
+```
+
+```python Python
+from recurso.api.webhooks import list_webhook_endpoints
+
+result = list_webhook_endpoints.sync(client=client)
+if isinstance(result, Error):
+    raise RuntimeError(result.error.message)
+
+for ep in result.data or []:
+    print(ep.id, ep.url, ep.status)
+```
+</CodeGroup>
+
+## Pause and resume
+
+Pausing sets the endpoint to `inactive`: it stops receiving deliveries but keeps
+its secret and configuration, so you can resume without re-registering.
+
+<Steps>
+  <Step title="Pause">
+    Node and Go expose named helpers; Python sends the status body directly.
+
+    <CodeGroup>
+    ```typescript Node
+    await recurso.webhooks.pause(endpointId); // status: "inactive"
+    ```
+
+    ```go Go
+    _, err := client.Webhooks.UpdateStatus(ctx, endpointID, &recurso.WebhookStatusParams{
+    	Status: "inactive",
+    })
+    ```
+
+    ```python Python
+    from recurso.api.webhooks import update_webhook_endpoint_status
+    from recurso.models import (
+        UpdateWebhookEndpointStatusBody,
+        UpdateWebhookEndpointStatusBodyStatus,
+    )
+
+    update_webhook_endpoint_status.sync(
+        endpoint_id,  # a UUID
+        client=client,
+        body=UpdateWebhookEndpointStatusBody(
+            status=UpdateWebhookEndpointStatusBodyStatus.INACTIVE,
+        ),
+    )
+    ```
+    </CodeGroup>
+  </Step>
+  <Step title="Resume">
+    <CodeGroup>
+    ```typescript Node
+    await recurso.webhooks.resume(endpointId); // status: "active"
+    ```
+
+    ```go Go
+    _, err := client.Webhooks.UpdateStatus(ctx, endpointID, &recurso.WebhookStatusParams{
+    	Status: "active",
+    })
+    ```
+
+    ```python Python
+    update_webhook_endpoint_status.sync(
+        endpoint_id,
+        client=client,
+        body=UpdateWebhookEndpointStatusBody(
+            status=UpdateWebhookEndpointStatusBodyStatus.ACTIVE,
+        ),
+    )
+    ```
+    </CodeGroup>
+  </Step>
+</Steps>
+
+To remove an endpoint permanently instead, use `recurso.webhooks.delete(id)` /
+`client.Webhooks.Delete(ctx, id)` / `delete_webhook_endpoint.sync(id, client=client)`.
+
+## Inspect deliveries
+
+Every attempt to reach an endpoint is a **delivery** record with an attempt
+count, the last HTTP status code, and the next retry time. List them per
+endpoint, newest first, filtered by derived status (`pending`, `succeeded`,
+`failed`) and paginated with `limit`/`offset`.
+
+<CodeGroup>
+```typescript Node
+const deliveries = await recurso.webhooks.deliveries(endpointId, {
+  status: 'failed',
+  limit: 50,
+  offset: 0,
+});
+for (const d of deliveries.data ?? []) {
+  console.log(d.id, d.status, d.attempts, d.last_status_code, d.last_error);
+}
+```
+
+```go Go
+deliveries, err := client.Webhooks.Deliveries(ctx, endpointID, &recurso.DeliveryListParams{
+	Status: "failed",
+	Limit:  50,
+	Offset: 0,
+})
+if err != nil {
+	panic(err)
+}
+for _, d := range deliveries {
+	fmt.Println(d.ID, d.Status, d.Attempts, d.LastStatusCode, d.LastError)
+}
+```
+
+```python Python
+from recurso.api.webhooks import list_webhook_endpoint_deliveries
+from recurso.models import ListWebhookEndpointDeliveriesStatus
+
+result = list_webhook_endpoint_deliveries.sync(
+    endpoint_id,
+    client=client,
+    status=ListWebhookEndpointDeliveriesStatus.FAILED,
+    limit=50,
+    offset=0,
+)
+if isinstance(result, Error):
+    raise RuntimeError(result.error.message)
+
+for d in result.data or []:
+    print(d.id, d.status, d.attempts, d.last_status_code, d.last_error)
+```
+</CodeGroup>
+
+## Redeliver an event
+
+If your handler was down or returned an error, re-enqueue the event to **every
+active subscribed endpoint**. Redelivery is keyed on the **event ID**, not the
+endpoint, and is idempotent — repeated calls reset the existing delivery records
+for a fresh attempt rather than creating duplicates. It returns `202` with the
+count of deliveries queued.
+
+<CodeGroup>
+```typescript Node
+// See which endpoints the event reached, across all endpoints:
+const attempts = await recurso.events.deliveries(eventId);
+
+// Re-enqueue it to every active subscribed endpoint:
+const res = await recurso.events.redeliver(eventId);
+console.log(res.data?.deliveries_queued);
+```
+
+```go Go
+// Delivery attempts of an event across all endpoints:
+attempts, err := client.Events.Deliveries(ctx, eventID)
+
+// Re-enqueue to every active subscribed endpoint:
+res, err := client.Events.Redeliver(ctx, eventID)
+if err != nil {
+	panic(err)
+}
+fmt.Println(res.DeliveriesQueued)
+```
+
+```python Python
+from recurso.api.webhooks import list_event_deliveries, redeliver_event
+
+# Delivery attempts of an event across all endpoints:
+attempts = list_event_deliveries.sync(event_id, client=client)
+
+# Re-enqueue to every active subscribed endpoint:
+res = redeliver_event.sync(event_id, client=client)
+if isinstance(res, Error):
+    raise RuntimeError(res.error.message)
+print(res.data.deliveries_queued)
+```
+</CodeGroup>
+
+<Info>
+In Python, the redeliver and event-delivery operations live in the
+`recurso.api.webhooks` package (`redeliver_event`, `list_event_deliveries`)
+even though they act on an event. IDs passed to Python operations are typed as
+`uuid.UUID` — pass a `UUID` (or a value that stringifies to one).
+</Info>
+
+## Verifying inbound deliveries
+
+Receiving a webhook is code **you** write — an HTTP route in your own app that
+Recurso `POST`s to. None of the three SDKs ship an inbound-signature helper or a
+server; the `webhooks`/`events` surfaces only *manage* endpoints. Verify
+signatures yourself:
+
+<Steps>
+  <Step title="Read the raw request body">
+    Compute the signature over the **exact bytes** Recurso sent. Do not
+    re-serialize a parsed JSON object — key order or whitespace changes break the
+    HMAC. Capture the raw body before any JSON middleware touches it.
+  </Step>
+  <Step title="Recompute the HMAC with the endpoint's signing secret">
+    Recurso signs each delivery with an HMAC keyed by the **signing secret**
+    returned when you created the endpoint (the `whsec_…` value). Recompute the
+    HMAC-SHA256 of the raw body with that secret.
+  </Step>
+  <Step title="Compare in constant time">
+    Compare your computed digest against the signature header on the request
+    using a constant-time comparison (`crypto.timingSafeEqual` in Node,
+    `hmac.Equal` in Go, `hmac.compare_digest` in Python) to avoid timing leaks.
+    Reject the request on any mismatch.
+  </Step>
+</Steps>
+
+<Warning>
+Treat the signing secret like any other credential: keep it server-side, never
+in a browser or mobile client. If it leaks, delete and re-register the endpoint
+to rotate it (a new secret is issued on the next create).
+</Warning>
+
+## Related
+
+- [Errors & retries](/sdk-guides/workflows/errors-and-retries) — handling failures, idempotency, and pagination
+- [Usage-based billing](/sdk-guides/workflows/usage-based-billing) — the events that fire `usage.alert.triggered`
+- [SDK overview](/sdk-guides/overview) — install and configure each client
+- [Node guide](/sdk-guides/node) · [Go guide](/sdk-guides/go) · [Python guide](/sdk-guides/python)

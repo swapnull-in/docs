@@ -1,0 +1,97 @@
+---
+title: "SDK integration guides"
+description: "Integrate Recurso from Node.js, Python, or Go — setup, idioms, and end-to-end workflows"
+---
+
+## Overview
+
+Recurso ships three official SDKs. Each is a typed client over the same REST
+API, so they cover the same surface — plans, customers, the subscription
+lifecycle, invoices, the usage platform, wallets, quotes, entitlements,
+webhooks, analytics, and more — but each follows its **language's own idiom**,
+not a lowest-common-denominator API.
+
+| Language | Package | Install | Client style |
+| --- | --- | --- | --- |
+| Node.js / TypeScript | [`recurso`](https://www.npmjs.com/package/recurso) | `npm install recurso` | Resource methods — `recurso.plans.create(...)` |
+| Go 1.22+ | `github.com/recurso-dev/recurso-go` | `go get github.com/recurso-dev/recurso-go` | Service methods — `client.Plans.Create(ctx, ...)` |
+| Python 3.11+ | `recurso` | `pip install ./recurso-python` | Generated client — `create_plan.sync(client=client, body=...)` |
+
+<Info>
+Because the Python client is generated from the OpenAPI spec, its shape differs
+from Node/Go (per-operation functions and model classes, not resource objects).
+Follow the [Python guide](/sdk-guides/python) for its idiom rather than
+translating the Node examples literally.
+</Info>
+
+## Pick your path
+
+<CardGroup cols={3}>
+  <Card title="Node.js" icon="node-js" href="/sdk-guides/node">
+    Install, configure, and integrate with the TypeScript client.
+  </Card>
+  <Card title="Go" icon="golang" href="/sdk-guides/go">
+    Services, params structs, and context-aware calls.
+  </Card>
+  <Card title="Python" icon="python" href="/sdk-guides/python">
+    The generated client, models, and sync/async calls.
+  </Card>
+</CardGroup>
+
+## Workflows
+
+Task-oriented, end-to-end walkthroughs with side-by-side code in all three
+languages:
+
+<CardGroup cols={2}>
+  <Card title="Bill a customer" icon="user-plus" href="/sdk-guides/workflows/bill-a-customer">
+    Customer → plan → subscription → first invoice.
+  </Card>
+  <Card title="Usage-based billing" icon="chart-line" href="/sdk-guides/workflows/usage-based-billing">
+    Metric → plan charges → record usage → query and rate it.
+  </Card>
+  <Card title="Subscription changes" icon="repeat" href="/sdk-guides/workflows/subscription-lifecycle">
+    Upgrade/downgrade with proration, pause, resume, cancel.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/sdk-guides/workflows/webhooks">
+    Register endpoints, track deliveries, and redeliver.
+  </Card>
+  <Card title="Errors & retries" icon="rotate" href="/sdk-guides/workflows/errors-and-retries">
+    Error handling, idempotency, retries, and pagination.
+  </Card>
+</CardGroup>
+
+## Concepts that apply to every SDK
+
+<AccordionGroup>
+  <Accordion title="Authentication">
+    All three send your API key as a bearer token
+    (`Authorization: Bearer <key>`). Create and rotate keys in the dashboard
+    under [Developers](/dashboard/developers). Use a **test** key against a
+    test/`make demo` stack and a **live** key in production. Never ship a secret
+    key to a browser or mobile client.
+  </Accordion>
+  <Accordion title="Money is in minor units">
+    Amounts are integers in the currency's smallest unit — `2900` is $29.00,
+    and `499900` is ₹4,999.00. This avoids floating-point rounding. Convert for
+    display only.
+  </Accordion>
+  <Accordion title="Base URL">
+    Point the client at your API host — `https://api.recurso.dev`, your
+    self-hosted URL, or `http://localhost:8080` for a local `make demo` stack.
+    Each language guide shows exactly where the base URL goes.
+  </Accordion>
+  <Accordion title="Pagination">
+    List endpoints default to a small page size, so always pass an explicit
+    `limit` when you need the full set. The paging cursor varies by endpoint and
+    SDK — most take `limit` plus a page or offset — so follow the exact
+    parameter names in your language guide and in
+    [Errors & retries](/sdk-guides/workflows/errors-and-retries).
+  </Accordion>
+  <Accordion title="Idempotency">
+    Money-moving and ingestion endpoints accept an idempotency/transaction key
+    so a retried request doesn't double-charge or double-count. The usage
+    ingestion path uses a per-event `transaction_id`; see the
+    [usage workflow](/sdk-guides/workflows/usage-based-billing).
+  </Accordion>
+</AccordionGroup>

@@ -22,9 +22,16 @@ npm and Go directly with `go get`.
 </Info>
 
 All three authenticate the same way — your API key is sent as a bearer token
-(`Authorization: Bearer <key>`) — and mirror the same resources and method names.
-The worked examples in **Node.js** below are the fullest reference; the
-[Python](#python) and [Go](#go) quickstarts follow at the end.
+(`Authorization: Bearer <key>`) — and cover the same API surface, but each
+follows its own language idiom (Node and Go are resource/service objects; the
+Python client is generated from the OpenAPI spec, with per-operation functions
+and model classes). The worked examples in **Node.js** below are the fullest
+reference; the [Python](#python) and [Go](#go) quickstarts follow at the end.
+
+<Info>
+For step-by-step setup and end-to-end workflows in each language, see the
+[SDK integration guides](/sdk-guides/overview).
+</Info>
 
 ## Node.js
 

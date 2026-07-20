@@ -236,6 +236,38 @@
         ]
       },
       {
+        "tab": "SDKs",
+        "groups": [
+          {
+            "group": "Get started",
+            "icon": "code",
+            "pages": [
+              "sdk-guides/overview"
+            ]
+          },
+          {
+            "group": "By language",
+            "icon": "laptop-code",
+            "pages": [
+              "sdk-guides/node",
+              "sdk-guides/go",
+              "sdk-guides/python"
+            ]
+          },
+          {
+            "group": "Workflows",
+            "icon": "list-check",
+            "pages": [
+              "sdk-guides/workflows/bill-a-customer",
+              "sdk-guides/workflows/usage-based-billing",
+              "sdk-guides/workflows/subscription-lifecycle",
+              "sdk-guides/workflows/webhooks",
+              "sdk-guides/workflows/errors-and-retries"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Compliance",
         "groups": [
           {

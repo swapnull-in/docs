@@ -1,0 +1,440 @@
+---
+title: "Errors, retries & pagination"
+description: "Integration hygiene across the SDKs — how errors surface, retrying transient failures, idempotency keys, and paging through lists"
+---
+
+## Overview
+
+Four cross-cutting concerns decide whether a Recurso integration survives
+production: reading errors, retrying transient failures safely, using
+idempotency keys so retries don't double-charge, and paging through lists
+without missing rows. Each SDK expresses these in its own idiom — this guide
+shows all three side by side.
+
+<Info>
+The biggest difference between SDKs is **how a failed request surfaces**.
+Node throws, Go returns a typed error, and the **Python client does *not* raise
+for documented 4xx/5xx statuses — it returns an `Error` model in the return
+union**. Read the next section before writing any error handling.
+</Info>
+
+## How errors surface
+
+<CodeGroup>
+```typescript Node
+import axios from 'axios';
+import { Recurso } from 'recurso';
+
+const recurso = new Recurso('sk_live_your_api_key');
+
+try {
+  const plan = await recurso.plans.get('pl_missing');
+} catch (err) {
+  // The Node SDK wraps axios — a non-2xx response throws an AxiosError.
+  if (axios.isAxiosError(err)) {
+    const status = err.response?.status;                 // e.g. 404
+    const body = err.response?.data as { error?: { code?: string; message?: string } };
+    console.error(status, body?.error?.code, body?.error?.message);
+  } else {
+    throw err; // not an HTTP error (bug, etc.)
+  }
+}
+```
+
+```go Go
+package main
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	recurso "github.com/recurso-dev/recurso-go"
+)
+
+func main() {
+	ctx := context.Background()
+	client := recurso.NewClient("sk_live_your_api_key")
+
+	_, err := client.Plans.Get(ctx, "pl_missing")
+	if err != nil {
+		// Every non-2xx response is a *recurso.APIError.
+		var apiErr *recurso.APIError
+		if errors.As(err, &apiErr) {
+			fmt.Println(apiErr.StatusCode, apiErr.Code, apiErr.Message)
+		} else {
+			panic(err) // transport error (DNS, connection, context cancelled)
+		}
+	}
+}
+```
+
+```python Python
+from recurso import AuthenticatedClient
+from recurso.api.plans import get_plan
+from recurso.models import Error
+
+client = AuthenticatedClient(
+    base_url="https://api.recurso.dev",
+    token="sk_live_your_api_key",
+)
+
+# .sync() returns the success model, an Error model, or None — it does NOT
+# raise for documented statuses. Check the type of what you get back.
+result = get_plan.sync("pl_missing", client=client)
+if isinstance(result, Error):
+    print(result.error.code, result.error.message)   # e.g. "NOT_FOUND"
+else:
+    print(result.id)
+```
+</CodeGroup>
+
+The error envelope is identical on the wire in every language —
+`{"error": {"code", "message"}}` — where `code` is a stable machine-readable
+string (`NOT_FOUND`, `VALIDATION_ERROR`, …) and `message` is human-readable.
+
+<Warning>
+The Python client only *returns* an `Error` for statuses the OpenAPI spec
+documents. For an **undocumented** status it raises `errors.UnexpectedStatus`
+(when `raise_on_unexpected_status=True`, the default), and a timeout raises
+`httpx.TimeoutException`. To read the raw status code, call the
+**`.sync_detailed(...)`** variant — it returns a `Response` with
+`.status_code`, `.parsed`, `.content`, and `.headers` instead of just the
+parsed body.
+</Warning>
+
+<CodeGroup>
+```python Python
+from http import HTTPStatus
+
+from recurso import errors
+from recurso.api.plans import get_plan
+from recurso.models import Error
+
+try:
+    resp = get_plan.sync_detailed("pl_missing", client=client)
+    print(resp.status_code)                    # HTTPStatus, e.g. HTTPStatus.NOT_FOUND
+    if isinstance(resp.parsed, Error):
+        print(resp.parsed.error.code)
+except errors.UnexpectedStatus as e:
+    print("undocumented status:", e.status_code)
+```
+</CodeGroup>
+
+## Retrying transient failures
+
+Retry only **transient** failures — HTTP `429` (rate limited) and `5xx`
+(server-side), plus connection/timeout errors. Never retry a `4xx` like
+`400`/`404`/`409`; those are deterministic and a retry just repeats the failure.
+Back off exponentially between attempts.
+
+<CodeGroup>
+```typescript Node
+import axios from 'axios';
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 4): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      // Retry on 429, any 5xx, or a network error (no response).
+      const transient = status === 429 || (status !== undefined && status >= 500) ||
+        (axios.isAxiosError(err) && err.response === undefined);
+      if (!transient || attempt >= maxAttempts) throw err;
+      await sleep(2 ** attempt * 100); // 200ms, 400ms, 800ms
+    }
+  }
+}
+
+const invoice = await withRetry(() => recurso.invoices.get('inv_123'));
+```
+
+```go Go
+import (
+	"context"
+	"errors"
+	"time"
+
+	recurso "github.com/recurso-dev/recurso-go"
+)
+
+func withRetry[T any](ctx context.Context, fn func() (T, error), maxAttempts int) (T, error) {
+	var zero T
+	for attempt := 1; ; attempt++ {
+		out, err := fn()
+		if err == nil {
+			return out, nil
+		}
+
+		// Retry on 429 / 5xx. A non-APIError is a transport error — also retry.
+		var apiErr *recurso.APIError
+		retryable := true
+		if errors.As(err, &apiErr) {
+			retryable = apiErr.StatusCode == 429 || apiErr.StatusCode >= 500
+		}
+		if !retryable || attempt >= maxAttempts {
+			return zero, err
+		}
+
+		select {
+		case <-time.After(time.Duration(1<<attempt) * 100 * time.Millisecond):
+		case <-ctx.Done():
+			return zero, ctx.Err()
+		}
+	}
+}
+
+// invoice, err := withRetry(ctx, func() (*recurso.Invoice, error) {
+// 	return client.Invoices.Get(ctx, "inv_123")
+// }, 4)
+```
+
+```python Python
+import time
+
+import httpx
+
+from recurso.api.invoices import get_invoice
+from recurso.models import Error
+
+
+def with_retry(call, *, max_attempts=4):
+    for attempt in range(1, max_attempts + 1):
+        try:
+            resp = call()  # a .sync_detailed(...) call, so we can see the status
+        except httpx.TimeoutException:
+            if attempt == max_attempts:
+                raise
+            time.sleep(2**attempt * 0.1)
+            continue
+
+        code = int(resp.status_code)
+        if code < 400:
+            return resp.parsed
+        # Retry 429 / 5xx; surface deterministic 4xx immediately.
+        if (code == 429 or code >= 500) and attempt < max_attempts:
+            time.sleep(2**attempt * 0.1)  # 0.2s, 0.4s, 0.8s
+            continue
+        return resp.parsed  # an Error model — let the caller inspect it
+
+result = with_retry(lambda: get_invoice.sync_detailed("inv_123", client=client))
+```
+</CodeGroup>
+
+<Info>
+Add jitter and a cap in production, and honor a `Retry-After` header on `429`
+when present. The examples keep the schedule fixed for clarity.
+</Info>
+
+## Idempotency
+
+Retrying a money-moving or ingestion call is only safe if the server can tell a
+retry from a genuinely new request. Recurso's usage-ingestion path takes a
+caller-supplied **`transaction_id`**: a retried event with the same
+`(subscription, transaction_id)` collapses to the original instead of
+double-counting (the response reports the original event and a `duplicate`
+status).
+
+Generate the key **once per logical event**, before the first attempt, and reuse
+the *same* key on every retry.
+
+<CodeGroup>
+```typescript Node
+import { randomUUID } from 'crypto';
+
+const transactionId = randomUUID(); // computed once, reused across retries
+
+await withRetry(() =>
+  recurso.usage.record({
+    subscription_id: 'sub_123',
+    customer_id: 'cus_123',
+    dimension: 'api_calls',
+    quantity: 1000,
+    transaction_id: transactionId,
+  }),
+);
+```
+
+```go Go
+import "github.com/google/uuid"
+
+transactionID := uuid.NewString() // computed once, reused across retries
+
+_, err := withRetry(ctx, func() (*recurso.UsageRecordResult, error) {
+	return client.Usage.Record(ctx, &recurso.UsageRecordParams{
+		SubscriptionID: "sub_123",
+		CustomerID:     "cus_123",
+		Dimension:      "api_calls",
+		Quantity:       1000,
+		TransactionID:  transactionID,
+	})
+}, 4)
+```
+
+```python Python
+import uuid
+
+from recurso.api.usage import record_usage_event
+from recurso.models import RecordUsageEventBody
+
+transaction_id = str(uuid.uuid4())  # computed once, reused across retries
+
+record_usage_event.sync(
+    client=client,
+    body=RecordUsageEventBody(
+        subscription_id=uuid.UUID("00000000-0000-0000-0000-0000000000123"),
+        customer_id=uuid.UUID("00000000-0000-0000-0000-0000000000123"),
+        dimension="api_calls",
+        quantity=1000,
+        transaction_id=transaction_id,
+    ),
+)
+```
+</CodeGroup>
+
+<Warning>
+A fresh `transaction_id` per retry defeats the point — every attempt looks new
+and you double-count. The key must be stable for the life of the event you are
+recording.
+</Warning>
+
+## Pagination
+
+List endpoints default to a small page. Always pass an explicit `limit` and loop
+until a short page comes back.
+
+<Warning>
+Paging style is **not** uniform. Resource lists like `plans` page with
+**`limit` + `page`** (1-based). Delivery, event, and usage-event feeds page with
+**`limit` + `offset`** (0-based). Check the params type for the endpoint you are
+calling.
+</Warning>
+
+Page-based loop over a resource list (`plans`):
+
+<CodeGroup>
+```typescript Node
+async function allPlans() {
+  const limit = 100;
+  const out = [];
+  for (let page = 1; ; page++) {
+    const res = await recurso.plans.list({ limit, page });
+    const batch = res.data ?? [];
+    out.push(...batch);
+    if (batch.length < limit) break; // short page => last page
+  }
+  return out;
+}
+```
+
+```go Go
+func allPlans(ctx context.Context, client *recurso.Client) ([]recurso.Plan, error) {
+	const limit = 100
+	var out []recurso.Plan
+	for page := 1; ; page++ {
+		batch, err := client.Plans.List(ctx, &recurso.PlanListParams{
+			Limit: limit,
+			Page:  page,
+		})
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, batch...)
+		if len(batch) < limit { // short page => last page
+			break
+		}
+	}
+	return out, nil
+}
+```
+
+```python Python
+from recurso.api.plans import list_plans
+from recurso.models import Error
+
+
+def all_plans(client):
+    limit, page, out = 100, 1, []
+    while True:
+        res = list_plans.sync(client=client, limit=limit, page=page)
+        if isinstance(res, Error):
+            raise RuntimeError(res.error.message)
+        batch = res.data or []
+        out.extend(batch)
+        if len(batch) < limit:  # short page => last page
+            break
+        page += 1
+    return out
+```
+</CodeGroup>
+
+Offset-based loop over a feed (webhook deliveries) — advance `offset` by the
+page size instead of incrementing a page number:
+
+<CodeGroup>
+```typescript Node
+async function allDeliveries(endpointId: string) {
+  const limit = 100;
+  const out = [];
+  for (let offset = 0; ; offset += limit) {
+    const res = await recurso.webhooks.deliveries(endpointId, { limit, offset });
+    const batch = res.data ?? [];
+    out.push(...batch);
+    if (batch.length < limit) break;
+  }
+  return out;
+}
+```
+
+```go Go
+func allDeliveries(ctx context.Context, client *recurso.Client, endpointID string) ([]recurso.EventDelivery, error) {
+	const limit = 100
+	var out []recurso.EventDelivery
+	for offset := 0; ; offset += limit {
+		batch, err := client.Webhooks.Deliveries(ctx, endpointID, &recurso.DeliveryListParams{
+			Limit:  limit,
+			Offset: offset,
+		})
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, batch...)
+		if len(batch) < limit {
+			break
+		}
+	}
+	return out, nil
+}
+```
+
+```python Python
+from recurso.api.webhooks import list_webhook_endpoint_deliveries
+from recurso.models import Error
+
+
+def all_deliveries(client, endpoint_id):
+    limit, offset, out = 100, 0, []
+    while True:
+        res = list_webhook_endpoint_deliveries.sync(
+            endpoint_id, client=client, limit=limit, offset=offset,
+        )
+        if isinstance(res, Error):
+            raise RuntimeError(res.error.message)
+        batch = res.data or []
+        out.extend(batch)
+        if len(batch) < limit:
+            break
+        offset += limit
+    return out
+```
+</CodeGroup>
+
+## Related
+
+- [Managing webhook endpoints](/sdk-guides/workflows/webhooks) — deliveries and redelivery
+- [Usage-based billing](/sdk-guides/workflows/usage-based-billing) — where `transaction_id` matters most
+- [SDK overview](/sdk-guides/overview) — shared concepts (auth, minor units, base URL)
+- [Node guide](/sdk-guides/node) · [Go guide](/sdk-guides/go) · [Python guide](/sdk-guides/python)
