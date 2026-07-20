@@ -1,0 +1,259 @@
+---
+title: "Bill a customer"
+description: "Create a plan, a customer, and a subscription, then read the resulting first invoice — side by side in Node.js, Go, and Python"
+---
+
+## Overview
+
+This is the shortest path to money: define a recurring **plan**, create a
+**customer**, subscribe the customer to the plan, and read the **invoice** that
+the subscription generates. All three SDKs cover the same REST surface, so the
+steps line up one-to-one — only the idiom differs.
+
+Creating a subscription **also generates its first invoice** in the same call,
+so the last step is simply to fetch it back.
+
+<Info>
+**Money is in minor units.** Every amount is an integer in the currency's
+smallest unit — `2900` is $29.00. See
+[the concepts overview](/sdk-guides/overview) for the shared rules.
+</Info>
+
+<Steps>
+
+<Step title="Construct a client">
+Each SDK authenticates with your API key as a bearer token. Point the client at
+your API host (`https://api.recurso.dev`, or `http://localhost:8080` for a local
+`make demo` stack).
+
+<Info>
+The Python client is generated from the OpenAPI spec. Use `AuthenticatedClient`,
+give it the host **without** the `/v1` prefix (operations add it), and call
+per-operation `sync(...)` functions. Each `sync` returns either the parsed model
+or an `Error` model — check with `isinstance(result, Error)` in production.
+</Info>
+
+<CodeGroup>
+```typescript Node
+import { Recurso } from 'recurso';
+
+const recurso = new Recurso('sk_live_your_api_key', {
+  baseUrl: 'https://api.recurso.dev',
+});
+```
+
+```go Go
+package main
+
+import (
+	"context"
+	"log"
+
+	recurso "github.com/recurso-dev/recurso-go"
+)
+
+func main() {
+	ctx := context.Background()
+	client := recurso.NewClient("sk_live_your_api_key")
+	_ = ctx
+	_ = client
+}
+```
+
+```python Python
+from recurso import AuthenticatedClient
+
+client = AuthenticatedClient(
+    base_url="https://api.recurso.dev",
+    token="sk_live_your_api_key",
+)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create a plan">
+A plan carries a `code`, a billing interval, and a price in minor units. The
+price currency is set here.
+
+<CodeGroup>
+```typescript Node
+const plan = await recurso.plans.create({
+  name: 'Pro Plan',
+  code: 'PRO-USD',
+  amount: 2900, // $29.00 in minor units
+  currency: 'USD',
+  interval_unit: 'month',
+  interval_count: 1,
+});
+```
+
+```go Go
+plan, err := client.Plans.Create(ctx, &recurso.PlanCreateParams{
+	Name:          "Pro Plan",
+	Code:          "PRO-USD",
+	Amount:        2900, // $29.00 in minor units
+	Currency:      "USD",
+	IntervalUnit:  "month",
+	IntervalCount: 1,
+})
+if err != nil {
+	log.Fatal(err)
+}
+```
+
+```python Python
+from recurso.api.plans import create_plan
+from recurso.models import CreatePlanRequest, CreatePlanRequestIntervalUnit
+
+plan = create_plan.sync(
+    client=client,
+    body=CreatePlanRequest(
+        name="Pro Plan",
+        code="PRO-USD",
+        amount=2900,  # $29.00 in minor units
+        currency="USD",
+        interval_unit=CreatePlanRequestIntervalUnit.MONTH,
+        interval_count=1,
+    ),
+)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create a customer">
+A customer needs at minimum an email and a name. Billing address fields are
+optional; the Node client defaults `country` to `US`.
+
+<CodeGroup>
+```typescript Node
+const customer = await recurso.customers.create({
+  name: 'Jane User',
+  email: 'jane@example.com',
+  country: 'US',
+});
+```
+
+```go Go
+customer, err := client.Customers.Create(ctx, &recurso.CustomerCreateParams{
+	Name:    "Jane User",
+	Email:   "jane@example.com",
+	Country: "US",
+})
+if err != nil {
+	log.Fatal(err)
+}
+```
+
+```python Python
+from recurso.api.customers import create_customer
+from recurso.models import CreateCustomerRequest
+
+customer = create_customer.sync(
+    client=client,
+    body=CreateCustomerRequest(
+        name="Jane User",
+        email="jane@example.com",
+        country="US",
+    ),
+)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create a subscription">
+Subscribe the customer to the plan. This one call creates the subscription,
+applies any coupon, and **generates the first invoice**.
+
+<CodeGroup>
+```typescript Node
+const subscription = await recurso.subscriptions.create({
+  customer_id: customer.id,
+  plan_id: plan.id,
+});
+```
+
+```go Go
+subscription, err := client.Subscriptions.Create(ctx, &recurso.SubscriptionCreateParams{
+	CustomerID: customer.ID,
+	PlanID:     plan.ID,
+})
+if err != nil {
+	log.Fatal(err)
+}
+```
+
+```python Python
+from recurso.api.subscriptions import create_subscription
+from recurso.models import CreateSubscriptionRequest
+
+subscription = create_subscription.sync(
+    client=client,
+    body=CreateSubscriptionRequest(
+        customer_id=customer.id,
+        plan_id=plan.id,
+    ),
+)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Fetch the resulting invoice">
+The invoice list is newest-first. There is **no server-side `customer_id`
+filter** on the invoice list in any SDK, so pull a page and pick the invoice
+belonging to your new subscription (or customer) client-side.
+
+<CodeGroup>
+```typescript Node
+const { data: invoices } = await recurso.invoices.list({ limit: 100 });
+const firstInvoice = invoices.find(
+  (inv) => inv.subscription_id === subscription.id,
+);
+console.log(firstInvoice?.invoice_number, firstInvoice?.total); // total in minor units
+```
+
+```go Go
+invoices, err := client.Invoices.List(ctx, &recurso.InvoiceListParams{Limit: 100})
+if err != nil {
+	log.Fatal(err)
+}
+
+var firstInvoice *recurso.Invoice
+for i := range invoices {
+	if invoices[i].SubscriptionID == subscription.ID {
+		firstInvoice = &invoices[i]
+		break
+	}
+}
+if firstInvoice != nil {
+	log.Printf("%s total=%d", firstInvoice.InvoiceNumber, firstInvoice.Total) // minor units
+}
+```
+
+```python Python
+from recurso.api.invoices import list_invoices
+
+result = list_invoices.sync(client=client)  # newest first, no query params
+first_invoice = next(
+    (inv for inv in result.data if inv.subscription_id == subscription.id),
+    None,
+)
+if first_invoice is not None:
+    print(first_invoice.invoice_number, first_invoice.total)  # total in minor units
+```
+</CodeGroup>
+
+<Note>
+`invoice.total`, `amount_due`, and every other amount are integers in minor
+units. Convert to a decimal only for display.
+</Note>
+</Step>
+
+</Steps>
+
+## Related
+
+- [Node.js SDK guide](/sdk-guides/node)
+- [Go SDK guide](/sdk-guides/go)
+- [Python SDK guide](/sdk-guides/python)
+- [Usage-based billing workflow](/sdk-guides/workflows/usage-based-billing)
+- [Subscription lifecycle workflow](/sdk-guides/workflows/subscription-lifecycle)

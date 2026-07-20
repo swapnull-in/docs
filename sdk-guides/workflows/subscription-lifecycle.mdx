@@ -1,0 +1,221 @@
+---
+title: "Subscription lifecycle"
+description: "Preview and apply a plan change with proration, then pause, resume, and cancel a subscription — in Node.js, Go, and Python"
+---
+
+## Overview
+
+Once a subscription is live, you manage it through lifecycle actions: change the
+plan (upgrade/downgrade, with a proration preview first), **pause** it,
+**resume** it, and eventually **cancel** it. Each SDK exposes these as
+subscription-level operations.
+
+<Info>
+All proration amounts are integers in **minor units**. A plan change previews a
+net credit/charge before you commit it.
+</Info>
+
+<Steps>
+
+<Step title="Construct a client">
+<CodeGroup>
+```typescript Node
+import { Recurso } from 'recurso';
+
+const recurso = new Recurso('sk_live_your_api_key', {
+  baseUrl: 'https://api.recurso.dev',
+});
+```
+
+```go Go
+ctx := context.Background()
+client := recurso.NewClient("sk_live_your_api_key")
+```
+
+```python Python
+from recurso import AuthenticatedClient
+
+client = AuthenticatedClient(
+    base_url="https://api.recurso.dev",
+    token="sk_live_your_api_key",
+)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Preview a plan change (proration)">
+Preview the proration for switching to a new plan **before** committing.
+Nothing is charged or persisted — you get back the credit for unused time, the
+charge for the new plan, the net, and whether it's an upgrade.
+
+<Warning>
+**Node gap.** The Node SDK does **not** expose the plan-change preview
+(`GET /subscriptions/{id}/preview-change`); `recurso.subscriptions` has no
+`previewChange` method. Either call that endpoint directly, or skip straight to
+applying the change in the next step. Go and Python both expose it.
+</Warning>
+
+<CodeGroup>
+```typescript Node
+// Not available in the Node SDK — no recurso.subscriptions.previewChange(...).
+// Apply the change directly (next step), or call the REST endpoint yourself:
+//   GET /v1/subscriptions/{id}/preview-change?plan_id={newPlanId}
+```
+
+```go Go
+preview, err := client.Subscriptions.PreviewChange(ctx, subscription.ID, newPlan.ID)
+if err != nil {
+	log.Fatal(err)
+}
+log.Printf("net=%d total=%d upgrade=%t", preview.NetAmount, preview.TotalAmount, preview.IsUpgrade) // minor units
+```
+
+```python Python
+from recurso.api.subscriptions import preview_plan_change
+
+preview = preview_plan_change.sync(
+    id=subscription.id,
+    client=client,
+    plan_id=new_plan.id,
+)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Apply the plan change">
+Committing the change updates the subscription to the new plan and prorates per
+the preview.
+
+<CodeGroup>
+```typescript Node
+const updated = await recurso.subscriptions.update(subscription.id, {
+  plan_id: newPlan.id,
+});
+```
+
+```go Go
+updated, err := client.Subscriptions.Update(ctx, subscription.ID, &recurso.SubscriptionUpdateParams{
+	PlanID: newPlan.ID,
+})
+if err != nil {
+	log.Fatal(err)
+}
+```
+
+```python Python
+from recurso.api.subscriptions import update_subscription
+from recurso.models import UpdateSubscriptionBody
+
+updated = update_subscription.sync(
+    id=subscription.id,
+    client=client,
+    body=UpdateSubscriptionBody(plan_id=new_plan.id),
+)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Pause the subscription">
+Pausing halts billing without cancelling. The subscription can be resumed later.
+
+<CodeGroup>
+```typescript Node
+await recurso.subscriptions.pause(subscription.id);
+```
+
+```go Go
+_, err = client.Subscriptions.Pause(ctx, subscription.ID)
+if err != nil {
+	log.Fatal(err)
+}
+```
+
+```python Python
+from recurso.api.subscriptions import pause_subscription
+
+pause_subscription.sync(id=subscription.id, client=client)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Resume the subscription">
+Resume a paused subscription to restart billing on its schedule.
+
+<CodeGroup>
+```typescript Node
+await recurso.subscriptions.resume(subscription.id);
+```
+
+```go Go
+_, err = client.Subscriptions.Resume(ctx, subscription.ID)
+if err != nil {
+	log.Fatal(err)
+}
+```
+
+```python Python
+from recurso.api.subscriptions import resume_subscription
+
+resume_subscription.sync(id=subscription.id, client=client)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Cancel the subscription">
+Cancellation defaults to **period end** (the customer keeps access until the
+current period closes). Pass `immediately: true` to cancel now. A `reason` is
+recorded; Python takes it as an enum.
+
+<CodeGroup>
+```typescript Node
+await recurso.subscriptions.cancel(subscription.id, {
+  reason: 'too_expensive',
+  // immediately: true, // cancel now instead of at period end
+});
+```
+
+```go Go
+immediately := true
+result, err := client.Subscriptions.Cancel(ctx, subscription.ID, &recurso.SubscriptionCancelParams{
+	Reason:      "too_expensive",
+	Immediately: &immediately, // omit for cancel-at-period-end
+})
+if err != nil {
+	log.Fatal(err)
+}
+log.Printf("status=%s", result.Status)
+```
+
+```python Python
+from recurso.api.subscriptions import cancel_subscription
+from recurso.models import CancelSubscriptionRequest, CancelSubscriptionRequestReason
+
+cancel_subscription.sync(
+    id=subscription.id,
+    client=client,
+    body=CancelSubscriptionRequest(
+        reason=CancelSubscriptionRequestReason.TOO_EXPENSIVE,
+        immediately=True,  # omit for cancel-at-period-end
+    ),
+)
+```
+</CodeGroup>
+
+<Note>
+A cancelled subscription can often be brought back with
+`recurso.subscriptions.reactivate(id)` (Node) /
+`client.Subscriptions.Reactivate(ctx, id)` (Go) /
+`reactivate_subscription.sync(id=..., client=client)` (Python), subject to its
+current status.
+</Note>
+</Step>
+
+</Steps>
+
+## Related
+
+- [Node.js SDK guide](/sdk-guides/node)
+- [Go SDK guide](/sdk-guides/go)
+- [Python SDK guide](/sdk-guides/python)
+- [Bill a customer workflow](/sdk-guides/workflows/bill-a-customer)
+- [Usage-based billing workflow](/sdk-guides/workflows/usage-based-billing)

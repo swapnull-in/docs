@@ -1,0 +1,228 @@
+---
+title: "Go SDK"
+description: "Integrate Recurso from Go 1.22+ — services, params structs, and context-aware calls"
+---
+
+## Install
+
+```bash
+go get github.com/recurso-dev/recurso-go
+```
+
+The SDK is standard-library only (no third-party dependencies) and requires
+**Go 1.22+**. Import it as `recurso`:
+
+```go
+import recurso "github.com/recurso-dev/recurso-go"
+```
+
+## Create a client
+
+`NewClient` takes your API key (sent as an `Authorization: Bearer <key>`
+bearer token) and optional functional options:
+
+```go
+client := recurso.NewClient("sk_live_your_api_key")
+```
+
+By default the client targets production (`https://api.recurso.dev/v1` — the
+base URL already includes the `/v1` prefix). Override it for a self-hosted,
+staging, or local `make demo` stack with `WithBaseURL`, and supply your own
+`*http.Client` with `WithHTTPClient`:
+
+```go
+client := recurso.NewClient(
+	"sk_live_your_api_key",
+	recurso.WithBaseURL("http://localhost:8080/v1"),        // self-hosted / localhost
+	recurso.WithHTTPClient(&http.Client{Timeout: 30 * time.Second}),
+)
+```
+
+<Info>
+Amounts are **integers in the currency's smallest unit** — `2900` is $29.00.
+This avoids floating-point rounding; convert for display only.
+</Info>
+
+## The service idiom
+
+Every endpoint hangs off a typed service field on the `Client`. Each method
+takes a `context.Context` first, takes a `*…Params` struct for the body/filters,
+and returns `(result, error)`:
+
+```go
+result, err := client.Plans.Create(ctx, &recurso.PlanCreateParams{ /* ... */ })
+```
+
+The client exposes these services:
+
+| Service | Service | Service |
+| --- | --- | --- |
+| `client.Plans` | `client.Customers` | `client.Subscriptions` |
+| `client.Invoices` | `client.Usage` | `client.UsageAlerts` |
+| `client.BillableMetrics` | `client.Wallets` | `client.Coupons` |
+| `client.Quotes` | `client.Entitlements` | `client.CreditNotes` |
+| `client.Webhooks` | `client.Events` | `client.Gifts` |
+| `client.Referrals` | `client.Mandates` | `client.Ledger` |
+| `client.Analytics` | `client.Churn` | `client.CancelFlows` |
+| `client.DunningCampaigns` | `client.OfflinePayments` | `client.VirtualAccounts` |
+| `client.Organizations` | `client.Accounting` | `client.AuditLogs` |
+| `client.Developer` | `client.Account` | |
+
+## Worked example
+
+Create a plan, a customer, and a subscription; then read the subscription back
+and list all subscriptions.
+
+<Steps>
+  <Step title="Set up the client">
+    ```go
+    package main
+
+    import (
+    	"context"
+    	"errors"
+    	"log"
+
+    	recurso "github.com/recurso-dev/recurso-go"
+    )
+
+    func main() {
+    	ctx := context.Background()
+    	client := recurso.NewClient("sk_live_your_api_key")
+    ```
+  </Step>
+
+  <Step title="Create a plan">
+    Money is in minor units — `2900` is $29.00/month.
+
+    ```go
+    	plan, err := client.Plans.Create(ctx, &recurso.PlanCreateParams{
+    		Name:          "Pro Plan",
+    		Code:          "PRO-USD",
+    		Amount:        2900,
+    		Currency:      "USD",
+    		IntervalUnit:  "month",
+    		IntervalCount: 1,
+    	})
+    	if err != nil {
+    		log.Fatalf("create plan: %v", err)
+    	}
+    ```
+  </Step>
+
+  <Step title="Create a customer">
+    ```go
+    	customer, err := client.Customers.Create(ctx, &recurso.CustomerCreateParams{
+    		Name:    "Jane User",
+    		Email:   "jane@example.com",
+    		Country: "US",
+    	})
+    	if err != nil {
+    		log.Fatalf("create customer: %v", err)
+    	}
+    ```
+  </Step>
+
+  <Step title="Create a subscription">
+    Creating a subscription generates its first invoice. Inspect a typed
+    `*recurso.APIError` for structured failures (see below).
+
+    ```go
+    	sub, err := client.Subscriptions.Create(ctx, &recurso.SubscriptionCreateParams{
+    		CustomerID: customer.ID,
+    		PlanID:     plan.ID,
+    	})
+    	if err != nil {
+    		var apiErr *recurso.APIError
+    		if errors.As(err, &apiErr) {
+    			log.Fatalf("recurso %d %s: %s", apiErr.StatusCode, apiErr.Code, apiErr.Message)
+    		}
+    		log.Fatalf("create subscription: %v", err)
+    	}
+    	log.Printf("created subscription %s (%s)", sub.ID, sub.Status)
+    ```
+  </Step>
+
+  <Step title="Read it back and list">
+    `Get` takes a bare ID; list methods take a `*…ListParams`.
+
+    ```go
+    	fetched, err := client.Subscriptions.Get(ctx, sub.ID)
+    	if err != nil {
+    		log.Fatalf("get subscription: %v", err)
+    	}
+    	log.Printf("period ends %s", fetched.CurrentPeriodEnd)
+
+    	subs, err := client.Subscriptions.List(ctx, &recurso.SubscriptionListParams{
+    		Status: "active",
+    		Limit:  50,
+    	})
+    	if err != nil {
+    		log.Fatalf("list subscriptions: %v", err)
+    	}
+    	log.Printf("%d active subscriptions", len(subs))
+    }
+    ```
+  </Step>
+</Steps>
+
+## Error handling
+
+Any non-2xx response is returned as a `*recurso.APIError`. It carries a stable
+machine-readable `Code` (e.g. `"NOT_FOUND"`, `"VALIDATION_ERROR"`), a
+human-readable `Message`, and the HTTP `StatusCode`. Unwrap it with
+`errors.As`:
+
+```go
+_, err := client.Plans.Get(ctx, "plan_missing")
+var apiErr *recurso.APIError
+if errors.As(err, &apiErr) {
+	switch apiErr.Code {
+	case "NOT_FOUND":
+		// handle a 404
+	case "VALIDATION_ERROR":
+		log.Printf("bad request: %s", apiErr.Message)
+	default:
+		log.Printf("recurso %d %s: %s", apiErr.StatusCode, apiErr.Code, apiErr.Message)
+	}
+}
+```
+
+Non-API failures (network errors, a cancelled `context`) come back as ordinary
+errors, so always check `err != nil` before using the result.
+
+## Pagination
+
+Most list params take `Limit` plus a 1-based `Page`; pass an explicit `Limit`
+when you need the full set:
+
+```go
+customers, err := client.Customers.List(ctx, &recurso.CustomerListParams{
+	Country: "US",
+	Limit:   100,
+	Page:    2,
+})
+```
+
+The raw usage-event stream instead pages with `Limit` and `Offset` (limit is
+capped at 200, server default 50):
+
+```go
+events, err := client.Usage.ListEvents(ctx, &recurso.UsageEventListParams{
+	CustomerID: customer.ID,
+	Dimension:  "api_calls",
+	Limit:      200,
+	Offset:     0,
+})
+```
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Bill a customer" icon="user-plus" href="/sdk-guides/workflows/bill-a-customer">
+    Customer → plan → subscription → first invoice, end to end.
+  </Card>
+  <Card title="Usage-based billing" icon="chart-line" href="/sdk-guides/workflows/usage-based-billing">
+    Metric → plan charges → record usage → query and rate it.
+  </Card>
+</CardGroup>

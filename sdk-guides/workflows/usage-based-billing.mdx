@@ -1,0 +1,341 @@
+---
+title: "Usage-based billing"
+description: "Define a billable metric, attach usage charges to a plan, record idempotent usage events, and rate the current period — in Node.js, Go, and Python"
+---
+
+## Overview
+
+Usage-based (metered) billing rates real consumption at period close. The moving
+parts:
+
+1. A **billable metric** — a named aggregation (`count`, `sum`, `max`, `unique`)
+   over raw usage events. Its `code` doubles as the event **dimension**.
+2. A **usage charge** on a plan that prices that metric (per-unit or tiered).
+3. **Usage events** you record as consumption happens, each optionally carrying
+   a `transaction_id` for idempotency.
+4. A **rating** read — windowed usage buckets, or the live current-period amount.
+
+<Info>
+**Rate units differ from flat prices.** A per-unit or tier `unit_amount` is a
+**decimal string in major currency units** (e.g. `"0.0035"` = $0.0035 per unit).
+Flat plan prices and package amounts stay as integer minor units.
+</Info>
+
+<Steps>
+
+<Step title="Construct a client">
+<CodeGroup>
+```typescript Node
+import { Recurso } from 'recurso';
+
+const recurso = new Recurso('sk_live_your_api_key', {
+  baseUrl: 'https://api.recurso.dev',
+});
+```
+
+```go Go
+ctx := context.Background()
+client := recurso.NewClient("sk_live_your_api_key")
+```
+
+```python Python
+from recurso import AuthenticatedClient
+
+client = AuthenticatedClient(
+    base_url="https://api.recurso.dev",
+    token="sk_live_your_api_key",
+)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create a billable metric">
+The `code` is the dimension your events will report against and is immutable
+after creation. `field_name` is required only for the `unique` aggregation (the
+event property whose distinct values are counted) and forbidden otherwise.
+
+<CodeGroup>
+```typescript Node
+const metric = await recurso.billableMetrics.create({
+  name: 'API Calls',
+  code: 'api_calls',
+  aggregation_type: 'sum', // count | sum | max | unique
+});
+```
+
+```go Go
+metric, err := client.BillableMetrics.Create(ctx, &recurso.BillableMetricParams{
+	Name:            "API Calls",
+	Code:            "api_calls",
+	AggregationType: "sum", // count | sum | max | unique
+})
+if err != nil {
+	log.Fatal(err)
+}
+```
+
+```python Python
+from recurso.api.metering import create_billable_metric
+from recurso.models import BillableMetricInput, BillableMetricInputAggregationType
+
+metric = create_billable_metric.sync(
+    client=client,
+    body=BillableMetricInput(
+        name="API Calls",
+        code="api_calls",
+        aggregation_type=BillableMetricInputAggregationType.SUM,
+    ),
+)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Set usage charges on a plan">
+Charges use **PUT replace semantics**: the list you send becomes the plan's
+complete usage-charge set (charges absent from it are removed). Flat plan prices
+are untouched — a plan with both is hybrid (flat fee in advance, usage in
+arrears on the same renewal invoice). Reference the metric by its `id`.
+
+A **per-unit** charge prices every unit at one rate:
+
+<CodeGroup>
+```typescript Node
+await recurso.plans.setCharges(plan.id, [
+  {
+    metric_id: metric.id,
+    charge_model: 'per_unit',
+    amounts: {
+      USD: { unit_amount: '0.0035' }, // $0.0035 per unit (major units)
+    },
+  },
+]);
+```
+
+```go Go
+_, err = client.Plans.SetCharges(ctx, plan.ID, []recurso.ChargeParams{
+	{
+		MetricID:    metric.ID,
+		ChargeModel: "per_unit",
+		Amounts: map[string]recurso.ChargeAmounts{
+			"USD": {UnitAmount: "0.0035"}, // $0.0035 per unit (major units)
+		},
+	},
+})
+if err != nil {
+	log.Fatal(err)
+}
+```
+
+```python Python
+# See the note below: the ChargeAmounts value model is missing from the
+# generated package, so this body cannot currently be constructed in Python.
+from uuid import UUID
+
+from recurso.api.metering import set_plan_charges
+from recurso.models import ChargeInput, ChargeInputAmounts, ChargeInputChargeModel
+```
+</CodeGroup>
+
+A **tiered** (graduated) charge prices bands separately; the final tier is
+unbounded (`up_to: null`):
+
+<CodeGroup>
+```typescript Node
+await recurso.plans.setCharges(plan.id, [
+  {
+    metric_id: metric.id,
+    charge_model: 'graduated',
+    amounts: {
+      USD: {
+        tiers: [
+          { up_to: 100000, unit_amount: '0.0035' }, // first 100k units
+          { up_to: null, unit_amount: '0.0020' }, // everything above
+        ],
+      },
+    },
+  },
+]);
+```
+
+```go Go
+first := int64(100000)
+_, err = client.Plans.SetCharges(ctx, plan.ID, []recurso.ChargeParams{
+	{
+		MetricID:    metric.ID,
+		ChargeModel: "graduated",
+		Amounts: map[string]recurso.ChargeAmounts{
+			"USD": {Tiers: []recurso.ChargeTier{
+				{UpTo: &first, UnitAmount: "0.0035"}, // first 100k units
+				{UpTo: nil, UnitAmount: "0.0020"},    // everything above
+			}},
+		},
+	},
+})
+if err != nil {
+	log.Fatal(err)
+}
+```
+
+```python Python
+# ChargeTier is available; ChargeAmounts (the per-currency value) is not.
+from recurso.models import ChargeTier
+```
+</CodeGroup>
+
+<Warning>
+**Python gap.** The `set_plan_charges` operation and `ChargeInput` /
+`ChargeInputAmounts` / `ChargeTier` models are present, but the `ChargeAmounts`
+value model that `ChargeInputAmounts` maps each currency to is **missing from
+the generated package** (its import is unresolved and no `charge_amounts.py`
+exists). Until that model is regenerated, build and send this one request body
+via raw HTTP (or the Node/Go SDK). Every other step in this workflow works in
+Python.
+</Warning>
+</Step>
+
+<Step title="Record usage events">
+Record consumption as it happens against the subscription and its dimension.
+Pass a `transaction_id` to make ingestion **idempotent**: a retried event with
+the same `(subscription, transaction_id)` collapses to the original instead of
+double-counting.
+
+<CodeGroup>
+```typescript Node
+await recurso.usage.record({
+  subscription_id: subscription.id,
+  customer_id: customer.id,
+  dimension: 'api_calls', // the metric's code
+  quantity: 1500,
+  transaction_id: 'req-2026-07-20-0001', // idempotency key
+});
+```
+
+```go Go
+_, err = client.Usage.Record(ctx, &recurso.UsageRecordParams{
+	SubscriptionID: subscription.ID,
+	CustomerID:     customer.ID,
+	Dimension:      "api_calls", // the metric's code
+	Quantity:       1500,
+	TransactionID:  "req-2026-07-20-0001", // idempotency key
+})
+if err != nil {
+	log.Fatal(err)
+}
+```
+
+```python Python
+from recurso.api.usage import record_usage_event
+from recurso.models import RecordUsageEventBody
+
+record_usage_event.sync(
+    client=client,
+    body=RecordUsageEventBody(
+        subscription_id=subscription.id,
+        customer_id=customer.id,
+        dimension="api_calls",  # the metric's code
+        quantity=1500,
+        transaction_id="req-2026-07-20-0001",  # idempotency key
+    ),
+)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Query windowed usage">
+Aggregate events into time buckets over a window. At least one of
+`subscription_id` or `customer_id` is required; the window defaults to the last
+30 days at day granularity.
+
+<CodeGroup>
+```typescript Node
+const { data: buckets } = await recurso.usage.query({
+  subscription_id: subscription.id,
+  from: '2026-07-01T00:00:00Z',
+  to: '2026-07-31T23:59:59Z',
+  granularity: 'day', // day | month
+});
+```
+
+```go Go
+usage, err := client.Usage.Query(ctx, &recurso.UsageQueryParams{
+	SubscriptionID: subscription.ID,
+	From:           "2026-07-01T00:00:00Z",
+	To:             "2026-07-31T23:59:59Z",
+	Granularity:    "day", // day | month
+})
+if err != nil {
+	log.Fatal(err)
+}
+for _, b := range usage.Data {
+	log.Printf("%s %s=%d", b.Period, b.Dimension, b.Quantity)
+}
+```
+
+```python Python
+import datetime
+
+from recurso.api.usage import query_usage
+from recurso.models import QueryUsageGranularity
+
+usage = query_usage.sync(
+    client=client,
+    subscription_id=subscription.id,
+    from_=datetime.datetime(2026, 7, 1, tzinfo=datetime.timezone.utc),
+    to=datetime.datetime(2026, 7, 31, 23, 59, 59, tzinfo=datetime.timezone.utc),
+    granularity=QueryUsageGranularity.DAY,
+)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Get the current usage amount">
+Rating preview: what the current period's metered usage would bill to if
+invoiced now, per charge, with a `total_amount` **in minor units**.
+
+<CodeGroup>
+```typescript Node
+const amount = await recurso.subscriptions.usageAmount(subscription.id);
+console.log(amount.total_amount, amount.currency); // total in minor units
+for (const charge of amount.charges) {
+  console.log(charge.metric_code, charge.quantity, charge.amount);
+}
+```
+
+```go Go
+amount, err := client.Subscriptions.UsageAmount(ctx, subscription.ID)
+if err != nil {
+	log.Fatal(err)
+}
+log.Printf("total=%d %s", amount.TotalAmount, amount.Currency) // minor units
+for _, c := range amount.Charges {
+	log.Printf("%s qty=%d amount=%d", c.MetricCode, c.Quantity, c.Amount)
+}
+```
+
+```python Python
+from recurso.api.metering import get_subscription_usage_amount
+
+amount = get_subscription_usage_amount.sync(
+    id=subscription.id,
+    client=client,
+)
+```
+</CodeGroup>
+
+<Note>
+`recurso.subscriptions.usage(id)` (Node) / `client.Subscriptions.Usage(ctx, id)`
+(Go) / `get_subscription_usage.sync(...)` (Python `recurso.api.usage`) is the
+sibling read: raw current-period **quantities** per dimension plus lifetime
+totals and entitlement limits, without rating them to money.
+</Note>
+</Step>
+
+</Steps>
+
+## Related
+
+- [Node.js SDK guide](/sdk-guides/node)
+- [Go SDK guide](/sdk-guides/go)
+- [Python SDK guide](/sdk-guides/python)
+- [Bill a customer workflow](/sdk-guides/workflows/bill-a-customer)
+- [Subscription lifecycle workflow](/sdk-guides/workflows/subscription-lifecycle)
