@@ -127,12 +127,28 @@ if err != nil {
 ```
 
 ```python Python
-# See the note below: the ChargeAmounts value model is missing from the
-# generated package, so this body cannot currently be constructed in Python.
-from uuid import UUID
-
 from recurso.api.metering import set_plan_charges
-from recurso.models import ChargeInput, ChargeInputAmounts, ChargeInputChargeModel
+from recurso.models import (
+    ChargeAmounts,
+    ChargeInput,
+    ChargeInputAmounts,
+    ChargeInputChargeModel,
+)
+
+amounts = ChargeInputAmounts()
+amounts["USD"] = ChargeAmounts(unit_amount="0.0035")  # $0.0035 per unit
+
+set_plan_charges.sync(
+    plan.id,
+    client=client,
+    body=[
+        ChargeInput(
+            metric_id=metric.id,
+            charge_model=ChargeInputChargeModel.PER_UNIT,
+            amounts=amounts,
+        )
+    ],
+)
 ```
 </CodeGroup>
 
@@ -177,20 +193,35 @@ if err != nil {
 ```
 
 ```python Python
-# ChargeTier is available; ChargeAmounts (the per-currency value) is not.
-from recurso.models import ChargeTier
+from recurso.models import ChargeAmounts, ChargeInput, ChargeInputAmounts, ChargeInputChargeModel, ChargeTier
+
+amounts = ChargeInputAmounts()
+amounts["USD"] = ChargeAmounts(
+    tiers=[
+        ChargeTier(up_to=100000, unit_amount="0.0035"),  # first 100k units
+        ChargeTier(up_to=None, unit_amount="0.0020"),    # everything above
+    ]
+)
+
+set_plan_charges.sync(
+    plan.id,
+    client=client,
+    body=[
+        ChargeInput(
+            metric_id=metric.id,
+            charge_model=ChargeInputChargeModel.GRADUATED,
+            amounts=amounts,
+        )
+    ],
+)
 ```
 </CodeGroup>
 
-<Warning>
-**Python gap.** The `set_plan_charges` operation and `ChargeInput` /
-`ChargeInputAmounts` / `ChargeTier` models are present, but the `ChargeAmounts`
-value model that `ChargeInputAmounts` maps each currency to is **missing from
-the generated package** (its import is unresolved and no `charge_amounts.py`
-exists). Until that model is regenerated, build and send this one request body
-via raw HTTP (or the Node/Go SDK). Every other step in this workflow works in
-Python.
-</Warning>
+<Info>
+The `ChargeAmounts` model was missing from an earlier generated build of the
+Python client; it's now present, so `set_plan_charges` works in all three SDKs.
+Install a Python build that includes it (from a current checkout of the repo).
+</Info>
 </Step>
 
 <Step title="Record usage events">

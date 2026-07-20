@@ -48,18 +48,14 @@ Preview the proration for switching to a new plan **before** committing.
 Nothing is charged or persisted — you get back the credit for unused time, the
 charge for the new plan, the net, and whether it's an upgrade.
 
-<Warning>
-**Node gap.** The Node SDK does **not** expose the plan-change preview
-(`GET /subscriptions/{id}/preview-change`); `recurso.subscriptions` has no
-`previewChange` method. Either call that endpoint directly, or skip straight to
-applying the change in the next step. Go and Python both expose it.
-</Warning>
+<Info>
+`previewChange` was added to the Node SDK — make sure you're on a release that
+includes it (published after v1.5.0). All three SDKs now expose the preview.
+</Info>
 
 <CodeGroup>
 ```typescript Node
-// Not available in the Node SDK — no recurso.subscriptions.previewChange(...).
-// Apply the change directly (next step), or call the REST endpoint yourself:
-//   GET /v1/subscriptions/{id}/preview-change?plan_id={newPlanId}
+const preview = await recurso.subscriptions.previewChange(subscription.id, newPlan.id);
 ```
 
 ```go Go
