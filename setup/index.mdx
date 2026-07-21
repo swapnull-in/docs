@@ -13,20 +13,45 @@ endpoint) — a setup guide is the fastest path from "off" to "working".
 Every guide follows the same shape: **Overview → numbered Steps → Verify → Next steps**,
 and shows both the **dashboard** path and the **API** where relevant.
 
-## Choose your setup
+## Monetization
+
+<CardGroup cols={2}>
+  <Card title="Prepaid wallets" icon="wallet" href="/setup/wallets">
+    Sell prepaid credit that drains before any card, with auto-recharge.
+  </Card>
+  <Card title="Usage alerts" icon="bell" href="/setup/usage-alerts">
+    Notify on metered-usage thresholds, once per period.
+  </Card>
+  <Card title="Coupons & discounts" icon="tag" href="/setup/coupons">
+    Percentage or fixed-amount promos, one-time or recurring.
+  </Card>
+  <Card title="Credit notes & refunds" icon="receipt" href="/setup/credit-notes">
+    Cash refunds or spendable account credit.
+  </Card>
+</CardGroup>
+
+## Payments & recovery
+
+<CardGroup cols={2}>
+  <Card title="Payment gateways (BYO)" icon="credit-card" href="/setup/payment-gateway">
+    Connect your own Stripe or Razorpay account for autopay.
+  </Card>
+  <Card title="Dunning" icon="rotate" href="/setup/dunning">
+    Recover failed payments with smart retries + reminder campaigns.
+  </Card>
+</CardGroup>
+
+## Compliance
 
 <CardGroup cols={2}>
   <Card title="EU e-invoicing" icon="file-invoice" href="/setup/eu-einvoicing">
     Turn on EN 16931 / UBL 2.1 e-invoice generation, per tenant.
   </Card>
   <Card title="US customer exemptions" icon="file-shield" href="/setup/us-exemptions">
-    Record resale/government exemptions and pass them through to your tax provider.
+    Record resale/government exemptions and pass them to your tax provider.
   </Card>
   <Card title="US registrations & liability" icon="clipboard-check" href="/setup/us-registrations">
     Track where you're registered and pull the per-state liability report.
-  </Card>
-  <Card title="Payment gateways (BYO)" icon="credit-card" href="/setup/payment-gateway">
-    Connect your own Stripe or Razorpay account for autopay.
   </Card>
 </CardGroup>
 
@@ -40,7 +65,8 @@ Some setups already have a full end-to-end tutorial:
 - [Set up US sales tax end-to-end](/tutorials/us-sales-tax-setup)
 
 <Info>
-More setup guides — dunning, SSO, accounting sync, webhooks, wallets, and the
-rest of the platform — are being added. If you need one that isn't here yet, the
-matching [concept doc](/concepts) covers the same ground.
+More setup guides — SSO, accounting sync, webhooks, India IRP e-invoicing, UPI
+mandates, revenue recognition, month-end close, and the rest of the platform —
+are being added. If you need one that isn't here yet, the matching
+[concept doc](/concepts) covers the same ground.
 </Info>

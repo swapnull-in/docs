@@ -163,17 +163,27 @@
             ]
           },
           {
+            "group": "Monetization",
+            "pages": [
+              "setup/wallets",
+              "setup/usage-alerts",
+              "setup/coupons",
+              "setup/credit-notes"
+            ]
+          },
+          {
+            "group": "Payments & recovery",
+            "pages": [
+              "setup/payment-gateway",
+              "setup/dunning"
+            ]
+          },
+          {
             "group": "Compliance",
             "pages": [
               "setup/eu-einvoicing",
               "setup/us-exemptions",
               "setup/us-registrations"
-            ]
-          },
-          {
-            "group": "Payments",
-            "pages": [
-              "setup/payment-gateway"
             ]
           }
         ]
