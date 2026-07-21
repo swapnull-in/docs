@@ -154,6 +154,31 @@
         "icon": "book-open"
       },
       {
+        "tab": "Setup Guides",
+        "groups": [
+          {
+            "group": "Start here",
+            "pages": [
+              "setup/index"
+            ]
+          },
+          {
+            "group": "Compliance",
+            "pages": [
+              "setup/eu-einvoicing",
+              "setup/us-exemptions",
+              "setup/us-registrations"
+            ]
+          },
+          {
+            "group": "Payments",
+            "pages": [
+              "setup/payment-gateway"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Dashboard Guide",
         "groups": [
           {
