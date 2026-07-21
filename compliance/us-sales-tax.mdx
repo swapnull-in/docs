@@ -1,36 +1,87 @@
 ---
 title: "US Sales Tax"
-description: "Live jurisdiction-level US sales tax via TaxJar — or an honest 0% stub without it"
+description: "Automatic economic-nexus monitoring plus jurisdiction-level rates through your own Avalara or TaxJar"
 ---
+
+<Frame caption="Per-state nexus monitoring in the Recurso dashboard">
+  <img src="/images/screenshot-placeholder.svg" alt="Per-state nexus monitoring in the Recurso dashboard" />
+</Frame>
 
 ## Overview
 
-US sales tax is jurisdiction-level: the rate depends on the buyer's state,
-county, city, and special districts. Accurate rates therefore come from an
-external provider — Recurso integrates with **TaxJar**.
+After *South Dakota v. Wayfair*, US sales-tax obligations turn on **nexus** — you
+must register and collect in a state once you cross its threshold, and there are
+45+ states each with its own numbers. Recurso handles the two hard parts:
 
-The US engine applies when the **seller** is US-based (`COMPANY_COUNTRY=US`)
-and the customer's billing country is `US` (or unset). Buyers outside the US
-are invoiced with no US sales tax (`tax_type: "export"`).
+- **Nexus monitoring** — Recurso tracks your year-to-date taxable sales and
+  transaction count in every state, shows how close you are to each state's
+  economic-nexus threshold, and **auto-establishes economic nexus** the moment
+  you cross one, so a registration obligation never sneaks up on you.
+- **Authoritative rates** — US rates are jurisdiction-level (state + county +
+  city + special districts), so exact rates come from a provider. Recurso
+  integrates with both **Avalara** and **TaxJar**, and each tenant can bring
+  their own account.
+
+The US engine applies when the **seller** is US-based and the customer's billing
+country is `US` (or unset). Buyers outside the US are invoiced with no US sales
+tax (`tax_type: "export"`).
 
 <Info>
-Without TaxJar configured, Recurso does **not** guess: US invoices carry 0%
-tax, explicitly marked `sales_tax_stub`. There are no silently wrong rates.
+Recurso never guesses a rate. With no provider configured, US invoices carry 0%
+tax, explicitly marked `sales_tax_stub` — there are no silently wrong rates. And
+tax is collected **only** where you have nexus (see [Nexus](#nexus-configuration)), so you
+never over-collect in a state you have no obligation in.
 </Info>
 
-## TaxJar Setup
+## Choose a tax provider
 
-Set the API key and (optionally) the API base URL:
+Recurso resolves rates through a provider two ways — a platform default and a
+per-tenant bring-your-own connection. **A tenant's own connection always wins**
+over the platform default.
+
+### Bring your own (per tenant)
+
+Connect a tenant's own Avalara or TaxJar account through the integrations API —
+credentials are encrypted at rest and used only for that tenant. This is also
+available in the dashboard under **Settings → Integrations**.
+
+```bash
+# Connect a tenant's TaxJar account
+POST /v1/integration-connections
+{
+  "category": "tax",
+  "provider": "taxjar",          // or "avalara"
+  "config": { "api_key": "your_taxjar_token" }
+}
+
+# List connected integrations
+GET /v1/integration-connections
+
+# Disconnect
+DELETE /v1/integration-connections/tax/taxjar
+```
+
+For Avalara, the `config` carries the account id, license key, and company code.
+
+### Platform default (environment)
+
+For a single-tenant or self-managed deployment, configure one provider via the
+environment. TaxJar takes precedence if both are set:
 
 ```bash .env
 # Seller jurisdiction used by the tax engine
 COMPANY_COUNTRY=US
 COMPANY_STATE=CA
 
-# TaxJar — real US sales-tax rates. Leave unset to keep the 0% stub.
+# Option A — TaxJar
 TAXJAR_API_KEY=your_taxjar_api_token
-# Sandbox for testing; the default is https://api.taxjar.com
-# TAXJAR_API_URL=https://api.sandbox.taxjar.com
+# TAXJAR_API_URL=https://api.sandbox.taxjar.com   # sandbox for testing
+
+# Option B — Avalara (used when TAXJAR_API_KEY is unset)
+# AVALARA_ACCOUNT_ID=...
+# AVALARA_LICENSE_KEY=...
+# AVALARA_COMPANY_CODE=...
+# AVALARA_API_URL=https://sandbox-rest.avatax.com   # sandbox for testing
 ```
 
 On startup the API logs which mode it is in:
@@ -41,21 +92,23 @@ US sales tax: TaxJar provider enabled
 US sales tax: 0% stub (TAXJAR_API_KEY not set)
 ```
 
+## How rates are applied
+
 At invoice time the engine sends the seller's state and the buyer's billing
-`state` + `zip` to TaxJar's tax-for-order endpoint and applies the combined
-jurisdiction rate. Make sure your US customers have billing addresses with
-at least `state` and `zip` populated.
+`state` + `zip` to the configured provider (Avalara or TaxJar) and applies the
+combined jurisdiction rate. Make sure your US customers have billing addresses
+with at least `state` and `zip` populated.
 
 ### Rate caching
 
 Lookups are cached in-memory for **24 hours per buyer `(state, zip)`** pair.
-Sales-tax rates change rarely, so this keeps TaxJar API spend proportional
+Sales-tax rates change rarely, so this keeps provider API spend proportional
 to the number of distinct buyer locations — not the number of invoices. The
 cache lives for the process lifetime; a restart clears it.
 
 ### Error handling
 
-- TaxJar calls time out after 10 seconds and are retried **once**, and only
+- Provider calls time out after 10 seconds and are retried **once**, and only
   on 5xx/network failures — auth errors (bad API key) and request-shape
   errors are never retried.
 - A provider failure **never blocks invoice generation** (see the matrix
