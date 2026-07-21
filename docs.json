@@ -284,6 +284,12 @@
             "icon": "landmark"
           },
           {
+            "group": "Europe (EU)",
+            "pages": [
+              "compliance/eu-einvoicing"
+            ]
+          },
+          {
             "group": "Global Tax",
             "pages": [
               "compliance/us-sales-tax"
