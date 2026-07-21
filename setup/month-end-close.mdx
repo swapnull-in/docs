@@ -1,0 +1,61 @@
+---
+title: "Set Up Month-End Close"
+description: "Run a one-call close pack — trial balance, reconciliation, deferred rollforward, and a ready-to-close verdict."
+---
+
+## Overview
+
+Month-end close in Recurso is a single call that returns everything finance needs
+to close the period: the **trial balance**, a **billing-to-ledger reconciliation**,
+the **deferred-revenue rollforward**, a GL export pointer, and a **ready-to-close
+verdict**. No spreadsheet rebuild.
+
+<Info>
+The pack builds on the double-entry [ledger](/advanced/ledger) and
+[revenue recognition](/setup/revenue-recognition). Walkthrough:
+[Run your monthly close](/dashboard/workflows/monthly-close).
+</Info>
+
+## Step 1: Make sure the period's activity is settled
+
+Before closing, confirm the period's invoices are finalized and payments/refunds
+have settled — the reconciliation compares billing against the ledger, so
+in-flight items will show as discrepancies until they land.
+
+## Step 2: Pull the close pack
+
+In the dashboard, go to **Finance → Month-end close** and select the period; or
+via the API:
+
+```bash
+curl "https://api.recurso.dev/v1/finance/close-pack?month=6&year=2026" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+You get the trial balance, the reconciliation result, the deferred rollforward,
+and a verdict on whether the period is clean to close.
+
+## Step 3: Export the GL
+
+Export the general ledger for the period (`/ledger/export`) to hand to your
+accounting system (QuickBooks/Xero/Tally/NetSuite), or rely on the
+[accounting sync](/setup/accounting) to push it for you.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The trial balance ties">
+    Debits equal credits for the period.
+  </Step>
+  <Step title="Reconciliation is clean">
+    Billing reconciles to the ledger with zero (or explained) discrepancies.
+  </Step>
+  <Step title="The verdict says ready">
+    The close pack reports the period as ready to close.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Run your monthly close (workflow)](/dashboard/workflows/monthly-close)
+- [Set up accounting sync](/setup/accounting)

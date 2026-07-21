@@ -183,7 +183,16 @@
             "pages": [
               "setup/eu-einvoicing",
               "setup/us-exemptions",
-              "setup/us-registrations"
+              "setup/us-registrations",
+              "setup/india-irp",
+              "setup/upi-mandates"
+            ]
+          },
+          {
+            "group": "Finance",
+            "pages": [
+              "setup/revenue-recognition",
+              "setup/month-end-close"
             ]
           },
           {
