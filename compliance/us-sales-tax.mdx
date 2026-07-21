@@ -120,7 +120,8 @@ Every US invoice records how its tax was computed in `tax_type`:
 
 | `tax_type` | When | Rate applied | What it means |
 |------------|------|--------------|----------------|
-| `sales_tax` | TaxJar configured, lookup succeeded | Live jurisdiction rate | The note names the provider and jurisdiction (e.g. `US sales tax via taxjar (CA)`). If TaxJar reports you have no nexus in the buyer's state, tax is 0 and the note flags it honestly: `no nexus in buyer state per provider — nothing to collect`. |
+| `sales_tax` | Provider configured, lookup succeeded | Live jurisdiction rate | The note names the provider and jurisdiction (e.g. `US sales tax via taxjar (CA)`). If the provider reports you have no nexus in the buyer's state, tax is 0 and the note flags it honestly: `no nexus in buyer state per provider — nothing to collect`. |
+| `sales_tax_exempt` | Buyer has a tax exemption on file | 0% | The exemption number + entity-use code were passed to the provider, which returned 0 and recorded an **exempt** sale. Distinct from a no-nexus $0 line so the liability report can break exempt out. See [Customer exemptions](#customer-exemptions). |
 | `no_nexus` | Buyer is in a US state you have **not** declared nexus in (and you've declared at least one) | 0% | The **native** nexus gate: `No sales-tax nexus in <ST> — not collected`. Not an error — you're correctly not collecting where you have no obligation. See [Nexus Configuration](#nexus-configuration). |
 | `sales_tax_error` | TaxJar configured, lookup **failed** after the retry | 0% | The invoice ships anyway — a tax lookup outage must never block billing. The note says `invoiced at 0% (needs review)` and a warning is logged. **Treat these invoices as an audit queue**: find them, recompute, and issue corrections. |
 | `sales_tax_stub` | `TAXJAR_API_KEY` not set | 0% | The historical placeholder behavior, honestly labeled. Fine for development; not for production US billing. |
@@ -195,6 +196,73 @@ passes professional review. While it's `false`, treat threshold crossings as
 **indicative** — confirm each state's current rule with a tax professional before
 relying on it for a filing or registration decision.
 </Warning>
+
+## Threshold alerts
+
+Recurso doesn't just establish economic nexus on a crossing — it tells you.
+A daily job emails your workspace owner/admin when a state's year-to-date
+activity **approaches** (≥80% of the threshold) and again when it **crosses**,
+so a registration obligation never passes unnoticed. Each state+level is
+alerted **at most once per calendar year** (a state that stays crossed isn't
+re-alerted daily), and the alert carries the state's YTD sales, transactions,
+and the threshold.
+
+<Info>
+"Crossed" alerts fire only for economic nexus established **this** calendar year
+— an already-established state isn't re-alerted every January. Declared
+physical/voluntary nexus is never alerted (you set it yourself).
+</Info>
+
+## Customer exemptions
+
+A tax-exempt customer (resale, government, non-profit) carries an exemption on
+their record: an **exemption certificate number** and a provider **entity-use
+code** (e.g. Avalara `A` = federal government). Set it in the dashboard on the
+customer, or via the API:
+
+```bash
+PUT /v1/customers/{id}
+{ "tax_exempt": true, "tax_exemption_number": "RESALE-0001", "tax_exemption_code": "A" }
+```
+
+At invoice time the exemption is **passed through** to Avalara/TaxJar rather
+than short-circuited: the provider returns zero tax **and records an exempt
+sale** on its side. The invoice line is marked `sales_tax_exempt` (distinct
+from a no-nexus $0 line), so exempt sales are unambiguous in your liability
+report and audit trail. Exempt lookups bypass the jurisdiction rate cache, so
+one exempt buyer never affects another's rate.
+
+## Liability report
+
+`GET /v1/settings/tax/liability` returns per-state figures for a filing period —
+gross sales, **taxable**, **exempt**, and **non-taxable** (no-nexus /
+below-threshold) sales, tax collected, invoice count, and whether you have nexus
+in each state. The three sale buckets partition gross, and a state collecting
+tax without declared nexus is surfaced.
+
+```bash
+# Current calendar year (default), or ?year=YYYY, or ?from=YYYY-MM-DD&to=YYYY-MM-DD
+curl "https://api.recurso.dev/v1/settings/tax/liability?year=2026" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+The dashboard renders this on the **US sales-tax** page (Settings → Tax nexus)
+with a year selector and totals.
+
+## Registrations
+
+Nexus tells you where you must collect; registrations record where you actually
+can. Track a **registration number** and **status** (`registered` / `pending` /
+`not_registered`) per state:
+
+```bash
+GET /v1/settings/tax/registrations
+PUT /v1/settings/tax/registrations
+{ "registrations": [ { "state_code": "CA", "registration_number": "CA-123", "status": "registered" } ] }
+```
+
+The dashboard flags the gap that matters: **states where you have nexus but no
+registration on file** — the compliance dots to connect before you file.
 
 ## Testing
 
