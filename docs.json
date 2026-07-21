@@ -163,12 +163,14 @@
             ]
           },
           {
-            "group": "Monetization",
+            "group": "Core billing & monetization",
             "pages": [
               "setup/wallets",
               "setup/usage-alerts",
               "setup/coupons",
-              "setup/credit-notes"
+              "setup/credit-notes",
+              "setup/quotes",
+              "setup/commitments"
             ]
           },
           {
@@ -176,6 +178,14 @@
             "pages": [
               "setup/payment-gateway",
               "setup/dunning"
+            ]
+          },
+          {
+            "group": "Growth & retention",
+            "pages": [
+              "setup/gifts-referrals",
+              "setup/cancel-flows",
+              "setup/churn"
             ]
           },
           {
@@ -202,7 +212,10 @@
               "setup/sso",
               "setup/accounting",
               "setup/api-keys",
-              "setup/notifications"
+              "setup/notifications",
+              "setup/organizations",
+              "setup/virtual-accounts",
+              "setup/customer-portal"
             ]
           }
         ]

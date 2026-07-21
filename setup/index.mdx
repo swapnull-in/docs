@@ -13,11 +13,11 @@ endpoint) — a setup guide is the fastest path from "off" to "working".
 Every guide follows the same shape: **Overview → numbered Steps → Verify → Next steps**,
 and shows both the **dashboard** path and the **API** where relevant.
 
-## Monetization
+## Core billing & monetization
 
 <CardGroup cols={2}>
   <Card title="Prepaid wallets" icon="wallet" href="/setup/wallets">
-    Sell prepaid credit that drains before any card, with auto-recharge.
+    Prepaid credit that drains before any card, with auto-recharge.
   </Card>
   <Card title="Usage alerts" icon="bell" href="/setup/usage-alerts">
     Notify on metered-usage thresholds, once per period.
@@ -28,6 +28,12 @@ and shows both the **dashboard** path and the **API** where relevant.
   <Card title="Credit notes & refunds" icon="receipt" href="/setup/credit-notes">
     Cash refunds or spendable account credit.
   </Card>
+  <Card title="Quotes" icon="file-signature" href="/setup/quotes">
+    Draft, send, accept, and convert a quote.
+  </Card>
+  <Card title="Minimum commitments" icon="arrow-up-from-line" href="/setup/commitments">
+    A per-period revenue floor with automatic true-up.
+  </Card>
 </CardGroup>
 
 ## Payments & recovery
@@ -37,7 +43,21 @@ and shows both the **dashboard** path and the **API** where relevant.
     Connect your own Stripe or Razorpay account for autopay.
   </Card>
   <Card title="Dunning" icon="rotate" href="/setup/dunning">
-    Recover failed payments with smart retries + reminder campaigns.
+    Recover failed payments with smart retries + campaigns.
+  </Card>
+</CardGroup>
+
+## Growth & retention
+
+<CardGroup cols={2}>
+  <Card title="Gifts & referrals" icon="gift" href="/setup/gifts-referrals">
+    Gift subscriptions and reward referrals with credit.
+  </Card>
+  <Card title="Cancel flows & save offers" icon="hand" href="/setup/cancel-flows">
+    Intercept cancellations with reasons and save offers.
+  </Card>
+  <Card title="Churn monitoring" icon="triangle-exclamation" href="/setup/churn">
+    Surface at-risk customers before they leave.
   </Card>
 </CardGroup>
 
@@ -45,16 +65,16 @@ and shows both the **dashboard** path and the **API** where relevant.
 
 <CardGroup cols={2}>
   <Card title="EU e-invoicing" icon="file-invoice" href="/setup/eu-einvoicing">
-    Turn on EN 16931 / UBL 2.1 e-invoice generation, per tenant.
+    EN 16931 / UBL 2.1 generation, per tenant.
   </Card>
   <Card title="US customer exemptions" icon="file-shield" href="/setup/us-exemptions">
-    Record resale/government exemptions and pass them to your tax provider.
+    Resale/government exemptions, passed to your provider.
   </Card>
   <Card title="US registrations & liability" icon="clipboard-check" href="/setup/us-registrations">
-    Track where you're registered and pull the per-state liability report.
+    Registrations, gap flags, and the liability report.
   </Card>
   <Card title="India e-invoicing (IRP)" icon="file-certificate" href="/setup/india-irp">
-    Auto-submit B2B invoices to the IRP for a signed IRN + QR.
+    Auto-submit B2B invoices for a signed IRN + QR.
   </Card>
   <Card title="UPI AutoPay mandates" icon="indian-rupee-sign" href="/setup/upi-mandates">
     RBI-compliant recurring auto-debit in India.
@@ -79,7 +99,7 @@ and shows both the **dashboard** path and the **API** where relevant.
     Receive real-time billing events, verified and retried.
   </Card>
   <Card title="SSO (SAML)" icon="key" href="/setup/sso">
-    Sign your team in through Okta, Azure AD, or any SAML IdP.
+    Sign your team in through Okta, Azure AD, or any IdP.
   </Card>
   <Card title="Accounting sync" icon="book" href="/setup/accounting">
     Push invoices/payments to QuickBooks, Xero, or Tally.
@@ -90,20 +110,22 @@ and shows both the **dashboard** path and the **API** where relevant.
   <Card title="Notifications" icon="envelope" href="/setup/notifications">
     Configure the transactional emails Recurso sends.
   </Card>
+  <Card title="Organizations" icon="sitemap" href="/setup/organizations">
+    Group customers under a parent for consolidated billing.
+  </Card>
+  <Card title="Virtual accounts" icon="building-columns" href="/setup/virtual-accounts">
+    Dedicated bank references for auto-reconciled transfers.
+  </Card>
+  <Card title="Customer portal" icon="user-gear" href="/setup/customer-portal">
+    Self-service card, plan, and invoice management.
+  </Card>
 </CardGroup>
 
 ## Related walkthroughs
 
-Some setups already have a full end-to-end tutorial:
+Some setups have a full end-to-end tutorial:
 
 - [Set up usage-based SaaS](/tutorials/usage-based-saas)
 - [Set up feature gating](/tutorials/feature-gating)
 - [Set up India GST](/tutorials/india-gst-setup)
 - [Set up US sales tax end-to-end](/tutorials/us-sales-tax-setup)
-
-<Info>
-A few more setup guides — quotes, gifts & referrals, commitments, cancel-flows,
-churn, organizations, virtual accounts, and the customer portal — are on the way.
-If you need one that isn't here yet, the matching [concept doc](/concepts) covers
-the same ground.
-</Info>

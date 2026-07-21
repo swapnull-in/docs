@@ -1,0 +1,50 @@
+---
+title: "Set Up Churn Monitoring"
+description: "Surface at-risk customers with churn-risk scoring and alerts so you can intervene before they leave."
+---
+
+## Overview
+
+Churn monitoring scores each customer's risk of leaving from their billing signals
+(failed payments, declining usage, downgrades) and surfaces the high-risk ones so
+your team can reach out before it's too late.
+
+<Info>
+Dashboard detail: [Churn](/dashboard/churn).
+</Info>
+
+## Step 1: Let scoring run on your billing data
+
+Churn risk is computed from activity already flowing through Recurso — no setup
+beyond having live subscriptions, invoices, and payments. Each customer carries a
+risk score that updates as their signals change.
+
+## Step 2: Watch the high-risk list
+
+In the dashboard, open **Churn** to see high-risk customers and churn alerts,
+ranked by score. This is your intervention queue.
+
+## Step 3: Act on the signal
+
+Pair it with the tools that reduce churn: strong [dunning](/setup/dunning) for
+involuntary churn, and [cancel flows with save offers](/setup/cancel-flows) for
+voluntary churn.
+
+## Verify your setup
+
+<Steps>
+  <Step title="Customers carry a risk score">
+    Customer records show a churn-risk score/level.
+  </Step>
+  <Step title="The high-risk list populates">
+    The Churn dashboard ranks at-risk customers.
+  </Step>
+  <Step title="Signals move the score">
+    A failed payment or downgrade raises the affected customer's risk.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Churn (dashboard)](/dashboard/churn)
+- [Set up cancel flows](/setup/cancel-flows) · [Set up dunning](/setup/dunning)

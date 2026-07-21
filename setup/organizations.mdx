@@ -1,0 +1,51 @@
+---
+title: "Set Up Organizations"
+description: "Group multiple customers under a parent organization for consolidated billing and hierarchy."
+---
+
+## Overview
+
+An organization groups related customers under a parent — useful for a company
+with several billing entities, departments, or subsidiaries you want to see and
+manage together.
+
+<Info>
+Concept + object detail: [Organizations](/advanced/organizations).
+</Info>
+
+## Step 1: Create the organization
+
+In the dashboard (or API), create the organization:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/organizations \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "Acme Group" }'
+```
+
+## Step 2: Attach customers
+
+Link customers to the organization so their subscriptions and invoices roll up
+under the parent. A customer belongs to one organization.
+
+## Step 3: View the hierarchy
+
+Use the organization view to see all member customers and their billing together —
+a consolidated picture of the account.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The organization exists">
+    `GET /v1/organizations` lists it.
+  </Step>
+  <Step title="Customers roll up">
+    Member customers appear under the organization.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Organizations concept](/advanced/organizations)
+- [Organizations (dashboard)](/dashboard/organizations)
