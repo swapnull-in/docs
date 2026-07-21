@@ -31,9 +31,11 @@ sequenceDiagram
 Metered billing is three pieces:
 
 1. A **billable metric** — a named meter that reduces raw usage events to
-   one quantity per period (`count`, `sum`, `max`, or `unique`).
-2. A **charge** — a pricing model (`per_unit`, `graduated`, `volume`,
-   `package`) attaching that metric to a plan.
+   one quantity per period (eight [aggregations](#aggregations), from `count`
+   to a sandboxed `custom` expression).
+2. A **charge** — a [pricing model](#2-attach-charges-to-a-plan) (`per_unit`,
+   `graduated`, `volume`, `package`, `percentage`, `graduated_percentage`, or
+   `dynamic`) attaching that metric to a plan.
 3. **Rating** — at period close, Recurso aggregates the elapsed period's
    events per metric, prices them, and adds the result to the renewal
    invoice as its own tax-resolved line item (billed **in arrears**).
@@ -58,19 +60,53 @@ curl -X POST https://api.recurso.dev/v1/billable-metrics \
   }'
 ```
 
+### Aggregations
+
 | Aggregation | Reduces a period's events to |
 |---|---|
 | `count` | the number of events (quantity ignored) |
 | `sum` | the sum of `quantity` |
 | `max` | the largest single-event `quantity` |
 | `unique` | distinct values of one event property (`field_name`), e.g. active users by `user_id` |
+| `latest` | the most recent event's `quantity` in the period |
+| `percentile` | the p-th percentile of event quantities (`field_name` holds the percentile 1–99, e.g. `"95"` for p95 latency-SLO billing) |
+| `weighted_sum` | the **time-weighted average** of a running level: each event's `quantity` is a signed delta (`+5`/`-2` seats), and the metric bills the average level over the period, carried forward from before it |
+| `custom` | the **sum of a sandboxed per-event expression** (`expression`) over `quantity` and numeric `properties.*` |
 
-A `unique` metric needs the property to count:
+A `unique` metric needs the property to count; `percentile` puts the percentile
+in `field_name`:
 
 ```json
 { "name": "Active users", "code": "active_users",
   "aggregation_type": "unique", "field_name": "user_id" }
+
+{ "name": "p95 latency", "code": "latency_ms",
+  "aggregation_type": "percentile", "field_name": "95" }
 ```
+
+A **`weighted_sum`** metric time-weights a running level built from signed
+deltas — ideal for per-second resources like seats or provisioned units. Report
+`+5` when five seats are added and `-2` when two are removed; the metric bills
+the average level held over the period (5 seats for 15 days + 10 for 15 days →
+7.5). The starting level carries forward, so a resource active before the period
+counts from day one.
+
+A **`custom`** metric evaluates an expression against every event and sums the
+results, so you can price on arithmetic over event fields without a bespoke
+aggregation:
+
+```json
+{ "name": "Storage (GB-hours)", "code": "storage",
+  "aggregation_type": "custom",
+  "expression": "properties.bytes / 1000000" }
+```
+
+<Info>
+The `custom` expression is sandboxed: it reads only `quantity` and numeric
+`properties.*`, has no functions or external access, is bounded in time and
+memory, and must return a number. It is validated when the metric is created, so
+an invalid expression is rejected up front — never at invoice time.
+</Info>
 
 ## 2. Attach Charges to a Plan
 
@@ -229,6 +265,40 @@ switch the tabs to compare:
 
     ₹5.00 per 1,000 calls — 5,200 calls bills 6 bundles = **₹30**.
   </Tab>
+  <Tab title="percentage">
+    A percentage of an aggregated **monetary base** (e.g. payment volume in
+    minor units). Optional `free_units` (base exempt before the rate), a flat
+    `fixed_amount`, and `min_amount`/`max_amount` clamps.
+
+    ```json
+    { "rate": "2.5", "fixed_amount": 30, "free_units": 100000,
+      "min_amount": 0, "max_amount": 500000 }
+    ```
+
+    2.5% of the base above the first ₹1,000, plus ₹0.30, capped at ₹5,000.
+  </Tab>
+  <Tab title="graduated_percentage">
+    The percentage analogue of `graduated`: each band of the monetary base is
+    charged at that band's `rate` (plus an optional per-band `flat_amount`).
+
+    ```json
+    { "tiers": [
+      { "up_to": 1000000, "rate": "3" },
+      { "up_to": null,    "rate": "2" }
+    ] }
+    ```
+
+    3% on the first ₹10,000 of base, 2% above it.
+  </Tab>
+  <Tab title="dynamic">
+    You supply the exact price with each event (`dynamic_amount`, minor units);
+    the charge bills their sum — no rate applied. For prices you compute
+    yourself (usage-based AI tokens, per-shipment freight, …).
+
+    ```json
+    { "charge_model": "dynamic", "amounts": { "INR": {} } }
+    ```
+  </Tab>
 </Tabs>
 
 <Note>
@@ -258,6 +328,58 @@ Rated windows are recorded in a `usage_ratings` claim keyed by
 `(subscription, charge, period_start)`, so a retried invoice generation can
 never bill the same window twice. Immediate cancellation generates a final
 usage-only invoice for the partial elapsed window.
+
+## Bill in advance (per event)
+
+By default usage bills **in arrears** at period close. Set `pay_in_advance` on a
+charge to bill each event's usage the moment it's reported — captured as a
+pending charge that folds onto the next invoice. Only non-cumulative models
+qualify (`per_unit`, `percentage`, `dynamic`), since a graduated/volume price
+depends on the whole period's total.
+
+```json
+{ "metric_id": "...", "charge_model": "per_unit",
+  "amounts": { "INR": { "unit_amount": "0.10" } },
+  "pay_in_advance": true }
+```
+
+## Dimensional pricing (charge filters)
+
+Price distinct values of one event property differently under a single charge.
+Set `filter_key` to the property and give per-value `amounts`; events matching no
+value fall to the charge's base `amounts`.
+
+```json
+{ "metric_id": "...", "charge_model": "per_unit",
+  "amounts": { "INR": { "unit_amount": "0.01" } },
+  "filter_key": "region",
+  "filters": [
+    { "value": "us", "amounts": { "INR": { "unit_amount": "0.02" } } },
+    { "value": "eu", "amounts": { "INR": { "unit_amount": "0.03" } } }
+  ] }
+```
+
+Each value bills as its own invoice line, all under one rating claim. (Filters
+aren't combined with the `custom`/`weighted_sum` aggregations or the `dynamic`
+model, which compute their quantity a different way.)
+
+## Progressive billing (interim invoices)
+
+For high-usage customers you can bill **before** period close. Set a
+`progressive_billing_threshold` (minor units) on the subscription: once accrued
+usage crosses it, an interim invoice bills the delta since the last one, and the
+renewal invoice settles the remainder. A per-charge **watermark** guarantees
+every unit is billed exactly once — interim bills + close always sum to the same
+total as pure arrears, no double-billing across retries or concurrent runs. A
+background sweep triggers interim invoices automatically; you can also force one
+with `POST /v1/subscriptions/{id}/bill-usage`.
+
+## Simulate a price before you ship it
+
+`POST /v1/pricing/simulate` rates a **proposed** charge set against sample or
+real usage without persisting anything — compare pricing options, see the rated
+lines and a balanced GL preview, and catch a mistake before it reaches an
+invoice.
 
 ## Preview the Current Period
 
