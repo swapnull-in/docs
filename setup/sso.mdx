@@ -1,0 +1,67 @@
+---
+title: "Set Up SSO (SAML)"
+description: "Sign your team in through Okta, Azure AD, or any SAML 2.0 identity provider."
+---
+
+## Overview
+
+SSO lets your team sign in to the Recurso dashboard through your identity
+provider (Okta, Azure AD, or any SAML 2.0 IdP) instead of separate passwords —
+centralizing access control and offboarding.
+
+<Info>
+Provider-specific detail (including Okta): [SSO / SAML](/advanced/okta-sso).
+</Info>
+
+## Step 1: Create the app in your IdP
+
+In your identity provider, create a SAML 2.0 application for Recurso. You'll set
+the **ACS (Assertion Consumer Service) URL** and **Entity ID** that Recurso
+provides, and your IdP will give you back its **sign-in URL**, **issuer**, and
+**X.509 signing certificate**.
+
+## Step 2: Configure the connection in Recurso
+
+In the dashboard, go to **Settings → SSO** and enter the IdP's sign-in URL,
+issuer, and certificate; or via the API:
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/sso/connection \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "idp_sso_url": "https://your-org.okta.com/app/.../sso/saml",
+    "idp_issuer": "http://www.okta.com/exk...",
+    "idp_certificate": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+  }'
+```
+
+<Warning>
+Get the certificate exactly right (including line breaks) — a mismatched or
+truncated cert makes every assertion fail signature validation.
+</Warning>
+
+## Step 3: Sign in
+
+Assign your team to the app in the IdP, then have them sign in through the SSO
+flow. New users are provisioned into your tenant on first successful sign-in per
+your configuration.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The connection is saved">
+    `GET /v1/sso/connection` returns your IdP URL and issuer.
+  </Step>
+  <Step title="A test sign-in succeeds">
+    A user assigned in the IdP completes the SSO flow and lands in the dashboard.
+  </Step>
+  <Step title="Signatures validate">
+    Sign-ins are accepted — a failing certificate would reject the assertion.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [SSO / SAML concept (Okta walkthrough)](/advanced/okta-sso)
+- [Team & security](/dashboard/team-security)

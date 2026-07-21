@@ -185,6 +185,16 @@
               "setup/us-exemptions",
               "setup/us-registrations"
             ]
+          },
+          {
+            "group": "Platform",
+            "pages": [
+              "setup/webhooks",
+              "setup/sso",
+              "setup/accounting",
+              "setup/api-keys",
+              "setup/notifications"
+            ]
           }
         ]
       },
