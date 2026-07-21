@@ -1,0 +1,83 @@
+---
+title: "Set Up US Customer Tax Exemptions"
+description: "Record a customer's resale or government exemption so it passes through to Avalara/TaxJar — zero tax, recorded as an exempt sale."
+---
+
+## Overview
+
+A tax-exempt customer (resale, government, non-profit) shouldn't be charged US
+sales tax — but the sale still needs to be **recorded as exempt** for your
+liability report and audit trail. Recurso stores the exemption on the customer
+and **passes it through to your tax provider** rather than silently skipping tax:
+the provider returns zero and logs an exempt sale, and the invoice line is marked
+`sales_tax_exempt` (distinct from a no-nexus $0 line).
+
+<Info>
+This assumes US sales tax is already set up — see
+[Set up US sales tax end-to-end](/tutorials/us-sales-tax-setup) for the provider
+and nexus configuration.
+</Info>
+
+## Step 1: Record the exemption on the customer
+
+Set three fields on the customer: the **exempt** flag, the **certificate number**,
+and a provider **entity-use code**. In the dashboard, open the customer and toggle
+**Tax exempt (US)**, then enter the number and code. Or via the API:
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/customers/{id} \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tax_exempt": true,
+    "tax_exemption_number": "RESALE-0001",
+    "tax_exemption_code": "A"
+  }'
+```
+
+## Step 2: Choose the right entity-use code
+
+The **entity-use code** is what tells the provider *why* the buyer is exempt and
+makes it zero-rate the line:
+
+- **Avalara** uses entity-use codes such as `A` (federal government), `E`
+  (charitable), `G` (resale). Set the code your provider expects.
+- **TaxJar** maps the code to its exemption categories (wholesale, government,
+  other) — a resale code becomes `wholesale`, and anything unrecognized falls
+  back to `other` (still exempt).
+
+<Warning>
+An exemption is only as good as the certificate behind it. Keep the certificate
+number accurate and on file — the provider records it against the transaction.
+</Warning>
+
+## Step 3: Invoice the customer
+
+At invoice time the exemption is passed to the provider. The result:
+
+- Tax comes back **0**.
+- The line's `tax_type` is `sales_tax_exempt`.
+- The provider records an **exempt** transaction on its side.
+- The exempt lookup **bypasses the rate cache**, so one exempt buyer never
+  affects another buyer's rate in the same jurisdiction.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The customer shows exempt">
+    The customer detail view shows **Tax exempt: Yes** with the number and code.
+  </Step>
+  <Step title="The invoice collects 0 and is marked exempt">
+    An invoice for the customer has `tax_amount: 0` and a note that records the
+    exemption (`exempt sale (code A) — cert RESALE-0001`).
+  </Step>
+  <Step title="It shows as exempt in the liability report">
+    The [liability report](/setup/us-registrations) counts the sale under
+    **exempt**, separate from **non-taxable** (no-nexus / below-threshold).
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Set up US registrations & liability report](/setup/us-registrations)
+- [US Sales Tax concept + behavior matrix](/compliance/us-sales-tax)

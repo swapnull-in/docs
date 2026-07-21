@@ -1,0 +1,60 @@
+---
+title: "Set Up Revenue Recognition"
+description: "Recognize subscription revenue over the service period under ASC 606, with a deferred-revenue rollforward."
+---
+
+## Overview
+
+Subscription revenue is earned over the service period, not when it's invoiced.
+Recurso **defers** revenue on invoice and **recognizes** it month by month under
+ASC 606 — giving you a recognition waterfall and a deferred-revenue rollforward
+your auditor can use.
+
+<Info>
+Concept + posting detail: [Revenue Recognition](/advanced/revenue-recognition) and
+[Ledger](/advanced/ledger).
+</Info>
+
+## Step 1: Nothing to switch on — it follows your plans
+
+Recognition is driven by your plan/subscription terms: a monthly plan recognizes
+over the month, an annual plan recognizes across twelve. Set your plan intervals
+correctly and the schedule follows. One-off charges recognize at point of sale.
+
+## Step 2: Read the recognition report
+
+Pull the period's recognized revenue, the deferred balance, and the release
+schedule. In the dashboard it's **Finance → Revenue recognition**; or via the API:
+
+```bash
+curl "https://api.recurso.dev/v1/finance/revrec/report?month=6&year=2026" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+The **waterfall** (`/finance/revrec/waterfall`) and the **deferred rollforward**
+(`/ledger/deferred-rollforward`) give the auditor views.
+
+## Step 3: Reconcile against the ledger
+
+Recognition posts double-entry legs — deferred revenue down, recognized revenue
+up — so the numbers tie to the ledger and the [month-end close](/setup/month-end-close).
+
+## Verify your setup
+
+<Steps>
+  <Step title="Deferred revenue appears on invoice">
+    Invoicing an annual plan defers the revenue rather than recognizing it all up
+    front.
+  </Step>
+  <Step title="It releases over time">
+    Each period recognizes its slice; the deferred balance rolls forward correctly.
+  </Step>
+  <Step title="It ties to the ledger">
+    Recognized + deferred reconciles against the ledger's balances.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Revenue Recognition concept](/advanced/revenue-recognition)
+- [Set up month-end close](/setup/month-end-close)

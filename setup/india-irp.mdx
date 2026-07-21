@@ -1,0 +1,73 @@
+---
+title: "Set Up India E-Invoicing (IRP / IRN)"
+description: "Connect the NIC Invoice Registration Portal so B2B invoices get a signed IRN and QR automatically."
+---
+
+## Overview
+
+India requires B2B invoices above the turnover threshold to be reported to the
+**Invoice Registration Portal (IRP)**, which returns a signed **IRN** and a QR
+code. Recurso submits finalized B2B invoices to the IRP automatically and retries
+transient failures.
+
+<Info>
+This is India's IRN clearance — separate from [EU e-invoicing](/setup/eu-einvoicing).
+Concept detail + statuses: [E-Invoicing (India)](/compliance/e-invoicing).
+Assumes [GST is set up](/tutorials/india-gst-setup).
+</Info>
+
+## Step 1: Connect your IRP credentials
+
+Provide your IRP/GSP connection. In the dashboard, go to **Settings → E-Invoicing
+(IRP)**; or via the API:
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/settings/irp \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_id": "your_irp_client_id",
+    "client_secret": "your_irp_client_secret",
+    "username": "your_irp_username",
+    "password": "your_irp_password",
+    "gstin": "27AABCU9603R1ZM",
+    "environment": "sandbox",
+    "is_enabled": true
+  }'
+```
+
+<Warning>
+Test with `environment: "sandbox"` first — sandbox submissions are not reported to
+the GST portal. Switch to `production` only once test invoices clear cleanly.
+</Warning>
+
+## Step 2: Keep customer + line data complete
+
+The IRP rejects incomplete invoices. Make sure B2B customers have a valid
+**GSTIN** and address, and that lines carry **HSN/SAC** codes — the most common
+failures are a wrong buyer GSTIN or a missing field.
+
+## Step 3: Finalize a B2B invoice
+
+Once enabled, every finalized B2B invoice is submitted to the IRP; on success the
+**IRN**, acknowledgement number, and signed **QR** are attached. Transient
+failures are retried automatically with backoff.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The connection tests clean">
+    Recurso can reach the IRP with your credentials (sandbox first).
+  </Step>
+  <Step title="A B2B invoice gets an IRN">
+    A finalized B2B invoice shows e-invoice status `generated` with an IRN + QR.
+  </Step>
+  <Step title="Failures retry, not stick">
+    A transient failure reschedules and recovers rather than staying failed.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [E-Invoicing (India) concept + statuses](/compliance/e-invoicing)
+- [Set up India GST](/tutorials/india-gst-setup)

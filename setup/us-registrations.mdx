@@ -1,0 +1,89 @@
+---
+title: "Set Up US Registrations & the Liability Report"
+description: "Record where you're registered to collect, surface nexus-but-not-registered gaps, and pull the per-state liability report for filing."
+---
+
+## Overview
+
+Nexus tells you *where you must collect*; **registrations** record *where you
+actually can*. Recording your registration number per state lets Recurso flag the
+compliance gap that matters — a state where you have nexus but **no registration
+on file** — and the **liability report** gives you the per-state figures to file.
+
+<Info>
+Assumes US sales tax and nexus are already configured — see
+[Set up US sales tax end-to-end](/tutorials/us-sales-tax-setup).
+</Info>
+
+## Step 1: Record your registrations
+
+For each state where you hold (or have applied for) a permit, record the
+registration number and status. In the dashboard, go to **Settings → Tax nexus →
+Sales-tax registrations**; or call the API (full replacement, like nexus states):
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/settings/tax/registrations \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "registrations": [
+      { "state_code": "CA", "registration_number": "CA-123", "status": "registered" },
+      { "state_code": "NY", "status": "pending" }
+    ]
+  }'
+```
+
+Status is `registered` (permit in hand), `pending` (applied, awaiting), or
+`not_registered`.
+
+## Step 2: Close the nexus-but-not-registered gaps
+
+On the US sales-tax page, Recurso compares your **nexus** states against your
+**registrations** and banners any state where you have nexus but no active
+registration — *"You have nexus but no registration on file in CA, NY."* Register
+with each flagged state, then add the number here.
+
+## Step 3: Pull the liability report
+
+The report gives per-state figures for a filing period — gross sales, the
+**taxable / exempt / non-taxable** split, tax collected, and whether you have
+nexus there. In the dashboard it's the **Sales-tax liability** section (with a
+year selector and totals); or via the API:
+
+```bash
+# Current year (default), or ?year=YYYY, or ?from=YYYY-MM-DD&to=YYYY-MM-DD
+curl "https://api.recurso.dev/v1/settings/tax/liability?year=2026" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+The three sale buckets **partition gross**: taxable (tax collected), exempt (a
+[customer exemption](/setup/us-exemptions) applied), and non-taxable (no-nexus or
+below-threshold). A state collecting tax without declared nexus is surfaced.
+
+<Warning>
+The report figures are exact, but confirm them with a tax professional before
+filing — and note the built-in nexus threshold data is a monitoring aid until it
+passes professional review.
+</Warning>
+
+## Verify your setup
+
+<Steps>
+  <Step title="Registrations read back">
+    `GET /v1/settings/tax/registrations` returns your states with their numbers
+    and statuses.
+  </Step>
+  <Step title="Gaps are flagged">
+    A state with nexus but no registration shows the gap banner on the US
+    sales-tax page.
+  </Step>
+  <Step title="The liability report ties out">
+    Per state, taxable + exempt + non-taxable equals gross sales, and tax
+    collected matches what you invoiced.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Set up customer exemptions](/setup/us-exemptions)
+- [US Sales Tax concept](/compliance/us-sales-tax)
