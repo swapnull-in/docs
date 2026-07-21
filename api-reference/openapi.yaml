@@ -1066,6 +1066,33 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /v1/subscriptions/{id}/bill-usage:
+    post:
+      operationId: billUsageNow
+      tags: [Subscriptions]
+      summary: Generate an interim progressive-usage invoice
+      description: >-
+        For a subscription with progressive billing enabled, bill the usage
+        accrued since the last bill when it has reached the threshold (A5). The
+        watermark guarantees no usage is billed twice. Returns the interim
+        invoice, or 200 with data:null when nothing is due (not progressive, or
+        below the threshold).
+      parameters:
+        - $ref: '#/components/parameters/PathID'
+      responses:
+        '201':
+          description: Interim invoice created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '200':
+          description: Nothing due (data is null).
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /v1/subscriptions/{id}/advance:
     post:
       operationId: generateAdvanceInvoice
@@ -1497,6 +1524,13 @@ paths:
                     Optional idempotency key: a retried event with the same
                     (subscription, transaction_id) collapses to the original
                     (200 with status "duplicate" and the original event_id).
+                dynamic_amount:
+                  type: integer
+                  format: int64
+                  description: >-
+                    Optional per-event exact price in minor units (non-negative).
+                    A `dynamic` charge bills the sum of these over the period;
+                    other charge models ignore it.
       responses:
         '201':
           description: Event recorded.
@@ -1550,6 +1584,7 @@ paths:
                         type: object
                         additionalProperties: { type: string }
                       transaction_id: { type: string, maxLength: 255 }
+                      dynamic_amount: { type: integer, format: int64 }
       responses:
         '200':
           description: Per-item outcomes, index-aligned with the request.
@@ -2614,6 +2649,110 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /webhooks/razorpay/{connID}:
+    post:
+      operationId: handleRazorpayWebhookForConnection
+      tags: [Inbound Webhooks]
+      summary: Razorpay webhook receiver (per-connection, BYO)
+      description: |
+        Per-connection variant of the Razorpay webhook receiver for tenants who
+        connected their own Razorpay account. The event is verified with THAT
+        connection's own signing secret (resolved from `connID`) before the
+        payload is trusted. Called by Razorpay, not by API consumers.
+      security: []
+      parameters:
+        - name: connID
+          in: path
+          required: true
+          description: The tenant's Razorpay gateway-connection id.
+          schema:
+            type: string
+            format: uuid
+        - name: X-Razorpay-Signature
+          in: header
+          required: true
+          description: HMAC-SHA256 signature of the raw request body.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Raw Razorpay event payload.
+      responses:
+        '200':
+          description: Event processed (or deliberately ignored).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, ignored]
+                  reason:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /webhooks/stripe/{connID}:
+    post:
+      operationId: handleStripeWebhookForConnection
+      tags: [Inbound Webhooks]
+      summary: Stripe webhook receiver (per-connection, BYO)
+      description: |
+        Per-connection variant of the Stripe webhook receiver for tenants who
+        connected their own Stripe account. The event is verified with THAT
+        connection's own signing secret (resolved from `connID`) before the
+        payload is trusted. Called by Stripe, not by API consumers.
+      security: []
+      parameters:
+        - name: connID
+          in: path
+          required: true
+          description: The tenant's Stripe gateway-connection id.
+          schema:
+            type: string
+            format: uuid
+        - name: Stripe-Signature
+          in: header
+          required: true
+          description: Stripe webhook signature header.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Raw Stripe event payload.
+      responses:
+        '200':
+          description: Event processed (or deliberately ignored).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, ignored]
+                  reason:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /v1/invoices/{id}/preview:
     get:
       operationId: previewInvoiceHTML
@@ -3571,6 +3710,48 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/ReconciliationReport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/finance/close-pack:
+    get:
+      operationId: getClosePack
+      tags: [Finance]
+      summary: Month-end close pack
+      description: |
+        One read-only artifact for a calendar month: the trial balance, an
+        on-demand reconciliation report, the Deferred Revenue rollforward (with
+        the schedule-sourced recognition view when rev-rec is wired), a pointer
+        to the GL CSV export, and a `ready_to_close` verdict. The period is
+        ready to close when the trial balance is in balance and reconciliation
+        finds zero discrepancies; otherwise `blockers` lists why. Nothing is
+        persisted — closing the period stays a human decision.
+      parameters:
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 2000
+      responses:
+        '200':
+          description: Month-end close pack for the period.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -5773,7 +5954,9 @@ paths:
         A metric is a tenant-defined meter over usage events; its `code`
         doubles as the event `dimension` it aggregates. Aggregations:
         `count`, `sum`, `max`, `unique` (distinct values of the event
-        property named by `field_name`).
+        property named by `field_name`), `latest` (most recent event's
+        quantity), and `percentile` (the p-th percentile of quantities, with
+        `field_name` carrying the percentile 1-99, e.g. "95").
       operationId: createBillableMetric
       requestBody:
         required: true
@@ -5914,6 +6097,53 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/Charge" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/plans/{id}/simulate-charges:
+    post:
+      tags: [Metering]
+      summary: Simulate a proposed charge set (read-only)
+      description: >-
+        Rates a PROPOSED charge set against sample usage and returns the rated
+        lines, the subtotal, and a balanced general-ledger preview
+        (DR Accounts Receivable / CR Revenue). Pre-tax — GST/tax is resolved at
+        invoice time. Nothing is persisted and no ledger legs are posted. Sample
+        usage comes from `usage` (per metric_id); metrics without an explicit
+        entry fall back to `subscription_id`'s current-period usage when given.
+      operationId: simulateCharges
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currency: { type: string, description: "ISO code; defaults to the plan's first price currency." }
+                subscription_id: { type: string, format: uuid, description: "Optional: fills usage for metrics without an explicit entry." }
+                charges:
+                  type: array
+                  items: { $ref: "#/components/schemas/ChargeInput" }
+                usage:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      metric_id: { type: string, format: uuid }
+                      quantity: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: The pre-tax pricing simulation with a balanced GL preview.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -6738,6 +6968,239 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   # --- Phase 3 auth: SAML SSO (per-tenant admin config + SP endpoints) ---
+  /v1/gateway-connections:
+    get:
+      tags: [Gateway Connections]
+      summary: List the tenant's BYO payment-gateway connections
+      description: |
+        Returns the tenant's active Stripe/Razorpay connections (secret-free —
+        only the public key, mode, and whether a webhook secret is set) and
+        whether the credential vault is available.
+      responses:
+        '200':
+          description: Connections and vault status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      connections:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/GatewayConnectionView'
+                      vault_ready:
+                        type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Gateway Connections]
+      summary: Connect (or replace) a payment gateway
+      description: |
+        Stores the tenant's own gateway credentials, sealed at rest. Secrets are
+        write-only and never returned. Replaces any existing active connection
+        for the provider. Owner/admin only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider, secret_key]
+              properties:
+                provider:
+                  type: string
+                  enum: [stripe, razorpay]
+                mode:
+                  type: string
+                  enum: [test, live]
+                public_key:
+                  type: string
+                  description: Razorpay key_id / Stripe publishable key (not secret).
+                secret_key:
+                  type: string
+                webhook_secret:
+                  type: string
+                  description: Optional; can be set later once the webhook URL is known.
+      responses:
+        '201':
+          description: Connected.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/GatewayConnectionView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          description: Credential vault unavailable (GATEWAY_ENCRYPTION_KEY not set).
+
+  /v1/gateway-connections/{provider}:
+    delete:
+      tags: [Gateway Connections]
+      summary: Disconnect a payment gateway
+      description: Soft-disconnects the tenant's active connection for a provider. Owner/admin only.
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [stripe, razorpay]
+      responses:
+        '200':
+          description: Disconnected.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/gateway-connections/{provider}/webhook-secret:
+    put:
+      tags: [Gateway Connections]
+      summary: Set the webhook signing secret on the active connection
+      description: |
+        Updates the webhook secret in place (id unchanged, so the per-connection
+        webhook URL stays stable). Two-step connect: create the webhook in the
+        gateway console using the per-connection URL, then paste the secret here.
+        Owner/admin only.
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [stripe, razorpay]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                webhook_secret:
+                  type: string
+      responses:
+        '200':
+          description: Updated.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/integration-connections:
+    get:
+      tags: [Integration Connections]
+      summary: List the tenant's BYO tax/CRM/storage integrations
+      description: |
+        Returns the tenant's active tax (TaxJar/Avalara), CRM (HubSpot), and
+        storage (S3/MinIO) connections — secret-free (only non-secret config like
+        region/bucket, and whether secrets are set) — plus vault availability.
+      responses:
+        '200':
+          description: Connections and vault status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      connections:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/IntegrationConnectionView'
+                      vault_ready:
+                        type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Integration Connections]
+      summary: Connect (or replace) a tax/CRM/storage integration
+      description: |
+        Stores the tenant's own integration credentials, sealed at rest. Secrets
+        are write-only. Replaces any existing active connection for the
+        (category, provider). Owner/admin only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category, provider, config]
+              properties:
+                category:
+                  type: string
+                  enum: [tax, crm, storage]
+                provider:
+                  type: string
+                  description: taxjar / avalara / hubspot / s3.
+                config:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Provider config (e.g. api_key; or bucket/region/keys for s3).
+      responses:
+        '201':
+          description: Connected.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/IntegrationConnectionView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          description: Credential vault unavailable (GATEWAY_ENCRYPTION_KEY not set).
+
+  /v1/integration-connections/{category}/{provider}:
+    delete:
+      tags: [Integration Connections]
+      summary: Disconnect a tax/CRM/storage integration
+      description: Soft-disconnects the tenant's active connection. Owner/admin only.
+      parameters:
+        - name: category
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [tax, crm, storage]
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Disconnected.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /v1/sso/connection:
     get:
       tags: [Auth]
@@ -6955,6 +7418,34 @@ components:
             $ref: '#/components/schemas/Error'
 
   schemas:
+    IntegrationConnectionView:
+      type: object
+      description: Secret-free projection of a BYO tax/CRM/storage connection.
+      properties:
+        id: { type: string, format: uuid }
+        category: { type: string, enum: [tax, crm, storage] }
+        provider: { type: string }
+        config:
+          type: object
+          additionalProperties: { type: string }
+          description: Non-secret config fields only (e.g. region, bucket, endpoints).
+        has_secrets: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    GatewayConnectionView:
+      type: object
+      description: Secret-free projection of a BYO gateway connection.
+      properties:
+        id: { type: string, format: uuid }
+        provider: { type: string, enum: [stripe, razorpay] }
+        mode: { type: string, enum: [test, live] }
+        public_key: { type: string }
+        has_webhook_secret: { type: boolean }
+        webhook_path:
+          type: string
+          description: Append to the API origin for the gateway console (e.g. /webhooks/stripe/{id}).
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
     Entitlement:
       type: object
       properties:
@@ -6982,10 +7473,16 @@ components:
         tenant_id: { type: string, format: uuid }
         name: { type: string }
         code: { type: string }
-        aggregation_type: { type: string, enum: [count, sum, max, unique] }
+        aggregation_type: { type: string, enum: [count, sum, max, unique, latest, percentile, custom, weighted_sum] }
         field_name:
           type: string
-          description: Event property counted by the `unique` aggregation.
+          description: Event property counted by `unique`, or the percentile 1-99 for `percentile`.
+        expression:
+          type: string
+          description: >
+            Sandboxed per-event formula for the `custom` aggregation (e.g.
+            `quantity * properties.multiplier`); its results are summed over the
+            period. Empty for every other aggregation.
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
     BillableMetricInput:
@@ -6997,13 +7494,19 @@ components:
           type: string
           maxLength: 50
           description: Doubles as the usage event dimension; immutable after create.
-        aggregation_type: { type: string, enum: [count, sum, max, unique] }
+        aggregation_type: { type: string, enum: [count, sum, max, unique, latest, percentile, custom, weighted_sum] }
         field_name:
           type: string
-          description: Required for `unique`, forbidden otherwise.
+          description: Required for `unique` (property name) and `percentile` (1-99); forbidden otherwise.
+        expression:
+          type: string
+          description: >
+            Required for the `custom` aggregation, forbidden otherwise. A
+            sandboxed per-event formula reading `quantity` and `properties`
+            (e.g. `quantity * properties.multiplier`); results are summed.
     ChargeTier:
       type: object
-      required: [up_to, unit_amount]
+      required: [up_to]
       properties:
         up_to:
           type: [integer, 'null']
@@ -7011,7 +7514,10 @@ components:
           description: Inclusive upper unit bound; null = unbounded (last tier only).
         unit_amount:
           type: string
-          description: Per-unit rate as a decimal string in MAJOR currency units (e.g. "0.0035").
+          description: (graduated/volume) per-unit rate as a decimal string in MAJOR currency units (e.g. "0.0035").
+        rate:
+          type: string
+          description: (graduated_percentage) percent applied to this band of the base, decimal string e.g. "2.5".
         flat_amount:
           type: integer
           format: int64
@@ -7035,6 +7541,25 @@ components:
           type: array
           items: { $ref: "#/components/schemas/ChargeTier" }
           description: (graduated/volume) price bands.
+        rate:
+          type: string
+          description: (percentage) percent applied to the base, decimal string e.g. "2.5".
+        fixed_amount:
+          type: integer
+          format: int64
+          description: (percentage) flat fee in minor units added after the percentage.
+        free_units:
+          type: integer
+          format: int64
+          description: (percentage) base units exempt from the percentage, deducted first.
+        min_amount:
+          type: integer
+          format: int64
+          description: (percentage) floor on the line in minor units; 0 = no floor.
+        max_amount:
+          type: integer
+          format: int64
+          description: (percentage) cap on the line in minor units; 0 = no cap.
     Charge:
       type: object
       description: >-
@@ -7044,22 +7569,52 @@ components:
         id: { type: string, format: uuid }
         plan_id: { type: string, format: uuid }
         metric_id: { type: string, format: uuid }
-        charge_model: { type: string, enum: [per_unit, graduated, volume, package] }
+        charge_model: { type: string, enum: [per_unit, graduated, volume, package, percentage, graduated_percentage, dynamic] }
         amounts:
           type: object
           additionalProperties: { $ref: "#/components/schemas/ChargeAmounts" }
           description: Pricing per ISO currency code.
+        filter_key:
+          type: string
+          description: >-
+            (A4) An event property this charge prices dimensionally; empty =
+            unfiltered. Each `filters` entry prices one value of this property;
+            events matching none use `amounts` (the default).
+        filters:
+          type: array
+          items: { $ref: "#/components/schemas/ChargeFilterValue" }
+        pay_in_advance:
+          type: boolean
+          description: >-
+            Rate this charge per usage event at ingestion time (captured as an
+            unbilled charge, folded onto the next invoice) instead of at period
+            close. Only per_unit/percentage/dynamic may set it.
         hsn_code: { type: string }
         metric: { $ref: "#/components/schemas/BillableMetric" }
+    ChargeFilterValue:
+      type: object
+      required: [value, amounts]
+      properties:
+        value: { type: string, description: The property value this band prices. }
+        amounts:
+          type: object
+          additionalProperties: { $ref: "#/components/schemas/ChargeAmounts" }
     ChargeInput:
       type: object
       required: [metric_id, charge_model, amounts]
       properties:
         metric_id: { type: string, format: uuid }
-        charge_model: { type: string, enum: [per_unit, graduated, volume, package] }
+        charge_model: { type: string, enum: [per_unit, graduated, volume, package, percentage, graduated_percentage, dynamic] }
         amounts:
           type: object
           additionalProperties: { $ref: "#/components/schemas/ChargeAmounts" }
+        filter_key: { type: string, description: "(A4) event property for dimensional pricing." }
+        filters:
+          type: array
+          items: { $ref: "#/components/schemas/ChargeFilterValue" }
+        pay_in_advance:
+          type: boolean
+          description: Non-cumulative models only (per_unit/percentage/dynamic).
         hsn_code: { type: string }
     AuditLog:
       type: object

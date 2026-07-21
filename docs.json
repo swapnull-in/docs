@@ -383,7 +383,21 @@
                 "pages": [
                   "api-reference/usage/record-event",
                   "api-reference/usage/query",
-                  "api-reference/usage/dimensions"
+                  "api-reference/usage/dimensions",
+                  "api-reference/subscriptions/usage-amount"
+                ]
+              },
+              {
+                "group": "Metering",
+                "pages": [
+                  "api-reference/metrics/list",
+                  "api-reference/metrics/create",
+                  "api-reference/metrics/get",
+                  "api-reference/metrics/update",
+                  "api-reference/metrics/delete",
+                  "api-reference/usage-alerts/create",
+                  "api-reference/usage-alerts/list",
+                  "api-reference/usage-alerts/delete"
                 ]
               },
               {
@@ -427,7 +441,10 @@
                 "pages": [
                   "api-reference/billing/add-charge",
                   "api-reference/billing/list-charges",
-                  "api-reference/billing/advance-invoice"
+                  "api-reference/billing/advance-invoice",
+                  "api-reference/billing/set-charges",
+                  "api-reference/billing/simulate-charges",
+                  "api-reference/subscriptions/bill-usage"
                 ]
               }
             ],
@@ -652,6 +669,14 @@
                 "group": "Waitlist",
                 "pages": [
                   "api-reference/waitlist/join"
+                ]
+              },
+              {
+                "group": "Payment Gateways",
+                "pages": [
+                  "api-reference/gateways/list",
+                  "api-reference/gateways/connect",
+                  "api-reference/gateways/disconnect"
                 ]
               }
             ],
