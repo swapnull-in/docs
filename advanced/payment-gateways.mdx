@@ -210,6 +210,29 @@ metadata (brand, last 4, expiry) for the dashboard and dunning emails; see
 | Razorpay | card, UPI, netbanking, wallet, UPI AutoPay mandate | Indian customers, INR billing |
 | Stripe | card, ACH debit, SEPA debit, iDEAL, Bancontact | International customers, USD and EUR billing |
 
+### Autopay on your own gateway (BYO)
+
+When you connect your **own** Stripe account, recurring charges run on *that*
+account — not the platform's — so the money, the statement descriptor, and the
+payout all belong to you. This is automatic once your connection is active:
+
+- **Saving a card** (portal or checkout) creates the Stripe SetupIntent on your
+  connected account, and Recurso records which connection saved it.
+- **Every off-session charge** for that card — subscription renewal, wallet
+  auto-recharge, and dunning retries — is then routed to the **same** account.
+
+A card is only ever chargeable on the gateway that saved it, so Recurso always
+charges each saved card on its recorded connection. Cards saved before you
+connected (or customers on the platform gateway) keep working unchanged. If a
+connection later becomes unavailable, the charge is left for dunning rather than
+attempted on the wrong account — it's never silently mischarged.
+
+<Note>
+Card autopay routes to your BYO **Stripe** connection. Razorpay recurring uses
+UPI AutoPay **mandates** (registered per customer), which already debit on your
+connected Razorpay account.
+</Note>
+
 ## Webhook Handling from Gateways
 
 Recurso receives webhooks from both gateways and normalizes them into a unified event format. You do not need to handle gateway-specific webhook payloads yourself.

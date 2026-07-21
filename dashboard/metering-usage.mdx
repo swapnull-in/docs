@@ -47,14 +47,27 @@ your app posts a usage event on dimension `api_calls`, the metric with code
     | `count` | Number of events |
     | `max` | The single largest event |
     | `unique` | Distinct values of a chosen property |
+    | `latest` | The most recent event's quantity in the period |
+    | `percentile` | The p-th percentile of event quantities (e.g. p95) |
+    | `weighted_sum` | Time-weighted average of a running level from signed deltas (per-time resources like seats) |
+    | `custom` | Sum of a sandboxed per-event expression |
 
-    For **`unique`**, a **Property to count (`field_name`)** field appears —
-    name the event property whose distinct values you're counting (e.g.
-    `user_id` for unique active users).
+    Two aggregations show an extra field in the editor:
+    - **`unique`** and **`percentile`** → a **Property / Percentile
+      (`field_name`)** field: the property whose distinct values you count, or
+      the percentile `1–99` (e.g. `95`).
+    - **`custom`** → an **Expression** field: a formula over `quantity` and
+      numeric `properties.*` (e.g. `quantity * properties.multiplier`), summed
+      over the period. It's validated as you save, so a bad formula is caught
+      here, not at invoice time.
+
+    **`weighted_sum`** needs no extra field — report a signed `quantity` (`+5`
+    when five seats are added, `-2` when two are removed) and it bills the
+    average level held over the period.
   </Step>
   <Step title="Create metric">
-    You can **edit** a metric's name, aggregation, and property later (the code
-    stays fixed), or **delete** it.
+    You can **edit** a metric's name, aggregation, property, and expression later
+    (the code stays fixed), or **delete** it.
   </Step>
 </Steps>
 
