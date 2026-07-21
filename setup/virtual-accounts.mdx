@@ -1,0 +1,45 @@
+---
+title: "Set Up Virtual Accounts (Offline Payments)"
+description: "Give customers a dedicated account/reference to pay invoices by bank transfer, auto-reconciled."
+---
+
+## Overview
+
+A virtual account is a dedicated bank account number (or reference) assigned to a
+customer, so payments they send by bank transfer are **automatically matched** to
+their invoices — offline collection without manual reconciliation.
+
+<Info>
+Concept + webhook detail: [Virtual Accounts](/advanced/virtual-accounts).
+</Info>
+
+## Step 1: Provision a virtual account
+
+Create a virtual account for the customer (dashboard or API). They receive the
+account number/reference to use for transfers.
+
+## Step 2: Share the payment details
+
+Put the virtual-account details on the customer's invoices / payment
+instructions, so a bank transfer carries the reference that identifies it.
+
+## Step 3: Let reconciliation match payments
+
+When funds arrive, the provider webhook notifies Recurso, which links the payment
+to the customer and settles the matching open invoice automatically.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The virtual account is assigned">
+    The customer has a virtual-account number/reference.
+  </Step>
+  <Step title="A transfer settles an invoice">
+    A bank transfer to the account is matched and marks the invoice paid.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Virtual Accounts concept](/advanced/virtual-accounts)
+- [Set up payment gateways](/setup/payment-gateway)

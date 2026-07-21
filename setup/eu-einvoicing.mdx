@@ -1,0 +1,92 @@
+---
+title: "Set Up EU E-Invoicing"
+description: "Turn on EN 16931 (UBL 2.1) structured e-invoice generation for a tenant, and set the seller identity the standard requires."
+---
+
+## Overview
+
+EU e-invoicing is **off by default** and enabled **per tenant** — the mandate
+landscape is fragmented (B2G vs B2B, different national rollout dates), so you
+switch it on only where a mandate applies. Once enabled, every finalized invoice
+generates an [EN 16931](/compliance/eu-einvoicing) document in UBL 2.1 syntax
+(Peppol BIS Billing 3.0), with your seller identity and per-rate VAT subtotals.
+
+<Info>
+This is separate from India's IRN e-invoicing — enabling one has no effect on the
+other. See [E-Invoicing (EU)](/compliance/eu-einvoicing) for the concept detail.
+</Info>
+
+## Step 1: Set your seller identity and enable
+
+Set the opt-in flag plus your EN 16931 seller party. In the dashboard, go to
+**Settings → EU e-invoicing**; or call the API:
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/settings/eu-einvoice \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "enabled": true,
+    "legal_name": "Acme GmbH",
+    "vat_number": "DE123456789",
+    "country_code": "DE",
+    "street": "Hauptstr. 1",
+    "city": "Berlin",
+    "postal_zone": "10115"
+  }'
+```
+
+<Warning>
+Enabling requires `legal_name`, `vat_number` (with the country prefix), and a
+valid two-letter `country_code` — an EN 16931 document can't be built without a
+complete seller identity, so the request is rejected if any are missing.
+</Warning>
+
+## Step 2: Make sure your customers carry a VAT identity
+
+The **buyer** party is projected from the customer record:
+
+- **VAT id** comes from the customer's tax id.
+- **Country** is normalized to an ISO 3166-1 alpha-2 code (common EU country
+  names are mapped; a two-letter code passes through).
+- **Name** and **postal address** come from the customer's billing details.
+
+Keep customer tax ids and billing countries accurate — a missing VAT id or an
+unrecognized country is the most common reason generation fails.
+
+## Step 3: Finalize an invoice
+
+Generation runs **after** the invoice is committed (via subscription billing or
+manual finalization) — it never blocks or rolls back invoicing. The document and
+its delivery status are stored against the invoice.
+
+## Verify your setup
+
+<Steps>
+  <Step title="Config reads back enabled">
+    `GET /v1/settings/eu-einvoice` returns `enabled: true` with your seller
+    identity.
+  </Step>
+  <Step title="A finalized invoice has a document">
+    After finalizing an invoice for an EU customer, the stored e-invoice status is
+    `generated` (built) or `sent` (delivered) — not `failed`.
+  </Step>
+  <Step title="Totals reconcile">
+    Line nets sum to the subtotal and the per-rate VAT subtotals sum to the tax
+    total — the document is exact to the cent.
+  </Step>
+</Steps>
+
+## Going live: the Access Point
+
+Recurso generates and stores the document today and hands it to a pluggable
+**transport**. Connecting a production **Peppol Access Point** is a
+provider-credential step — until it's wired, documents are generated, validated,
+stored, and retrievable, and the delivery hop is exercised by a built-in
+transport. Generation and retry behaviour are unchanged once a live Access Point
+is connected.
+
+## Next steps
+
+- [E-Invoicing (EU) concept + delivery statuses](/compliance/eu-einvoicing)
+- [Set up US sales tax](/tutorials/us-sales-tax-setup) if you also sell into the US

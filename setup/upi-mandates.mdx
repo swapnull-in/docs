@@ -1,0 +1,63 @@
+---
+title: "Set Up UPI AutoPay Mandates"
+description: "Collect recurring payments in India through RBI-compliant UPI AutoPay mandates."
+---
+
+## Overview
+
+A **UPI AutoPay mandate** is the customer's standing authorization to auto-debit
+recurring charges in India. It's created, authorized by the customer in their UPI
+app, linked to a subscription, and then debited each cycle — with RBI-required
+pre-debit notifications.
+
+<Info>
+Full lifecycle, frequencies, and webhooks: [UPI Mandates](/compliance/upi-mandates).
+Requires Razorpay — see [payment gateways](/setup/payment-gateway).
+</Info>
+
+## Step 1: Create the mandate
+
+Create a mandate for the customer with the amount cap and frequency. In the
+dashboard, this happens on the subscription; or via the API:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/mandates \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "cus_...",
+    "max_amount": 500000,
+    "frequency": "monthly"
+  }'
+```
+
+## Step 2: Get the customer to authorize
+
+The mandate returns an **authorization link/flow** — the customer approves it in
+their UPI app. Until they authorize, the mandate is pending and can't be debited.
+
+## Step 3: Link it to a subscription
+
+Attach the authorized mandate to the subscription so each cycle's invoice is
+auto-debited. Recurso sends the **pre-debit notification** ahead of each charge as
+RBI requires.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The mandate authorizes">
+    After the customer approves, the mandate status moves to active.
+  </Step>
+  <Step title="A cycle auto-debits">
+    The subscription's next invoice is collected via the mandate, after the
+    pre-debit notice.
+  </Step>
+  <Step title="Revocation stops debits">
+    Revoking the mandate stops further auto-debits.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [UPI Mandates concept](/compliance/upi-mandates)
+- [Set up payment gateways](/setup/payment-gateway)

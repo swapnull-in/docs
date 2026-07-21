@@ -1,0 +1,54 @@
+---
+title: "Set Up Accounting Sync"
+description: "Sync invoices, payments, and credit notes to QuickBooks, Xero, or Tally."
+---
+
+## Overview
+
+Accounting sync pushes your billing records — invoices, payments, credit notes —
+into **QuickBooks**, **Xero**, or **Tally**, so your books stay current without
+manual re-entry. Sync is incremental (only changed records) via dirty tracking.
+
+<Info>
+Full connection parameters, sync-status values, and Xero item linkage:
+[Accounting](/advanced/accounting).
+</Info>
+
+## Step 1: Provide OAuth credentials (QuickBooks / Xero)
+
+QuickBooks and Xero connect over OAuth, so first register a developer app with
+the provider and configure its client id/secret in your Recurso environment (see
+[Setting up OAuth credentials](/advanced/accounting)). Tally connects locally and
+doesn't need OAuth.
+
+## Step 2: Connect the provider
+
+In the dashboard, go to **Integrations → Accounting** and connect QuickBooks or
+Xero — you'll be redirected to the provider to authorize, then back. The OAuth
+state is signed to prevent CSRF on the callback.
+
+## Step 3: Sync
+
+Once connected, records sync automatically as they change; you can also trigger a
+sync on demand. Only records changed since the last sync are pushed (dirty
+tracking), so re-syncs are cheap.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The connection is active">
+    Integrations → Accounting shows the provider connected; the connection status
+    is healthy.
+  </Step>
+  <Step title="Records appear in the provider">
+    After a sync, recent invoices/payments show up in QuickBooks/Xero/Tally.
+  </Step>
+  <Step title="Incremental re-sync is clean">
+    A second sync only moves records changed since the last run.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Accounting concept + sync-status values](/advanced/accounting)
+- [Month-end close](/dashboard/workflows/monthly-close)

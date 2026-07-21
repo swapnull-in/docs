@@ -1,0 +1,95 @@
+---
+title: "Set Up Payment Gateways"
+description: "Configure a platform gateway (Stripe/Razorpay) via environment, or let each tenant bring their own account for autopay."
+---
+
+## Overview
+
+Recurso charges through a **payment gateway**. You can run one gateway for the
+whole deployment (via environment variables), or let **each tenant bring their
+own** Stripe/Razorpay account so funds settle directly to them. Currency decides
+routing — INR → Razorpay, USD → Stripe. Without any gateway configured, a
+built-in mock gateway is used (dev/testing only).
+
+<Info>
+See [Payment Gateways](/advanced/payment-gateways) for the full multi-gateway
+architecture, smart routing, and per-gateway feature notes.
+</Info>
+
+## Option A — Platform gateway (environment)
+
+For a single-tenant or self-managed deployment, configure one provider via the
+environment:
+
+```bash .env
+# Stripe (USD)
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PUBLISHABLE_KEY=pk_live_...   # handed to the browser for checkout
+
+# Razorpay (INR)
+RAZORPAY_KEY_ID=rzp_live_...
+RAZORPAY_KEY_SECRET=...
+RAZORPAY_WEBHOOK_SECRET=...
+```
+
+Point each gateway's webhook at Recurso so payment outcomes flow back as events.
+
+## Option B — Bring-your-own gateway (per tenant)
+
+Let a tenant connect their own account so autopay (save card + renewal + dunning
++ wallet recharge) runs on **their** gateway.
+
+### Step 1: Configure the credential vault key (once)
+
+BYO gateway credentials are sealed at rest with AES-256-GCM, so the server needs
+a master key. Without it, "Connect a gateway" is disabled and payments fall back
+to the platform gateway.
+
+```bash
+# Generate a 32-byte key (base64 or hex both work)
+openssl rand -base64 32
+# Set it as GATEWAY_ENCRYPTION_KEY in the API's environment / secret manager
+```
+
+<Warning>
+Set `GATEWAY_ENCRYPTION_KEY` **once and back it up** — rotating or losing it makes
+every already-encrypted gateway credential unreadable. It's safe to set fresh
+while no gateway is connected yet. In production, store it in a secret manager and
+inject it as an env var — never commit it.
+</Warning>
+
+### Step 2: Connect the tenant's gateway
+
+In the dashboard, go to **Integrations → Payment gateways** and connect Stripe or
+Razorpay with the tenant's own API keys, then set the gateway's **webhook secret**
+so payment outcomes are verified. Each tenant's credentials are encrypted and
+used only for that tenant.
+
+### Step 3: Confirm autopay routes to it
+
+Once connected, saved cards, renewals, dunning retries, and wallet auto-recharge
+for that tenant charge on **their** gateway — routed to the account where the card
+was saved.
+
+## Verify your setup
+
+<Steps>
+  <Step title="A gateway is active (not mock)">
+    On boot the API logs the gateway mode; the dashboard shows a connected gateway
+    rather than "using the platform/mock gateway".
+  </Step>
+  <Step title="A test charge settles">
+    Run a checkout or an autopay renewal and confirm the payment succeeds and the
+    invoice is marked paid.
+  </Step>
+  <Step title="Webhooks arrive">
+    A gateway webhook (e.g. payment succeeded) maps to a Recurso event and updates
+    the invoice.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Payment Gateways concept](/advanced/payment-gateways)
+- [Recover a failed payment](/dashboard/workflows/recover-failed-payment)
