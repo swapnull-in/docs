@@ -1,0 +1,92 @@
+---
+title: "Setup Guides"
+description: "Step-by-step guides to set up every part of Recurso — billing, payments, compliance, and platform."
+---
+
+## What these guides are
+
+Each guide here is a **task-oriented walkthrough**: do this, then this, then verify.
+They complement the [concept docs](/concepts) (which explain *what* a feature is)
+and the [API reference](/api-reference/introduction) (which documents every
+endpoint) — a setup guide is the fastest path from "off" to "working".
+
+Every guide follows the same shape: **Overview → numbered Steps → Verify → Next steps**,
+and shows both the **dashboard** path and the **API** where relevant.
+
+## Monetization
+
+<CardGroup cols={2}>
+  <Card title="Prepaid wallets" icon="wallet" href="/setup/wallets">
+    Sell prepaid credit that drains before any card, with auto-recharge.
+  </Card>
+  <Card title="Usage alerts" icon="bell" href="/setup/usage-alerts">
+    Notify on metered-usage thresholds, once per period.
+  </Card>
+  <Card title="Coupons & discounts" icon="tag" href="/setup/coupons">
+    Percentage or fixed-amount promos, one-time or recurring.
+  </Card>
+  <Card title="Credit notes & refunds" icon="receipt" href="/setup/credit-notes">
+    Cash refunds or spendable account credit.
+  </Card>
+</CardGroup>
+
+## Payments & recovery
+
+<CardGroup cols={2}>
+  <Card title="Payment gateways (BYO)" icon="credit-card" href="/setup/payment-gateway">
+    Connect your own Stripe or Razorpay account for autopay.
+  </Card>
+  <Card title="Dunning" icon="rotate" href="/setup/dunning">
+    Recover failed payments with smart retries + reminder campaigns.
+  </Card>
+</CardGroup>
+
+## Compliance
+
+<CardGroup cols={2}>
+  <Card title="EU e-invoicing" icon="file-invoice" href="/setup/eu-einvoicing">
+    Turn on EN 16931 / UBL 2.1 e-invoice generation, per tenant.
+  </Card>
+  <Card title="US customer exemptions" icon="file-shield" href="/setup/us-exemptions">
+    Record resale/government exemptions and pass them to your tax provider.
+  </Card>
+  <Card title="US registrations & liability" icon="clipboard-check" href="/setup/us-registrations">
+    Track where you're registered and pull the per-state liability report.
+  </Card>
+</CardGroup>
+
+## Platform
+
+<CardGroup cols={2}>
+  <Card title="Webhooks" icon="bolt" href="/setup/webhooks">
+    Receive real-time billing events, verified and retried.
+  </Card>
+  <Card title="SSO (SAML)" icon="key" href="/setup/sso">
+    Sign your team in through Okta, Azure AD, or any SAML IdP.
+  </Card>
+  <Card title="Accounting sync" icon="book" href="/setup/accounting">
+    Push invoices/payments to QuickBooks, Xero, or Tally.
+  </Card>
+  <Card title="API keys" icon="code" href="/setup/api-keys">
+    Create, rotate, and revoke server-to-server keys.
+  </Card>
+  <Card title="Notifications" icon="envelope" href="/setup/notifications">
+    Configure the transactional emails Recurso sends.
+  </Card>
+</CardGroup>
+
+## Related walkthroughs
+
+Some setups already have a full end-to-end tutorial:
+
+- [Set up usage-based SaaS](/tutorials/usage-based-saas)
+- [Set up feature gating](/tutorials/feature-gating)
+- [Set up India GST](/tutorials/india-gst-setup)
+- [Set up US sales tax end-to-end](/tutorials/us-sales-tax-setup)
+
+<Info>
+More setup guides — India IRP e-invoicing, UPI mandates, quotes, gifts &
+referrals, cancel-flows, revenue recognition, month-end close, and more — are
+being added. If you need one that isn't here yet, the matching
+[concept doc](/concepts) covers the same ground.
+</Info>

@@ -1,0 +1,69 @@
+---
+title: "Set Up Webhooks"
+description: "Receive real-time billing events at your endpoint, verify their signatures, and handle retries."
+---
+
+## Overview
+
+Webhooks push billing events to your server as they happen — subscription
+created, payment succeeded/failed, invoice finalized, and more — so your app
+reacts in real time instead of polling.
+
+<Info>
+Full event catalog and payload shapes: [Webhooks](/advanced/webhooks).
+</Info>
+
+## Step 1: Register your endpoint
+
+Point Recurso at a public HTTPS URL and subscribe to the events you care about.
+In the dashboard, go to **Developers → Webhooks → Add endpoint**; or via the API:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/webhooks \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-app.com/webhooks/recurso",
+    "event_types": ["invoice.paid", "payment.failed", "subscription.updated"]
+  }'
+```
+
+You'll get back a **signing secret** — store it; you need it to verify deliveries.
+
+## Step 2: Verify the signature
+
+Every delivery is signed with your endpoint's secret. On receipt, recompute the
+signature over the raw body and compare — reject anything that doesn't match, so
+only genuine Recurso events are trusted. The exact scheme is in
+[Verify signature](/advanced/webhooks).
+
+<Warning>
+Verify against the **raw** request body, before any JSON parsing/re-serialization
+— reformatting the bytes breaks the signature.
+</Warning>
+
+## Step 3: Respond fast and handle retries
+
+Return `2xx` quickly (do heavy work asynchronously). If your endpoint errors or
+times out, Recurso **retries with backoff**; make your handler **idempotent**
+(dedupe on the event id) so a redelivery is harmless.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The endpoint is registered">
+    It appears under Developers → Webhooks with its subscribed event types.
+  </Step>
+  <Step title="A test event is signed and accepted">
+    Send a test event; your handler verifies the signature and returns 2xx.
+  </Step>
+  <Step title="Deliveries are tracked">
+    Successful and failed deliveries show in the endpoint's delivery log; you can
+    redeliver a past event.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Webhooks concept + event types](/advanced/webhooks)
+- [Set up usage alerts](/setup/usage-alerts) (delivered by webhook)

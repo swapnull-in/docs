@@ -1,0 +1,63 @@
+---
+title: "Set Up API Keys"
+description: "Create an API key to call Recurso from your backend, and rotate or revoke it safely."
+---
+
+## Overview
+
+An API key authenticates server-to-server calls to the Recurso API (the dashboard
+itself uses a session cookie; your integration uses a key). Keys are tenant-scoped
+and sent as a bearer token.
+
+<Info>
+Full auth model: [Authentication](/api-reference/authentication).
+</Info>
+
+## Step 1: Create a key
+
+In the dashboard, go to **Developers → API keys → Create key**; or via the API:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/developer/keys \
+  -H "Authorization: Bearer $EXISTING_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "Production backend" }'
+```
+
+<Warning>
+The full key is shown **once**, at creation. Copy it into your secret manager
+immediately — you can't retrieve it again, only revoke and re-create.
+</Warning>
+
+## Step 2: Use it
+
+Send the key as a bearer token on every request:
+
+```bash
+curl https://api.recurso.dev/v1/customers \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+The [SDKs](/sdk) take the key at client construction and attach it for you.
+
+## Step 3: Rotate and revoke
+
+To rotate, create a new key, deploy it, then revoke the old one — revoking a key
+stops it authenticating **immediately**. Keep keys out of source control and
+client-side code; store them in a secret manager.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The key authenticates">
+    A request with the key (e.g. `GET /v1/customers`) returns 200, not 401.
+  </Step>
+  <Step title="Revocation takes effect">
+    After revoking, the same key returns 401.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Authentication](/api-reference/authentication)
+- [SDKs](/sdk)
