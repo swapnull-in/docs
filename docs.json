@@ -110,6 +110,7 @@
               "advanced/organizations",
               "advanced/virtual-accounts",
               "advanced/developer-settings",
+              "advanced/mcp-server",
               "advanced/idempotency"
             ],
             "icon": "plug"
