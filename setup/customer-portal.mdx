@@ -1,0 +1,52 @@
+---
+title: "Set Up the Customer Portal"
+description: "Give customers a self-service portal to manage their card, plan, and invoices — cutting your support load."
+---
+
+## Overview
+
+The customer portal is a self-service page where your customers sign in (magic
+link) to update their payment method, view invoices, and manage their
+subscription — without emailing support. The session is held in an httpOnly
+cookie, never in local storage.
+
+<Info>
+Dashboard-side controls: [Customer portal](/dashboard/customer-portal) · overview:
+[Portal](/portal/overview).
+</Info>
+
+## Step 1: Configure the portal
+
+In the dashboard, go to the **Customer portal** settings and choose what customers
+can do (update card, change plan, view invoices, cancel). Set your branding and
+the return URL.
+
+## Step 2: Make sure email + a gateway are set
+
+The portal signs customers in by **magic link** (needs [email](/setup/notifications))
+and lets them update cards (needs a [payment gateway](/setup/payment-gateway) — a
+Stripe SetupIntent, or a UPI mandate re-auth).
+
+## Step 3: Send customers to the portal
+
+Link customers to the portal from your app or from billing emails. They request a
+magic link, sign in, and self-serve.
+
+## Verify your setup
+
+<Steps>
+  <Step title="A magic link signs in">
+    A customer requests a link and lands in the portal, authenticated by cookie.
+  </Step>
+  <Step title="Card update works">
+    Updating the payment method in the portal saves via the gateway.
+  </Step>
+  <Step title="Invoices are visible">
+    The customer sees their invoice history.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Customer portal (dashboard)](/dashboard/customer-portal)
+- [Set up notifications](/setup/notifications) · [payment gateways](/setup/payment-gateway)

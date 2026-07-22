@@ -1,0 +1,53 @@
+---
+title: "Set Up Minimum Commitments"
+description: "Bill a customer a minimum amount per period regardless of usage, with automatic true-up."
+---
+
+## Overview
+
+A minimum commitment guarantees a floor of revenue per period: if a customer's
+usage-based charges fall below the committed amount, Recurso **true-ups** the
+difference on the invoice. Above it, they simply pay for what they used.
+
+<Info>
+Concept detail: [Commitments](/advanced/commitments). Pairs with
+[usage-based billing](/tutorials/usage-based-saas).
+</Info>
+
+## Step 1: Set the commitment on the subscription
+
+In the dashboard, open the subscription's billing panel and set **Commitment**
+(the per-period minimum, in your currency); or via the API:
+
+```bash
+curl -X PUT https://api.recurso.dev/v1/subscriptions/{id}/commitment \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "amount": 100000 }'   # minor units; 0 clears the commitment
+```
+
+## Step 2: Let the true-up run at period close
+
+At the end of each period, if metered + fixed charges are below the commitment, a
+**true-up line** brings the invoice up to the committed minimum. Above it, no
+true-up is added.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The commitment is set">
+    The subscription shows its per-period minimum.
+  </Step>
+  <Step title="Low usage trues up">
+    A period with usage below the commitment invoices at the committed amount, with
+    a true-up line.
+  </Step>
+  <Step title="High usage doesn't">
+    A period above the commitment bills actual usage, no true-up.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Commitments concept](/advanced/commitments)
+- [Set up usage-based SaaS](/tutorials/usage-based-saas)

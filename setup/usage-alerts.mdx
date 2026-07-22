@@ -1,0 +1,63 @@
+---
+title: "Set Up Usage Alerts"
+description: "Notify customers (or yourself) when metered usage crosses a threshold — once per period, via webhook and email."
+---
+
+## Overview
+
+A usage alert fires when a customer's metered usage crosses a threshold in the
+current billing period — a bill-shock guardrail for high-usage accounts. It fires
+**once per period** (no repeat spam) and is delivered by webhook and email.
+
+<Info>
+Requires metering to be set up — see
+[Set up usage-based SaaS](/tutorials/usage-based-saas). Concept detail:
+[Usage alerts](/advanced/usage-alerts).
+</Info>
+
+## Step 1: Create the alert
+
+Attach an alert to a subscription and metric with a threshold. In the dashboard,
+open the subscription's usage and add an alert; or via the API:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/usage-alerts \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subscription_id": "sub_...",
+    "metric_code": "api_calls",
+    "threshold": 100000
+  }'
+```
+
+## Step 2: Handle the webhook
+
+When usage crosses the threshold, Recurso sends a webhook so your app can react
+(notify the customer in-product, throttle, or upsell). Configure the endpoint in
+[webhooks setup](/advanced/webhooks) and read the payload shape in
+[Usage alerts](/advanced/usage-alerts).
+
+## Step 3: Confirm the once-per-period behavior
+
+An alert fires a single time per billing period. It resets at the period
+boundary, so the customer isn't re-notified for continued usage in the same cycle.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The alert is attached">
+    The alert appears on the subscription with its metric and threshold.
+  </Step>
+  <Step title="Crossing the threshold fires it">
+    Ingesting usage past the threshold sends the webhook + email once.
+  </Step>
+  <Step title="It doesn't repeat">
+    Further usage in the same period does not re-fire the alert.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Usage alerts concept + payload](/advanced/usage-alerts)
+- [Set up webhooks](/advanced/webhooks)

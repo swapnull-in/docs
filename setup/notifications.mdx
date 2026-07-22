@@ -1,0 +1,52 @@
+---
+title: "Set Up Notifications"
+description: "Configure the transactional emails Recurso sends — invoices, payment outcomes, trials, dunning, and card-expiry."
+---
+
+## Overview
+
+Recurso sends transactional emails on billing events — invoice created, payment
+received/failed, trial ending, dunning reminders, card expiring. Set up an email
+sender so these reach your customers (and your team).
+
+<Info>
+See [Notifications](/dashboard/notifications) for the full list of emails and
+where they're triggered.
+</Info>
+
+## Step 1: Configure an email sender
+
+Point Recurso at your email transport (SMTP or the configured provider) via the
+API's environment. Until a sender is configured, emails are logged to the console
+(fine for development, not production).
+
+## Step 2: Set your from-identity and base URL
+
+Set the sending address/name and the dashboard/portal base URL used in email
+links, so buttons like "update payment method" resolve to your app.
+
+## Step 3: Confirm the events you rely on
+
+The key transactional emails:
+
+- **Invoice created** and **payment received** — receipts.
+- **Payment failed** and **dunning** — recovery (see [dunning setup](/setup/dunning)).
+- **Trial ending** and **card expiring** — proactive reminders that prevent churn.
+
+## Verify your setup
+
+<Steps>
+  <Step title="A real email sends">
+    Trigger an event (e.g. generate an invoice) and confirm the email is delivered,
+    not just logged.
+  </Step>
+  <Step title="Links resolve">
+    Buttons in the email (update card, view invoice) open your app at the right
+    place.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Notifications concept](/dashboard/notifications)
+- [Set up dunning](/setup/dunning)
