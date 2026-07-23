@@ -395,7 +395,8 @@
                 "pages": [
                   "api-reference/customers/create",
                   "api-reference/customers/list",
-                  "api-reference/customers/update-payment-method"
+                  "api-reference/customers/update-payment-method",
+                  "api-reference/customers/credit-statement"
                 ]
               },
               {
@@ -432,6 +433,8 @@
                   "api-reference/invoices/pdf",
                   "api-reference/invoices/preview",
                   "api-reference/invoices/einvoice-status",
+                  "api-reference/invoices/eu-einvoice",
+                  "api-reference/invoices/eu-einvoice-retry",
                   "api-reference/invoices/payment-wall"
                 ]
               },
@@ -486,6 +489,12 @@
                 "pages": [
                   "api-reference/credit-notes/create",
                   "api-reference/credit-notes/list"
+                ]
+              },
+              {
+                "group": "Wallets",
+                "pages": [
+                  "api-reference/wallets/close"
                 ]
               },
               {

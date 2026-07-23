@@ -1,0 +1,46 @@
+---
+title: "Close a wallet"
+openapi: "POST /v1/wallets/{id}/close"
+description: "Close a wallet and settle its remaining balance — refund paid balance, forfeit promotional balance."
+---
+
+## Path parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The wallet ID. |
+
+Closing is **irreversible**. The remaining balance is settled in one step:
+
+- **Paid balance** (top-ups the customer funded) is **refunded** to the customer.
+- **Promotional balance** (granted credit) is **forfeited**.
+
+Each movement posts its own ledger leg, and a closed wallet rejects further
+top-ups and drains.
+
+## Example request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/wallets/wal_8kQ2/close \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+No request body is required.
+
+## Example response
+
+```json
+{
+  "data": {
+    "refunded": 30000,
+    "forfeited": 5000
+  },
+  "message": "wallet closed"
+}
+```
+
+<Warning>
+This can't be undone. Once closed, the wallet's balance is zero and it can no
+longer be topped up or drained. Amounts are in the wallet currency's smallest
+unit.
+</Warning>
