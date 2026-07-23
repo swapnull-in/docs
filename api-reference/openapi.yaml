@@ -747,6 +747,67 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /v1/customers/{id}/credit-statement:
+    get:
+      operationId: getCreditStatement
+      tags: [Customers]
+      summary: Customer account-credit statement
+      description: >-
+        A customer's consolidated account-credit statement — spendable balance
+        per currency/entity, every grant (credit note), the invoice draw-down
+        history, and a per-currency rollup. The spendable balance equals the
+        credit applier's view (adjustment credits, status issued, balance > 0)
+        and reconciles to the Customer Credit ledger account.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The credit statement.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      customer_id: { type: string, format: uuid }
+                      balances:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            currency: { type: string }
+                            entity_id: { type: [string, 'null'], format: uuid }
+                            balance: { type: integer, format: int64 }
+                      grants:
+                        type: array
+                        items: { $ref: '#/components/schemas/CreditNote' }
+                      applications:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            credit_note_id: { type: string, format: uuid }
+                            invoice_id: { type: string, format: uuid }
+                            invoice_number: { type: string }
+                            currency: { type: string }
+                            amount: { type: integer, format: int64 }
+                            created_at: { type: string, format: date-time }
+                      summary:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            currency: { type: string }
+                            total_issued: { type: integer, format: int64 }
+                            total_applied: { type: integer, format: int64 }
+                            current_balance: { type: integer, format: int64 }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /v1/customers/{id}/payment-method:
     put:
       operationId: updateCustomerPaymentMethod
@@ -1261,6 +1322,59 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /v1/invoices/{id}/eu-einvoice:
+    get:
+      operationId: getEUEInvoice
+      tags: [Invoices]
+      summary: Get EU e-invoice (EN 16931 / UBL) status
+      description: >-
+        Returns the invoice's generated EU e-invoice — status, syntax, UBL
+        document, delivery id/error — or data:null when none has been generated.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: EU e-invoice record, or null when not generated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: [object, 'null']
+                    description: The EU e-invoice record (null if none generated).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/invoices/{id}/eu-einvoice/retry:
+    post:
+      operationId: retryEUEInvoice
+      tags: [Invoices]
+      summary: Regenerate and re-transmit the EU e-invoice
+      description: >-
+        Re-runs EN 16931 UBL generation and Access Point transmission for the
+        invoice, recovering a generation or transmission failure. Idempotent.
+        data:null when the tenant hasn't opted in to EU e-invoicing.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Retry executed; the current EU e-invoice record (or null).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: [object, 'null']
+                  message: { type: string }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /v1/invoices/{id}/einvoice:
     get:
       operationId: getEInvoiceStatus
@@ -1643,6 +1757,14 @@ paths:
                     in `invoice_id` and posts a Refunds-vs-Cash ledger
                     reversal; its progress is tracked by the credit note's
                     `refund_status`.
+                expires_at:
+                  type: [string, 'null']
+                  format: date-time
+                  description: >-
+                    Optional expiry for a spendable adjustment credit. When it
+                    passes with balance remaining, the expiry sweep writes the
+                    balance off (DR Customer Credit / CR Credits & Adjustments).
+                    Ignored for refunds.
       responses:
         '201':
           description: Credit note issued.
@@ -6384,6 +6506,43 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "401": { $ref: "#/components/responses/Unauthorized" }
 
+  /v1/wallets/{id}/close:
+    post:
+      operationId: closeWallet
+      tags: [Wallets]
+      summary: Close a wallet (cash out)
+      description: >-
+        Closes a wallet and settles its remaining balance: paid balance is
+        refunded to the customer and promotional balance is forfeited, each with
+        its ledger leg. Irreversible — a closed wallet rejects further top-ups
+        and drains.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Wallet closed; the settled amounts.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      refunded:
+                        type: integer
+                        format: int64
+                        description: Paid balance refunded to the customer (minor units).
+                      forfeited:
+                        type: integer
+                        format: int64
+                        description: Promotional balance written off (minor units).
+                  message: { type: string }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /v1/wallets/{id}/top-up:
     post:
       tags: [Wallets]
@@ -8398,9 +8557,13 @@ components:
           type: string
         status:
           type: string
-          enum: [issued, used, void]
+          enum: [issued, used, void, pending_approval, rejected, expired]
         reason:
           type: string
+        expires_at:
+          type: [string, 'null']
+          format: date-time
+          description: When a dated adjustment credit lapses; null = never expires. On this date any unused balance is written off.
         created_at:
           type: string
           format: date-time

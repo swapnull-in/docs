@@ -1,0 +1,65 @@
+---
+title: "Set Up Credit Notes & Refunds"
+description: "Issue a credit note to refund a customer or apply account credit against future invoices."
+---
+
+## Overview
+
+A credit note issues money back to a customer — either as a **cash refund**
+through the gateway, or as **account credit** that drains against future invoices
+(before any card). Every credit note posts to the double-entry ledger and tracks
+its own balance.
+
+<Info>
+Full lifecycle and filters: [Credit Notes](/advanced/credit-notes).
+</Info>
+
+## Step 1: Create the credit note
+
+In the dashboard, open the invoice (or the customer) and issue a credit note with
+a reason; or via the API:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/credit-notes \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "cus_...",
+    "amount": 2500,
+    "reason": "Service credit"
+  }'
+```
+
+## Step 2: Choose refund vs. account credit
+
+- **Cash refund** — the amount is returned via the gateway; settlement completes
+  when the gateway webhook confirms it (mandate payments are refundable too).
+- **Account credit** — the amount becomes spendable balance applied to future
+  invoices automatically, before any card.
+
+## Step 3: Track the balance
+
+A credit note carries a running balance as it's applied or refunded, and can be
+**voided** while unused. The customer's overall credit balance reflects all
+active adjustment credit notes.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The credit note exists with a balance">
+    It appears under the customer/invoice with its amount and remaining balance.
+  </Step>
+  <Step title="A refund settles / credit applies">
+    A cash refund flips to settled on the gateway webhook; account credit reduces
+    the next invoice's amount due.
+  </Step>
+  <Step title="The ledger balances">
+    The credit note's legs post to the ledger — the invariant harness keeps it
+    balanced.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Credit Notes concept + lifecycle](/advanced/credit-notes)
+- [Refund a customer (workflow)](/dashboard/workflows/refund-customer)

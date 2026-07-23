@@ -1,0 +1,69 @@
+---
+title: "Set Up Prepaid Wallets"
+description: "Sell prepaid credit that drains before any card is charged, with threshold-based auto-recharge."
+---
+
+## Overview
+
+A wallet is money-denominated prepaid credit for a customer. A committed invoice
+**drains the wallet first** — before adjustment credits and before any card — so
+paid-up customers are never double-charged. Optional **auto-recharge** tops the
+balance up off-session before it runs dry.
+
+<Info>
+See [Wallets](/advanced/wallets) for the draining order and balance mechanics.
+</Info>
+
+## Step 1: Create a wallet for the customer
+
+In the dashboard, go to **Wallets → Create wallet** (pick the customer and
+currency); or via the API:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/wallets \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "customer_id": "cus_...", "currency": "USD" }'
+```
+
+## Step 2: Top it up
+
+Add credit to the balance — a manual top-up, or the customer's prepayment:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/wallets/{id}/top-up \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "amount": 5000 }'   # minor units (e.g. $50.00)
+```
+
+## Step 3: Enable auto-recharge (optional)
+
+Set a threshold and a top-up amount; when the balance dips below the threshold,
+Recurso recharges the saved card off-session — routed to the tenant's
+[connected gateway](/setup/payment-gateway).
+
+## Step 4: Bill against it
+
+When an invoice commits, the wallet balance is consumed first; only the remainder
+(if any) goes to the card. Every movement posts to the ledger.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The wallet shows a balance">
+    Wallets → the customer's wallet shows the topped-up balance and a transaction
+    for the top-up.
+  </Step>
+  <Step title="An invoice drains it first">
+    A committed invoice reduces the wallet balance before charging any card.
+  </Step>
+  <Step title="Auto-recharge fires">
+    Dropping below the threshold triggers an off-session recharge on the saved card.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Wallets concept](/advanced/wallets)
+- [Set up payment gateways](/setup/payment-gateway)

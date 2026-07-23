@@ -102,6 +102,23 @@ or move those first. Billing history is always kept, and an archived customer
 can be **restored** at any time (the button becomes **Restore**).
 </Warning>
 
+### Account credit
+
+When a customer has account credit, the detail panel shows an **Account credit**
+section:
+
+- **Available balance** chips, one per currency — the credit that can be applied
+  to invoices right now.
+- **Grants** — every credit note, with its status, type, amount, remaining
+  balance, and expiry (or "expired").
+- **Applied to invoices** — the draw-down history.
+- **Export CSV** — download the statement (grants + applications) for the
+  customer's finance team to reconcile.
+
+The balance shown is exactly what the billing engine will apply, and reconciles
+to the Customer Credit ledger account. The same data is available via the
+[credit-statement API](/api-reference/customers/credit-statement).
+
 ## Where to go next
 
 <CardGroup cols={2}>

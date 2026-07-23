@@ -1,0 +1,47 @@
+---
+title: "Retry EU e-invoice"
+openapi: "POST /v1/invoices/{id}/eu-einvoice/retry"
+description: "Regenerate and re-transmit an invoice's EU e-invoice after a failure."
+---
+
+## Path parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | The invoice ID. |
+
+Re-runs the same EN 16931 UBL generation and Access Point transmission the
+post-commit hook uses, so it recovers **both** a generation failure (data since
+corrected) and a transmission failure. It is idempotent — one EU e-invoice per
+invoice. `data: null` means the tenant hasn't opted in to EU e-invoicing.
+
+## Example request
+
+```bash
+curl -X POST https://api.recurso.dev/v1/invoices/inv_Rp3mK7nBwQ/eu-einvoice/retry \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+No request body is required.
+
+## Example response
+
+```json
+{
+  "data": {
+    "id": "euinv_9fA2",
+    "invoice_id": "inv_Rp3mK7nBwQ",
+    "syntax": "ubl21",
+    "status": "sent",
+    "message_id": "ap-msg-8d2f",
+    "error_message": ""
+  },
+  "message": "EU e-invoice regenerated"
+}
+```
+
+<Tip>
+If a retry still fails, the record's `status` stays `failed` and `error_message`
+explains why — the background retry worker will also keep redriving transmission
+failures on a backoff schedule.
+</Tip>

@@ -1,0 +1,63 @@
+---
+title: "Set Up Coupons & Discounts"
+description: "Create promotional codes — percentage or fixed-amount, one-time or recurring — and apply them to subscriptions."
+---
+
+## Overview
+
+A coupon is a reusable discount you apply to a subscription: **percentage** or
+**fixed amount**, applied **once**, for a **number of periods**, or **forever**,
+with optional restrictions (specific plans, a minimum amount, new customers only).
+
+<Info>
+Full option reference: [Coupons](/advanced/coupons).
+</Info>
+
+## Step 1: Create the coupon
+
+In the dashboard, go to **Coupons → Create**; or via the API:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/coupons \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "LAUNCH20",
+    "discount_type": "percent",
+    "discount_value": 20,
+    "duration": "repeating",
+    "duration_in_periods": 3
+  }'
+```
+
+- `discount_type` is `percent` or `amount` (fixed, in minor units).
+- `duration` is `once`, `repeating` (with `duration_in_periods`), or `forever`.
+
+## Step 2: Add restrictions (optional)
+
+Limit where the coupon applies — specific plans, a minimum invoice amount, or
+new customers only — so a promo can't be used outside its intent.
+
+## Step 3: Apply it to a subscription
+
+Attach the coupon at subscription creation or to an existing subscription. The
+discount is applied on the next invoice and tracked as a redemption.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The coupon validates">
+    `GET /v1/coupons/{code}` (or the validate endpoint) returns it as active.
+  </Step>
+  <Step title="The discount lands on the invoice">
+    A subscription with the coupon shows the reduced total on its next invoice.
+  </Step>
+  <Step title="Redemption is tracked">
+    The coupon's redemption count increments; duration limits are respected.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Coupons concept + restrictions](/advanced/coupons)
+- [Create your first subscription](/dashboard/workflows/first-subscription)

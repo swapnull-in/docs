@@ -89,6 +89,20 @@ Auto-recharge needs both a threshold **and** a recharge amount — you can't set
 one without the other. Disabling clears both.
 </Warning>
 
+## Close a wallet
+
+Closing a wallet settles and retires it. From a wallet's row, choose **Close** and
+confirm — the action is **irreversible**. The remaining balance is settled in one
+step:
+
+- **Paid balance** (top-ups the customer funded) is **refunded** to the customer.
+- **Promotional balance** (granted credit) is **forfeited**.
+
+The confirmation dialog spells out the split, and afterward a small summary shows
+how much was refunded vs. forfeited. Each movement posts its own ledger leg, so the
+books stay balanced. A **closed** wallet is badged as such and no longer accepts
+top-ups, drains, or auto-recharge.
+
 ## Transaction history
 
 Click a wallet row to see its recent movements (newest first). Each entry is

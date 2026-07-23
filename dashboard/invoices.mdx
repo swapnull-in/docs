@@ -98,6 +98,32 @@ a credit note instead.
 For setting up GST e-invoicing end to end, see
 [Set up GST e-invoicing](/dashboard/workflows/india-gst-invoicing).
 
+## EU e-invoicing
+
+For an invoice issued under an EU-enabled entity, the invoice detail shows an
+**EU e-invoice** section alongside the GST one, with its **status**
+(`GENERATED`, `SENT`, or `FAILED`), **syntax** (UBL 2.1), delivery id, and any
+error.
+
+<Steps>
+  <Step title="Download the UBL">
+    Click **Download UBL** to save the generated EN 16931 / UBL 2.1 XML — the
+    exact document handed to the Access Point.
+  </Step>
+  <Step title="Retry a failed e-invoice">
+    If the status is **FAILED**, click **Retry**. This regenerates and
+    re-transmits the document, recovering both generation and transmission
+    failures; it's idempotent.
+  </Step>
+</Steps>
+
+<Note>
+Live delivery to the Peppol network requires a connected Access Point. Until one
+is wired, documents are generated and stored (and retrievable/downloadable), and
+the background worker keeps redriving failed transmissions. See
+[EU e-invoicing](/compliance/eu-einvoicing) for setup.
+</Note>
+
 ## Where to go next
 
 <CardGroup cols={2}>

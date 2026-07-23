@@ -1,0 +1,71 @@
+---
+title: "Customer credit statement"
+openapi: "GET /v1/customers/{id}/credit-statement"
+description: "A customer's consolidated account-credit statement: spendable balance, grants, and draw-down history."
+---
+
+## What it returns
+
+A single, reconciled view of a customer's account credit:
+
+- **`balances`** — spendable balance per currency (and legal entity). This equals
+  exactly what the billing engine can apply to invoices: adjustment credits with
+  status `issued` and a positive balance.
+- **`grants`** — every credit note for the customer (including fully-drawn `used`,
+  `expired`, and `refund` notes), newest first.
+- **`applications`** — the draw-down history: which credit note settled which
+  invoice, for how much, and when.
+- **`summary`** — a per-currency rollup of total issued, total applied, and the
+  current spendable balance.
+
+## Example request
+
+```bash
+curl https://api.recurso.dev/v1/customers/cust_abc123/credit-statement \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+## Example response
+
+```json
+{
+  "data": {
+    "customer_id": "cust_abc123",
+    "balances": [
+      { "currency": "USD", "entity_id": null, "balance": 4500 }
+    ],
+    "grants": [
+      {
+        "id": "cn_r4t8w1",
+        "type": "adjustment",
+        "status": "issued",
+        "amount": 5000,
+        "balance": 4500,
+        "currency": "USD",
+        "reason": "Goodwill credit",
+        "expires_at": "2026-12-31T23:59:59Z",
+        "created_at": "2026-06-01T10:00:00Z"
+      }
+    ],
+    "applications": [
+      {
+        "credit_note_id": "cn_r4t8w1",
+        "invoice_id": "inv_001",
+        "invoice_number": "REC/2026/0042",
+        "currency": "USD",
+        "amount": 500,
+        "created_at": "2026-07-01T09:00:00Z"
+      }
+    ],
+    "summary": [
+      { "currency": "USD", "total_issued": 5000, "total_applied": 500, "current_balance": 4500 }
+    ]
+  }
+}
+```
+
+<Note>
+The statement's spendable balance is computed the same way the billing engine
+selects credit to apply, so it can never disagree with what the customer can
+actually spend. It reconciles to the **Customer Credit (2300)** ledger account.
+</Note>

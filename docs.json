@@ -110,6 +110,7 @@
               "advanced/organizations",
               "advanced/virtual-accounts",
               "advanced/developer-settings",
+              "advanced/mcp-server",
               "advanced/idempotency"
             ],
             "icon": "plug"
@@ -152,6 +153,73 @@
           }
         ],
         "icon": "book-open"
+      },
+      {
+        "tab": "Setup Guides",
+        "groups": [
+          {
+            "group": "Start here",
+            "pages": [
+              "setup/index"
+            ]
+          },
+          {
+            "group": "Core billing & monetization",
+            "pages": [
+              "setup/wallets",
+              "setup/usage-alerts",
+              "setup/coupons",
+              "setup/credit-notes",
+              "setup/quotes",
+              "setup/commitments"
+            ]
+          },
+          {
+            "group": "Payments & recovery",
+            "pages": [
+              "setup/payment-gateway",
+              "setup/dunning"
+            ]
+          },
+          {
+            "group": "Growth & retention",
+            "pages": [
+              "setup/gifts-referrals",
+              "setup/cancel-flows",
+              "setup/churn"
+            ]
+          },
+          {
+            "group": "Compliance",
+            "pages": [
+              "setup/eu-einvoicing",
+              "setup/us-exemptions",
+              "setup/us-registrations",
+              "setup/india-irp",
+              "setup/upi-mandates"
+            ]
+          },
+          {
+            "group": "Finance",
+            "pages": [
+              "setup/revenue-recognition",
+              "setup/month-end-close"
+            ]
+          },
+          {
+            "group": "Platform",
+            "pages": [
+              "setup/webhooks",
+              "setup/sso",
+              "setup/accounting",
+              "setup/api-keys",
+              "setup/notifications",
+              "setup/organizations",
+              "setup/virtual-accounts",
+              "setup/customer-portal"
+            ]
+          }
+        ]
       },
       {
         "tab": "Dashboard Guide",
@@ -327,7 +395,8 @@
                 "pages": [
                   "api-reference/customers/create",
                   "api-reference/customers/list",
-                  "api-reference/customers/update-payment-method"
+                  "api-reference/customers/update-payment-method",
+                  "api-reference/customers/credit-statement"
                 ]
               },
               {
@@ -364,6 +433,8 @@
                   "api-reference/invoices/pdf",
                   "api-reference/invoices/preview",
                   "api-reference/invoices/einvoice-status",
+                  "api-reference/invoices/eu-einvoice",
+                  "api-reference/invoices/eu-einvoice-retry",
                   "api-reference/invoices/payment-wall"
                 ]
               },
@@ -418,6 +489,12 @@
                 "pages": [
                   "api-reference/credit-notes/create",
                   "api-reference/credit-notes/list"
+                ]
+              },
+              {
+                "group": "Wallets",
+                "pages": [
+                  "api-reference/wallets/close"
                 ]
               },
               {

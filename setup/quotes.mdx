@@ -1,0 +1,58 @@
+---
+title: "Set Up Quotes"
+description: "Draft a quote, send it for the customer to accept, and convert it into an invoice or subscription."
+---
+
+## Overview
+
+A quote is a proposed set of charges you send a customer for approval. They
+accept (or decline); on acceptance you convert it into an invoice or
+subscription. Quotes have an expiry and their own PDF.
+
+<Info>
+Full lifecycle: [Quotes](/advanced/quotes) · dashboard: [Quotes](/dashboard/quotes).
+</Info>
+
+## Step 1: Create the quote
+
+In the dashboard, go to **Quotes → Create**; or via the API:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/quotes \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "cus_...",
+    "line_items": [{ "description": "Enterprise plan (annual)", "amount": 1200000 }],
+    "expires_at": "2026-08-31"
+  }'
+```
+
+## Step 2: Send it for acceptance
+
+Send the quote to the customer — they review it (and its PDF) and **accept** or
+**decline**. A quote past its `expires_at` can't be accepted.
+
+## Step 3: Convert on acceptance
+
+Once accepted, convert the quote into an invoice (or subscription). Optional
+discounts on the quote carry through to the converted document.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The quote sends">
+    The customer receives the quote and it shows as sent/pending.
+  </Step>
+  <Step title="Acceptance converts cleanly">
+    Accepting produces an invoice/subscription with the quoted amounts.
+  </Step>
+  <Step title="Expiry is enforced">
+    A quote past its expiry can no longer be accepted.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Quotes concept + lifecycle](/advanced/quotes)
+- [Create your first subscription](/dashboard/workflows/first-subscription)

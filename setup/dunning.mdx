@@ -1,0 +1,63 @@
+---
+title: "Set Up Dunning (Failed-Payment Recovery)"
+description: "Turn on smart retries and multi-step reminder campaigns so failed payments are recovered automatically."
+---
+
+## Overview
+
+When a payment fails, dunning recovers it — **smart retries** (which learn the
+best retry timing) plus **multi-step reminder campaigns** (escalating emails).
+Together they cut involuntary churn without you chasing invoices.
+
+<Info>
+See [Dunning](/dashboard/dunning) for the KPIs and arm-performance detail, and
+[Recover a failed payment](/dashboard/workflows/recover-failed-payment) for the
+end-to-end flow.
+</Info>
+
+## Step 1: Make sure a gateway and email are configured
+
+Dunning acts on real payment failures and sends reminder emails, so first:
+
+- A [payment gateway](/setup/payment-gateway) is connected (failures come from it).
+- Email delivery is configured (reminders go out by email).
+
+## Step 2: Create a dunning campaign
+
+A campaign is an ordered set of steps, each firing after a delay when an invoice
+is past due. In the dashboard, go to **Dunning → Campaigns → Create a campaign**,
+then add steps (delay + message). Steps escalate — a gentle nudge, then firmer
+reminders, then a final notice.
+
+## Step 3: Let smart retries do the timing
+
+Alongside campaigns, the smart-retry engine reschedules the actual charge attempt
+on the timing most likely to succeed for that failure type, and attributes
+recovered revenue so you can see what's working (**Dunning → Smart Dunning**).
+
+## Step 4: Watch recovery
+
+The Dunning dashboard shows recovered revenue by month, arm performance by
+context, and recent retry history — your proof that involuntary churn is being
+contained.
+
+## Verify your setup
+
+<Steps>
+  <Step title="A campaign is active">
+    Your campaign appears under Dunning → Campaigns with its steps in order.
+  </Step>
+  <Step title="A past-due invoice enters dunning">
+    When an invoice goes past due, a retry is scheduled and the first campaign
+    step is queued.
+  </Step>
+  <Step title="Recovery shows up">
+    A recovered payment marks the invoice paid and appears in the recovered-revenue
+    view.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Recover a failed payment (workflow)](/dashboard/workflows/recover-failed-payment)
+- [Set up payment gateways](/setup/payment-gateway)

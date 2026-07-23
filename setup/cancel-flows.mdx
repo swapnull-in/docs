@@ -1,0 +1,53 @@
+---
+title: "Set Up Cancel Flows & Save Offers"
+description: "Intercept cancellations with a reason prompt and targeted save offers to retain customers."
+---
+
+## Overview
+
+A cancel flow is what a customer sees when they try to cancel: a reason prompt
+and, based on their answer, a **save offer** (a discount, a pause, a downgrade)
+that gives them a reason to stay. It turns a one-click churn into a retention
+opportunity.
+
+<Info>
+Dashboard detail: [Cancel flows](/dashboard/cancel-flows) · related:
+[Cancel with a save offer](/dashboard/workflows/cancel-with-save-offer).
+</Info>
+
+## Step 1: Build the flow
+
+In the dashboard, go to **Cancel flows** and define the reasons you want to
+capture and the **save offer** to present for each — e.g. offer a discount to
+"too expensive", a pause to "taking a break".
+
+## Step 2: Wire it into your cancel experience
+
+Point your app's cancel action at the flow so customers hit the reason prompt and
+offer before the subscription actually cancels. Accepting an offer applies it
+(discount/pause/downgrade) and keeps the subscription; declining proceeds to
+cancel.
+
+## Step 3: Learn from the reasons
+
+Cancellation reasons are captured whether or not the save offer lands — use them
+to see *why* customers leave and tune both the product and the offers.
+
+## Verify your setup
+
+<Steps>
+  <Step title="The flow presents on cancel">
+    Attempting to cancel shows the reason prompt and a save offer.
+  </Step>
+  <Step title="Accepting an offer retains">
+    Accepting applies the offer and the subscription stays active.
+  </Step>
+  <Step title="Reasons are recorded">
+    Declined cancellations still record the reason for analysis.
+  </Step>
+</Steps>
+
+## Next steps
+
+- [Cancel flows (dashboard)](/dashboard/cancel-flows)
+- [Set up churn monitoring](/setup/churn)

@@ -35,7 +35,7 @@ Recurso organizes ledger accounts into five standard accounting categories:
 | `liability` | Obligations owed | Credit | Deferred Revenue, Tax Payable |
 | `equity` | Owner's stake | Credit | Retained Earnings |
 | `revenue` | Income earned | Credit | Subscription Revenue |
-| `expense` | Costs incurred | Debit | Refunds, Discounts |
+| `expense` | Costs incurred | Debit | Refunds, Credits & Adjustments |
 
 ## Built-in Account Codes
 
@@ -49,7 +49,7 @@ Recurso provisions the following accounts automatically for each tenant:
 | `2100` | Deferred Revenue | `liability` | Prepaid revenue not yet recognized |
 | `5000` | Refunds | `expense` | Refund amounts issued to customers |
 | `2200` | Tax Payable | `liability` | Collected tax awaiting remittance |
-| `5100` | Discounts | `expense` | Coupon and discount amounts applied |
+| `5100` | Credits & Adjustments | `expense` | Coupons, discounts, and issued/expired account credit |
 
 <Info>
 Account codes follow standard chart-of-accounts conventions. Assets start with `1xxx`, liabilities with `2xxx`, revenue with `4xxx`, and expenses with `5xxx`.
@@ -124,7 +124,7 @@ Credit  2200 (Tax Payable)           ₹899.82
 When a coupon or discount is applied to an invoice:
 
 ```
-Debit   5100 (Discounts)             ₹500.00
+Debit   5100 (Credits & Adjustments) ₹500.00
 Credit  1100 (Accounts Receivable)   ₹500.00
 ```
 

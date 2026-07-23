@@ -224,19 +224,53 @@ Voiding a credit note is irreversible. If the credit note has already been parti
 const pdf = await recurso.creditNotes.pdf('cn_xyz');
 ```
 
-## Customer Balance
+## Credit expiry
 
-Track customer credit balance:
+An adjustment credit can carry an optional `expires_at`. When that date passes
+with balance still remaining, a background sweep writes the unused balance off
+and moves the credit to status `expired`, posting the reversal of the original
+issuance to the ledger:
 
-```typescript
-const balance = await recurso.customers.balance('cust_abc');
+- **DR Customer Credit (2300)** — the liability we no longer owe
+- **CR Credits & Adjustments (5100)** — reverses the original grant expense
 
-// Returns
-{
-  available_credit: 5000,  // ₹50 credit available
-  pending: 0
-}
+Pass `expires_at` when issuing the credit; omit it for a credit that never
+expires:
+
+```bash
+curl -X POST https://api.recurso.dev/v1/credit-notes \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "cust_abc123",
+    "amount": 5000,
+    "currency": "USD",
+    "reason": "Goodwill credit",
+    "expires_at": "2026-12-31T23:59:59Z"
+  }'
 ```
+
+<Note>
+Expiry applies only to spendable **adjustment** credits — a refund carries no
+balance to lapse. Once `expired`, a credit is unspendable and its balance is 0.
+</Note>
+
+## Customer credit statement
+
+To see a customer's running account credit — the spendable balance, every grant,
+and the invoice draw-down history — call the credit-statement endpoint:
+
+```bash
+curl https://api.recurso.dev/v1/customers/cust_abc123/credit-statement \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+It returns `balances` (spendable, per currency), `grants` (every credit note),
+`applications` (the draw-down trail), and a per-currency `summary`. The spendable
+balance equals what the billing engine can actually apply, and reconciles to the
+Customer Credit (2300) ledger account. See
+[Customer credit statement](/api-reference/customers/credit-statement) for the
+full schema.
 
 ## Webhooks
 

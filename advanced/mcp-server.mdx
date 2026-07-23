@@ -1,0 +1,126 @@
+---
+title: "MCP Server"
+description: "Let AI agents operate your billing over the Model Context Protocol"
+---
+
+## Overview
+
+The Recurso **MCP server** exposes your billing over the [Model Context Protocol](https://modelcontextprotocol.io),
+so an AI agent — Claude, ChatGPT, or your own — can read, simulate, and (when you
+allow it) act on your account. It is a thin, curated facade over the same API
+your dashboard uses: it holds no database and no shared credential. **Every tool
+call is scoped to the caller's own API key**, so an agent can only ever see and
+touch the tenant that key belongs to.
+
+<Note>
+Reads and simulations are always available. Curated writes are on by default.
+Money-path actions (issuing invoices, refunds, cancellations) are **off until
+you opt in**.
+</Note>
+
+## Tool tiers
+
+Tools are grouped into three tiers by how much they can affect your account.
+
+<CardGroup cols={3}>
+  <Card title="Reads & simulations" icon="magnifying-glass">
+    Always on. List and fetch customers, subscriptions, invoices, plans, quotes,
+    and metrics; preview a plan change; simulate charges; inspect usage. No side
+    effects.
+  </Card>
+  <Card title="Curated writes" icon="pen">
+    On by default, idempotent. Create and update customers, record usage
+    (single or batch), create and update subscriptions, draft and send quotes.
+    Retries can never double-apply.
+  </Card>
+  <Card title="Money-path" icon="lock">
+    Off until you opt in. Convert a quote to an invoice, cancel a subscription,
+    issue a credit note, top up a wallet, add a charge, bill usage now.
+  </Card>
+</CardGroup>
+
+Money-path tools are gated at two layers: the server won't offer them unless
+they're enabled, and each call re-checks your tenant's opt-in before it runs —
+**failing closed** if anything is uncertain. Enable them in **Settings → MCP
+server** in the dashboard.
+
+## Authentication
+
+The MCP server never holds a credential of its own. The agent supplies your
+Recurso API key, and Recurso derives the tenant and live/test mode from it.
+
+- **Remote (Streamable HTTP):** send `Authorization: Bearer rsk_live_…` with each
+  request. Multi-tenant — each caller uses their own key.
+- **Local (stdio):** the key comes from the `RECURSO_API_KEY` environment
+  variable and is used for every call.
+
+<Warning>
+Treat an `rsk_live_` key like a password. Prefer an `rsk_test_` key while you're
+evaluating an agent, and keep money-path tools disabled until you trust it.
+</Warning>
+
+## Connect an agent
+
+### Claude Desktop (local, stdio)
+
+Add the server to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "recurso": {
+      "command": "/path/to/recurso-mcp",
+      "env": {
+        "MCP_TRANSPORT": "stdio",
+        "API_BASE_URL": "https://api.recurso.dev",
+        "RECURSO_API_KEY": "rsk_live_…"
+      }
+    }
+  }
+}
+```
+
+### Remote client (Streamable HTTP)
+
+Point any MCP-capable client at the hosted endpoint and pass your key:
+
+```
+Endpoint:      https://mcp.recurso.dev
+Authorization: Bearer rsk_live_…
+```
+
+## What an agent can do
+
+A typical supervised session:
+
+> **You:** What's ACME's MRR? Draft a renewal quote at a 10% discount and show me
+> the invoice preview.
+
+The agent calls `list_customers` and analytics reads to find ACME, `create_quote`
+to draft the renewal, and `get_invoice_preview` to show the numbers — all without
+issuing anything. If it then tries `convert_quote_to_invoice` while money-path
+tools are disabled, the call is refused and reported back, so nothing is billed
+without your say-so.
+
+## Enterprise controls
+
+Money-path actions taken through an agent inherit the same governance as the
+dashboard:
+
+- **Segregation of duties** — refunds and credit notes follow a maker-checker
+  flow: one role drafts, a separate admin or owner approves.
+- **Audit trail** — every credit note records `created_by`, `approved_by`, and
+  `approved_at`, reconciled on Recurso's double-entry ledger.
+- **Idempotency** — every write carries an idempotency key, so a retried tool
+  call is never applied twice. See [Idempotency](/advanced/idempotency).
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Developer settings" icon="key" href="/advanced/developer-settings">
+    Create and manage the API keys agents authenticate with.
+  </Card>
+  <Card title="Idempotency" icon="rotate" href="/advanced/idempotency">
+    How Recurso makes retried writes safe.
+  </Card>
+</CardGroup>
